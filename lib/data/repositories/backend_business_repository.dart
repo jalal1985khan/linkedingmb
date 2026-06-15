@@ -77,6 +77,7 @@ class BackendBusinessRepository implements BusinessRepository {
     return profile;
   }
 
+
   BusinessProfile _mapLocationToProfile(Map<String, dynamic> location) {
     final id = _string(location['name']).isNotEmpty
         ? _string(location['name'])

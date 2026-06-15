@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../../core/config/api_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/models/business_profile.dart';
+import '../../data/repositories/business_repository.dart';
 import '../auth/auth_controller.dart';
 import '../settings/automation_settings_controller.dart';
 import 'business_flow_controller.dart';
@@ -96,43 +95,6 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Temporary GMB Access Path',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Until Google API quota approval is completed, you can use GMBAPI onboarding to connect account access.',
-                        style: TextStyle(color: AppColors.textSecondary),
-                      ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          OutlinedButton.icon(
-                            onPressed: _openGmbApiLanding,
-                            icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                            label: const Text('Open GMBAPI'),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: _openGmbApiAccessLink,
-                            icon: const Icon(Icons.link_rounded, size: 18),
-                            label: const Text('Open Admin Access Link'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
               Text(
                 'We found ${businesses.length} associated profiles',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
@@ -156,6 +118,7 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
                 icon: const Icon(Icons.add_business_rounded),
                 label: const Text('My business is not listed'),
               ),
+              const SizedBox(height: 12),
             ],
           );
         },
@@ -410,26 +373,6 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
       if (mounted) {
         setState(() => _isBusy = false);
       }
-    }
-  }
-
-  Future<void> _openGmbApiLanding() async {
-    final uri = Uri.parse(ApiConfig.gmbApiLandingUrl);
-    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!opened && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to open GMBAPI right now.')),
-      );
-    }
-  }
-
-  Future<void> _openGmbApiAccessLink() async {
-    final uri = Uri.parse(ApiConfig.gmbApiAccessLink);
-    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!opened && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to open access link right now.')),
-      );
     }
   }
 }
