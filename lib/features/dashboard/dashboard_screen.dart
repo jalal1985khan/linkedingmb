@@ -140,26 +140,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 MaterialPageRoute(builder: (_) => const CreatePostFlowScreen()),
               ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _StatCard(
-                    icon: Icons.timelapse_rounded,
-                    title: '${dashboard.queuedCount} Queued',
-                    color: AppColors.queuedBlue,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _StatCard(
-                    icon: Icons.auto_awesome_rounded,
-                    title: '${dashboard.aiGeneratedCount} AI Generated',
-                    color: AppColors.secondary,
-                  ),
-                ),
-              ],
-            ),
+
           ],
         );
       },
@@ -442,38 +423,3 @@ class _ProfileCompletionCard extends StatelessWidget {
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.icon,
-    required this.title,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String title;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              title,
-              style: TextStyle(color: color, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
