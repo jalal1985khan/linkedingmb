@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../data/models/business_profile.dart';
-import '../../data/repositories/business_repository.dart';
+import '../../data/repositories/gmbapi_repository.dart';
 import '../auth/auth_controller.dart';
 import '../settings/automation_settings_controller.dart';
 import 'business_flow_controller.dart';
@@ -70,10 +70,10 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
   }
 
   Widget _buildBusinessSelection(String userId) {
-    final businessesState = ref.watch(associatedBusinessesProvider(userId));
+    final locationsState = ref.watch(gmbapiLocationsProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Choose Business Profile')),
-      body: businessesState.when(
+      body: locationsState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(
           child: Padding(
@@ -81,8 +81,8 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
             child: Text('Could not fetch business profiles: $error'),
           ),
         ),
-        data: (businesses) {
-          if (businesses.isEmpty) {
+        data: (locations) {
+          if (locations.isEmpty) {
             _stage = _FlowStage.onboarding;
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
@@ -96,19 +96,53 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
             padding: const EdgeInsets.all(16),
             children: [
               Text(
-                'We found ${businesses.length} associated profiles',
+                'We found ${locations.length} associated profiles via GMB',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
-              for (final business in businesses)
+              for (final location in locations)
                 Card(
                   margin: const EdgeInsets.only(bottom: 10),
                   child: ListTile(
-                    title: Text(business.name),
-                    subtitle: Text('${business.category} • ${business.location}'),
-                    trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                    onTap: () {
-                      ref.read(selectedBusinessProvider.notifier).setBusiness(business);
+                    title: Text(location['title'] ?? 'Unknown Business'),
+                    subtitle: Text('${location['categories']?['primaryCategory']?['displayName'] ?? ''} • ${location['storefrontAddress']?['locality'] ?? ''}'),
+                    trailing: _isBusy
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                    onTap: () async {
+                      if (_isBusy) return;
+                      setState(() => _isBusy = true);
+                      try {
+                        final locationId = location['name']?.toString() ?? '';
+                        await ref.read(gmbapiRepositoryProvider).selectLocation(locationId);
+                        
+                        // Fake a BusinessProfile object for compatibility with downstream
+                        final business = BusinessProfile(
+                          id: locationId,
+                          name: location['title'] ?? 'Selected Business',
+                          category: location['categories']?['primaryCategory']?['displayName'] ?? '',
+                          location: location['storefrontAddress']?['locality'] ?? '',
+                          address: location['storefrontAddress']?['addressLines']?.firstOrNull ?? '',
+                          phone: location['phoneNumbers']?['primaryPhone'] ?? '',
+                          hoursSummary: '',
+                          website: location['websiteUri'] ?? '',
+                          targetAudience: '',
+                          brandTone: '',
+                          postingFrequency: 4,
+                        );
+                        
+                        if (mounted) {
+                          ref.read(selectedBusinessProvider.notifier).setBusiness(business);
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to select location: $e')));
+                        }
+                      } finally {
+                        if (mounted) {
+                          setState(() => _isBusy = false);
+                        }
+                      }
                     },
                   ),
                 ),

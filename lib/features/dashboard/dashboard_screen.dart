@@ -13,6 +13,7 @@ import '../scheduler/scheduler_screen.dart';
 import '../settings/automation_settings_screen.dart';
 import 'dashboard_controller.dart';
 import 'widgets/post_card.dart';
+import 'gmbapi_actions_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({
@@ -109,11 +110,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 12),
               _BusinessIdentityDetails(profile: selectedBusiness),
               const SizedBox(height: 12),
+              
+              // GMBAPI Dashboard Data
+              ref.watch(gmbapiDashboardProvider).when(
+                data: (data) => _GmbapiDashboardWidgets(data: data),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, st) => Text('Failed to load GMBAPI stats: $e', style: const TextStyle(color: Colors.red)),
+              ),
+              const SizedBox(height: 12),
+              
               _QuickManagementMenu(
                 onEditProfile: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const BusinessProfileScreen()),
                 ),
-                onReadReviews: () => _showSnackBar('Reviews integration next phase'),
+                onReadReviews: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const GmbapiActionsScreen()),
+                ),
                 onPhotos: () => _showSnackBar('Photos management coming next'),
                 onPosts: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const CreatePostFlowScreen()),
@@ -565,6 +577,102 @@ class _StatCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _GmbapiDashboardWidgets extends StatelessWidget {
+  final Map<String, dynamic> data;
+
+  const _GmbapiDashboardWidgets({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final stats = data['stats'] as Map<String, dynamic>? ?? {};
+    final keywords = data['keywords'] as List<dynamic>? ?? [];
+    final competitors = data['competitors'] as List<dynamic>? ?? [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Live Insights (GMBAPI)',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _StatItem(label: 'Views', value: '${stats['views'] ?? 0}', icon: Icons.visibility),
+                  _StatItem(label: 'Searches', value: '${stats['searches'] ?? 0}', icon: Icons.search),
+                  _StatItem(label: 'Interactions', value: '${stats['interactions'] ?? 0}', icon: Icons.touch_app),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (keywords.isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Top Keywords',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: keywords.map((k) => Chip(
+                    label: Text(k.toString()),
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    side: BorderSide.none,
+                  )).toList(),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+      ],
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+
+  const _StatItem({required this.label, required this.value, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: AppColors.primary, size: 28),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+      ],
     );
   }
 }

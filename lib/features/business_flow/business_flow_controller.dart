@@ -6,6 +6,7 @@ import '../../data/models/business_profile.dart';
 import '../../data/repositories/backend_business_repository.dart';
 import '../../data/repositories/ai_repository.dart';
 import '../../data/repositories/business_repository.dart';
+import '../../data/repositories/gmbapi_repository.dart';
 
 final businessRepositoryProvider = Provider<BusinessRepository>((ref) {
   return BackendBusinessRepository();
@@ -40,4 +41,12 @@ final associatedBusinessesProvider =
 final aiRecommendationsProvider =
     FutureProvider.family<List<AiRecommendation>, String>((ref, businessId) {
   return ref.read(aiRepositoryProvider).getRecommendations(businessId);
+});
+
+final gmbapiLocationsProvider = FutureProvider<List<dynamic>>((ref) {
+  return ref.read(gmbapiRepositoryProvider).getLocations();
+});
+
+final gmbapiDashboardProvider = FutureProvider<Map<String, dynamic>>((ref) {
+  return ref.read(gmbapiRepositoryProvider).getAnalyticsData();
 });
