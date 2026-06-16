@@ -12,6 +12,7 @@ import 'analytics_dashboard_screen.dart';
 import 'competitor_analysis_screen.dart';
 import 'reviews_screen.dart';
 import 'dashboard_controller.dart';
+import '../settings/automation_settings_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key, this.showScaffold = true});
@@ -46,7 +47,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           IconButton(
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => const AutomationSettingsScreen(),
+                builder: (_) => AutomationSettingsScreen(),
               ),
             ),
             icon: const Icon(Icons.tune_rounded),
