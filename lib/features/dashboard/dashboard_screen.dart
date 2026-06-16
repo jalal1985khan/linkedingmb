@@ -485,19 +485,20 @@ class _QuickManagementMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 14, 10, 8),
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
       ),
       child: GridView.count(
+        padding: EdgeInsets.zero,
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
-        crossAxisCount: 4,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 4,
-        childAspectRatio: 0.95,
+        crossAxisCount: 2,
+        mainAxisSpacing: 24,
+        crossAxisSpacing: 16,
+        childAspectRatio: 1.8,
         children: [
           _QuickMenuItem(
             icon: Icons.analytics_outlined,
@@ -515,30 +516,11 @@ class _QuickManagementMenu extends StatelessWidget {
             onTap: onReadReviews,
           ),
           _QuickMenuItem(
-            icon: Icons.post_add_rounded,
-            label: 'Posts',
-            onTap: onPosts,
-          ),
-          _QuickMenuItem(
             icon: Icons.edit_outlined,
             label: 'Edit profile',
             onTap: onEditProfile,
           ),
-          _QuickMenuItem(
-            icon: Icons.shopping_bag_outlined,
-            label: 'Products',
-            onTap: onEditProducts,
-          ),
-          _QuickMenuItem(
-            icon: Icons.list_alt_rounded,
-            label: 'Services',
-            onTap: onEditServices,
-          ),
-          _QuickMenuItem(
-            icon: Icons.calendar_month_outlined,
-            label: 'Bookings',
-            onTap: onBookings,
-          ),
+         
         ],
       ),
     );
