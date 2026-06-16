@@ -81,7 +81,39 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
             child: Text('Could not fetch business profiles: $error'),
           ),
         ),
-        data: (locations) {
+        data: (data) {
+          final List<dynamic> locations = data['locations'] ?? [];
+          final String? selectedLocationId = data['selected_location_id'];
+
+          if (selectedLocationId != null) {
+            // User already has a locked location. Select it and skip the screen!
+            final location = locations.firstWhere(
+                (loc) => loc['name']?.toString() == selectedLocationId,
+                orElse: () => null);
+            
+            if (location != null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  final business = BusinessProfile(
+                    id: selectedLocationId,
+                    name: location['title'] ?? 'Selected Business',
+                    category: location['categories']?['primaryCategory']?['displayName'] ?? '',
+                    location: location['storefrontAddress']?['locality'] ?? '',
+                    address: location['storefrontAddress']?['addressLines']?.firstOrNull ?? '',
+                    phone: location['phoneNumbers']?['primaryPhone'] ?? '',
+                    hoursSummary: '',
+                    website: location['websiteUri'] ?? '',
+                    targetAudience: '',
+                    brandTone: '',
+                    postingFrequency: 4,
+                  );
+                  ref.read(selectedBusinessProvider.notifier).setBusiness(business);
+                }
+              });
+              return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            }
+          }
+
           if (locations.isEmpty) {
             _stage = _FlowStage.onboarding;
             WidgetsBinding.instance.addPostFrameCallback((_) {

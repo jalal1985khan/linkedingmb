@@ -46,6 +46,11 @@ class BackendAuthRepository implements AuthRepository {
     await _secureStorage.delete(key: _tokenStorageKey);
   }
 
+  @override
+  Future<String?> getAccessToken() async {
+    return await _secureStorage.read(key: _tokenStorageKey);
+  }
+
   Future<AppUser> _fetchCurrentUser(String token) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/auth/me');
     final response = await _httpClient.get(

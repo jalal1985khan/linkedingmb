@@ -2,7 +2,8 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../../core/config/api_config.dart';
-import 'backend_auth_repository.dart';
+import '../../features/auth/auth_controller.dart';
+import 'auth_repository.dart';
 
 final gmbapiRepositoryProvider = Provider<GmbapiRepository>((ref) {
   final authRepo = ref.watch(authRepositoryProvider);
@@ -10,7 +11,7 @@ final gmbapiRepositoryProvider = Provider<GmbapiRepository>((ref) {
 });
 
 class GmbapiRepository {
-  final BackendAuthRepository _authRepository;
+  final AuthRepository _authRepository;
 
   GmbapiRepository(this._authRepository);
 
@@ -65,14 +66,14 @@ class GmbapiRepository {
     throw Exception('Refresh failed: ${response.statusCode}');
   }
 
-  Future<List<dynamic>> getLocations() async {
+  Future<Map<String, dynamic>> getLocations() async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmbapi/locations');
     final response = await http.get(uri, headers: await _getHeaders());
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       if (data['success'] == true) {
-        return data['locations'];
+        return data as Map<String, dynamic>;
       }
       throw Exception(data['message'] ?? 'Failed to load locations');
     }

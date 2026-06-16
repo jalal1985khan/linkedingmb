@@ -43,7 +43,7 @@ final aiRecommendationsProvider =
   return ref.read(aiRepositoryProvider).getRecommendations(businessId);
 });
 
-final gmbapiLocationsProvider = FutureProvider<List<dynamic>>((ref) {
+final gmbapiLocationsProvider = FutureProvider<Map<String, dynamic>>((ref) {
   return ref.read(gmbapiRepositoryProvider).getLocations();
 });
 
