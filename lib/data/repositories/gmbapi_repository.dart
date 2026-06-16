@@ -137,12 +137,13 @@ class GmbapiRepository {
   }
 
   Future<void> replyToReview(String reviewId, String replyText) async {
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmbapi/reviews/$reviewId/reply');
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmbapi/reviews/reply');
     final response = await http.post(
       uri,
       headers: await _getHeaders(),
       body: jsonEncode({
-        'reply_text': replyText,
+        'review_id': reviewId,
+        'answer': replyText,
       }),
     );
 
@@ -177,26 +178,36 @@ class GmbapiRepository {
     throw Exception('Failed to post QnA: ${response.statusCode}');
   }
 
-  Future<List<dynamic>> getReviews() async {
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmbapi/reviews');
-    final response = await http.get(uri, headers: await _getHeaders());
+  Future<Map<String, dynamic>> getLocationReviews({
+    int page = 1,
+    int perPage = 10,
+    int? starRating,
+    bool? hasComment,
+    bool? hasReply,
+    bool? isDeleted,
+  }) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmbapi/reviews/location');
+    final Map<String, dynamic> body = {
+      'page': page,
+      'per_page': perPage,
+    };
+    if (starRating != null) body['star_rating'] = starRating;
+    if (hasComment != null) body['has_comment'] = hasComment;
+    if (hasReply != null) body['has_reply'] = hasReply;
+    if (isDeleted != null) body['is_deleted'] = isDeleted;
+
+    final response = await http.post(
+      uri,
+      headers: await _getHeaders(),
+      body: jsonEncode(body),
+    );
+
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      if (data['success'] == true) return data['reviews'] ?? [];
+      if (data['success'] == true) return data['data'] ?? {};
       throw Exception(data['message'] ?? 'Failed to load reviews');
     }
     throw Exception('Failed to load reviews: ${response.statusCode}');
-  }
-
-  Future<Map<String, dynamic>> getReviewById(String reviewId) async {
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmbapi/reviews/$reviewId');
-    final response = await http.get(uri, headers: await _getHeaders());
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data['success'] == true) return data['review'];
-      throw Exception(data['message'] ?? 'Failed to load review');
-    }
-    throw Exception('Failed to load review: ${response.statusCode}');
   }
 
   Future<List<dynamic>> getPosts() async {
@@ -219,5 +230,50 @@ class GmbapiRepository {
       throw Exception(data['message'] ?? 'Failed to delete post');
     }
     throw Exception('Failed to delete post: ${response.statusCode}');
+  }
+
+  Future<Map<String, dynamic>> getCompetitorScan({String? scanId, String? placeId}) async {
+    final queryParams = <String, String>{};
+    if (scanId != null) queryParams['scanId'] = scanId;
+    if (placeId != null) queryParams['placeId'] = placeId;
+
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmbapi/competitor-scan').replace(queryParameters: queryParams);
+    final response = await http.get(uri, headers: await _getHeaders());
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['success'] == true) return data['data'] ?? {};
+      throw Exception(data['message'] ?? 'Failed to load competitor scan');
+    }
+    throw Exception('Failed to load competitor scan: ${response.statusCode}');
+  }
+
+  Future<Map<String, dynamic>> getKeywordScans() async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmbapi/keyword-scans');
+    final response = await http.get(uri, headers: await _getHeaders());
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['success'] == true) return data['data'] ?? {};
+      throw Exception(data['message'] ?? 'Failed to load keyword scans');
+    }
+    throw Exception('Failed to load keyword scans: ${response.statusCode}');
+  }
+
+  Future<Map<String, dynamic>> getCompetitorKpi(String placeId, String centerPlaceId) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmbapi/competitor-kpi').replace(
+      queryParameters: {
+        'placeId': placeId,
+        'centerPlaceId': centerPlaceId,
+      }
+    );
+    final response = await http.get(uri, headers: await _getHeaders());
+    
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['success'] == true) return data['data'] ?? {};
+      throw Exception(data['message'] ?? 'Failed to load competitor KPI');
+    }
+    throw Exception('Failed to load competitor KPI: ${response.statusCode}');
   }
 }
