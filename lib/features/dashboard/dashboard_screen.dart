@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../data/models/business_profile.dart';
-import '../../data/models/scheduled_post.dart';
 import '../auth/auth_controller.dart';
 import '../business_flow/business_profile_screen.dart';
 import '../business_flow/business_flow_controller.dart';
@@ -12,10 +11,7 @@ import '../posts/post_editor_screen.dart';
 import 'analytics_dashboard_screen.dart';
 import 'competitor_analysis_screen.dart';
 import 'reviews_screen.dart';
-import '../scheduler/scheduler_screen.dart';
-import '../settings/automation_settings_screen.dart';
 import 'dashboard_controller.dart';
-import 'widgets/post_card.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key, this.showScaffold = true});
@@ -27,8 +23,6 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  int selectedFilter = 0;
-  static const filters = ['All', 'AI Generated', 'Manual', 'Latest (2 days)'];
 
   @override
   Widget build(BuildContext context) {
@@ -77,18 +71,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       error: (error, stackTrace) =>
           Center(child: Text('Something went wrong: $error')),
       data: (dashboard) {
-        final filteredPosts = dashboard.posts.where((post) {
-          switch (selectedFilter) {
-            case 1:
-              return post.isAiGenerated;
-            case 2:
-              return !post.isAiGenerated;
-            case 3:
-              return DateTime.now().difference(post.scheduledAt).inDays <= 2;
-            default:
-              return true;
-          }
-        }).toList();
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 22),
@@ -177,134 +159,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 22),
-            Row(
-              children: [
-                const Text(
-                  'Scheduled Posts',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 22),
-                ),
-                const Spacer(),
-                Text(
-                  '${filteredPosts.length} posts',
-                  style: const TextStyle(color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: List.generate(filters.length, (index) {
-                final selected = selectedFilter == index;
-                return ChoiceChip(
-                  label: Text(filters[index]),
-                  selected: selected,
-                  onSelected: (_) => setState(() => selectedFilter = index),
-                  showCheckmark: false,
-                  selectedColor: AppColors.primary,
-                  labelStyle: TextStyle(
-                    color: selected ? Colors.white : AppColors.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  side: BorderSide(
-                    color: selected ? AppColors.primary : AppColors.border,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                );
-              }),
-            ),
-            const SizedBox(height: 18),
-            for (final post in filteredPosts)
-              PostCard(
-                post: post,
-                onOpen: () => _openEditor(post.id),
-                actions: _actionsForPost(post.status),
-                onActionSelected: (action) =>
-                    _handlePostAction(postId: post.id, action: action),
-              ),
           ],
         );
       },
     );
   }
 
-  List<PostActionItem> _actionsForPost(PostStatus status) {
-    switch (status) {
-      case PostStatus.failed:
-        return const [
-          PostActionItem(id: 'edit', label: 'Edit draft'),
-          PostActionItem(id: 'retry', label: 'Retry'),
-          PostActionItem(id: 'delete', label: 'Delete'),
-        ];
-      case PostStatus.published:
-        return const [
-          PostActionItem(id: 'duplicate', label: 'Duplicate'),
-          PostActionItem(id: 'delete', label: 'Delete'),
-        ];
-      default:
-        return const [
-          PostActionItem(id: 'edit', label: 'Edit draft'),
-          PostActionItem(id: 'schedule', label: 'Schedule'),
-          PostActionItem(id: 'publish', label: 'Publish now'),
-          PostActionItem(id: 'duplicate', label: 'Duplicate'),
-          PostActionItem(id: 'delete', label: 'Delete'),
-        ];
-    }
-  }
 
-  Future<void> _handlePostAction({
-    required String postId,
-    required String action,
-  }) async {
-    try {
-      final repository = ref.read(postRepositoryProvider);
-      switch (action) {
-        case 'edit':
-          _openEditor(postId);
-          return;
-        case 'schedule':
-          if (!mounted) {
-            return;
-          }
-          await Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => SchedulerScreen(postId: postId)),
-          );
-          return;
-        case 'publish':
-          await repository.publishNow(postId);
-          _showSnackBar('Post published');
-          break;
-        case 'duplicate':
-          await repository.duplicatePost(postId);
-          _showSnackBar('Post duplicated');
-          break;
-        case 'delete':
-          await repository.deletePost(postId);
-          _showSnackBar('Post deleted');
-          break;
-        case 'retry':
-          await repository.retryFailedPost(postId);
-          _showSnackBar('Retry queued');
-          break;
-      }
-      ref.invalidate(dashboardDataProvider);
-    } catch (error) {
-      _showSnackBar('Action failed: $error');
-    }
-  }
-
-  Future<void> _openEditor(String postId) async {
-    if (!mounted) {
-      return;
-    }
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => PostEditorScreen(postId: postId)));
-    ref.invalidate(dashboardDataProvider);
-  }
 
   void _showSnackBar(String message) {
     if (!mounted) {
