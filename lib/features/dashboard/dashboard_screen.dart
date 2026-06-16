@@ -77,23 +77,43 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 22),
           children: [
             if (selectedBusiness != null) ...[
-              Text(
-                'Welcome back',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontWeight: FontWeight.w600,
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  image: const DecorationImage(
+                    image: NetworkImage(
+                      'https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=1000&auto=format&fit=crop',
+                    ),
+                    fit: BoxFit.cover,
+                    opacity: 0.15,
+                  ),
+                  color: AppColors.primary.withValues(alpha: 0.05),
+                  border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome back',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      selectedBusiness.name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 26,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _BusinessIdentityDetails(profile: selectedBusiness),
+                  ],
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                selectedBusiness.name,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 26,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _BusinessIdentityDetails(profile: selectedBusiness),
               const SizedBox(height: 12),
 
               _QuickManagementMenu(
