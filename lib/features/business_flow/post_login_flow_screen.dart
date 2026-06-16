@@ -210,6 +210,7 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
                         }
                       }
                     },
+                  ),
                 );
               }).toList(),
               const SizedBox(height: 12),
