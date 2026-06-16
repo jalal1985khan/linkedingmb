@@ -8,7 +8,7 @@ import '../auth/auth_controller.dart';
 import '../settings/automation_settings_controller.dart';
 import 'business_flow_controller.dart';
 
-enum _FlowStage { selection, onboarding, analyzing, recommendations }
+enum _FlowStage { selection, preview, onboarding, analyzing, recommendations }
 
 class PostLoginFlowScreen extends ConsumerStatefulWidget {
   const PostLoginFlowScreen({super.key});
@@ -20,6 +20,7 @@ class PostLoginFlowScreen extends ConsumerStatefulWidget {
 class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
   _FlowStage _stage = _FlowStage.selection;
   BusinessProfile? _onboardingBusiness;
+  Map<String, dynamic>? _selectedLocationPreview;
   bool _isBusy = false;
   bool _autoApply = false;
   final Set<String> _selectedRecommendationIds = <String>{};
@@ -60,6 +61,8 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
     switch (_stage) {
       case _FlowStage.selection:
         return _buildBusinessSelection(user.id);
+      case _FlowStage.preview:
+        return _buildLocationPreview();
       case _FlowStage.onboarding:
         return _buildOnboarding();
       case _FlowStage.analyzing:
@@ -172,43 +175,12 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
                         ),
                       ],
                     ),
-                    trailing: _isBusy
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.arrow_forward_ios_rounded, size: 16),
-                    onTap: () async {
-                      if (_isBusy) return;
-                      setState(() => _isBusy = true);
-                      try {
-                        final locationId = location['name']?.toString() ?? '';
-                        await ref.read(gmbapiRepositoryProvider).selectLocation(locationId);
-                        
-                        // Fake a BusinessProfile object for compatibility with downstream
-                        final business = BusinessProfile(
-                          id: locationId,
-                          name: location['title'] ?? 'Selected Business',
-                          category: location['categories']?['primaryCategory']?['displayName'] ?? '',
-                          location: location['storefrontAddress']?['locality'] ?? '',
-                          address: (location['storefrontAddress']?['addressLines'] != null && (location['storefrontAddress']!['addressLines'] as List).isNotEmpty) ? (location['storefrontAddress']!['addressLines'] as List)[0].toString() : '',
-                          phone: location['phoneNumbers']?['primaryPhone'] ?? '',
-                          hoursSummary: '',
-                          website: location['websiteUri'] ?? '',
-                          targetAudience: '',
-                          brandTone: '',
-                          postingFrequency: 4,
-                        );
-                        
-                        if (mounted) {
-                          ref.read(selectedBusinessProvider.notifier).setBusiness(business);
-                        }
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to select location: $e')));
-                        }
-                      } finally {
-                        if (mounted) {
-                          setState(() => _isBusy = false);
-                        }
-                      }
+                    trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+                    onTap: () {
+                      setState(() {
+                        _selectedLocationPreview = location;
+                        _stage = _FlowStage.preview;
+                      });
                     },
                   ),
                 );
@@ -223,6 +195,156 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildLocationPreview() {
+    final location = _selectedLocationPreview;
+    if (location == null) {
+      return const Center(child: Text("No location selected"));
+    }
+    
+    final raw = location['gmbapi_raw'] ?? {};
+    final state = raw['state']?.toString() ?? 'Unknown';
+    final isVerified = raw['is_verified'] == 1 || raw['is_verified'] == true;
+    
+    String statusText = state;
+    Color statusColor = Colors.grey;
+    if (state.toLowerCase() == 'active' && isVerified) {
+      statusText = 'Active & Verified';
+      statusColor = Colors.green;
+    } else if (!isVerified) {
+      statusText = 'Pending Verification';
+      statusColor = Colors.orange;
+    } else if (state.toLowerCase() == 'inactive') {
+      statusText = 'Inactive / Not Approved';
+      statusColor = Colors.red;
+    }
+
+    final title = location['title'] ?? 'Unknown Business';
+    final category = location['categories']?['primaryCategory']?['displayName'] ?? '';
+    final addressLines = location['storefrontAddress']?['addressLines'] as List?;
+    final address = addressLines != null && addressLines.isNotEmpty ? addressLines.join(", ") : '';
+    final phone = location['phoneNumbers']?['primaryPhone'] ?? '';
+    final website = location['websiteUri'] ?? '';
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => setState(() => _stage = _FlowStage.selection),
+        ),
+        title: const Text('Confirm Business Profile'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              height: 160,
+              decoration: BoxDecoration(
+                color: Colors.blueGrey.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.storefront, size: 64, color: Colors.blueGrey.shade300),
+            ),
+            const SizedBox(height: 24),
+            Text(title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: statusColor.withOpacity(0.5)),
+                ),
+                child: Text(statusText, style: TextStyle(color: statusColor, fontWeight: FontWeight.w600)),
+              ),
+            ),
+            const SizedBox(height: 24),
+            if (category.isNotEmpty) _buildDetailRow(Icons.category, category),
+            if (address.isNotEmpty) _buildDetailRow(Icons.location_on, address),
+            if (phone.isNotEmpty) _buildDetailRow(Icons.phone, phone),
+            if (website.isNotEmpty) _buildDetailRow(Icons.language, website),
+            const SizedBox(height: 32),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.blue),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Disclaimer: Once you register with this business profile, you cannot select another one later. Your account will be tied to this business.',
+                      style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: _isBusy ? null : () async {
+                setState(() => _isBusy = true);
+                try {
+                  final locationId = location['name']?.toString() ?? '';
+                  await ref.read(gmbapiRepositoryProvider).selectLocation(locationId);
+                  
+                  final business = BusinessProfile(
+                    id: locationId,
+                    name: title,
+                    category: category,
+                    location: location['storefrontAddress']?['locality'] ?? '',
+                    address: addressLines != null && addressLines.isNotEmpty ? addressLines[0].toString() : '',
+                    phone: phone,
+                    hoursSummary: '',
+                    website: website,
+                    targetAudience: '',
+                    brandTone: '',
+                    postingFrequency: 4,
+                  );
+                  
+                  if (mounted) {
+                    ref.read(selectedBusinessProvider.notifier).setBusiness(business);
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to select location: $e')));
+                  }
+                } finally {
+                  if (mounted) {
+                    setState(() => _isBusy = false);
+                  }
+                }
+              },
+              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+              child: _isBusy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('Register with this Business'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: Colors.grey[600]),
+          const SizedBox(width: 12),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 15))),
+        ],
       ),
     );
   }
