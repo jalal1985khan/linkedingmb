@@ -77,19 +77,19 @@ class _GmbapiDashboardWidgets extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _StatItem(
-                    label: 'Views',
-                    value: '${stats['views'] ?? 0}',
-                    icon: Icons.visibility,
+                    label: 'Rating',
+                    value: '${stats['average_rating'] ?? 0.0}',
+                    icon: Icons.star_rate_rounded,
                   ),
                   _StatItem(
-                    label: 'Searches',
-                    value: '${stats['searches'] ?? 0}',
-                    icon: Icons.search,
+                    label: 'Reviews',
+                    value: '${stats['number_of_comments'] ?? 0}',
+                    icon: Icons.comment_rounded,
                   ),
                   _StatItem(
-                    label: 'Interactions',
-                    value: '${stats['interactions'] ?? 0}',
-                    icon: Icons.touch_app,
+                    label: 'Replies',
+                    value: '${stats['reply_percentage'] ?? 0}%',
+                    icon: Icons.reply_rounded,
                   ),
                 ],
               ),
