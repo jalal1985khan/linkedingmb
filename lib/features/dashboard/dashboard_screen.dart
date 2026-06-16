@@ -571,7 +571,11 @@ class _QuickMenuItem extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
+            ),
           ),
         ],
       ),
