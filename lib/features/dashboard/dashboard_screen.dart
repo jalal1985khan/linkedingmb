@@ -92,12 +92,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   fontSize: 26,
                 ),
               ),
-              const SizedBox(height: 10),
-              const _BusinessSnapshotCard(),
               const SizedBox(height: 12),
               _BusinessIdentityDetails(profile: selectedBusiness),
-              const SizedBox(height: 12),
-
               const SizedBox(height: 12),
 
               _QuickManagementMenu(
@@ -157,23 +153,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
 
 
-class _BusinessSnapshotCard extends StatelessWidget {
-  const _BusinessSnapshotCard();
 
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: AspectRatio(
-        aspectRatio: 1.6,
-        child: Image.asset(
-          'assets/images/gbp_reference/gbp_hero.png',
-          fit: BoxFit.cover,
-        ),
-      ),
-    );
-  }
-}
 
 class _BusinessIdentityDetails extends StatelessWidget {
   const _BusinessIdentityDetails({required this.profile});
