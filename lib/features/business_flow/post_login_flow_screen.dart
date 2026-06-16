@@ -130,12 +130,48 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
-              for (final location in locations)
-                Card(
+              ...locations.map((location) {
+                final raw = location['gmbapi_raw'] ?? {};
+                final state = raw['state']?.toString() ?? 'Unknown';
+                final isVerified = raw['is_verified'] == 1 || raw['is_verified'] == true;
+                
+                String statusText = state;
+                Color statusColor = Colors.grey;
+                
+                if (state.toLowerCase() == 'active' && isVerified) {
+                  statusText = 'Active & Verified';
+                  statusColor = Colors.green;
+                } else if (!isVerified) {
+                  statusText = 'Pending Verification';
+                  statusColor = Colors.orange;
+                } else if (state.toLowerCase() == 'inactive') {
+                  statusText = 'Inactive / Not Approved';
+                  statusColor = Colors.red;
+                }
+
+                return Card(
                   margin: const EdgeInsets.only(bottom: 10),
                   child: ListTile(
                     title: Text(location['title'] ?? 'Unknown Business'),
-                    subtitle: Text('${location['categories']?['primaryCategory']?['displayName'] ?? ''} • ${location['storefrontAddress']?['locality'] ?? ''}'),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('${location['categories']?['primaryCategory']?['displayName'] ?? ''} • ${location['storefrontAddress']?['locality'] ?? ''}'),
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(color: statusColor.withOpacity(0.5)),
+                          ),
+                          child: Text(
+                            statusText,
+                            style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
                     trailing: _isBusy
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                         : const Icon(Icons.arrow_forward_ios_rounded, size: 16),
@@ -174,8 +210,8 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
                         }
                       }
                     },
-                  ),
-                ),
+                );
+              }).toList(),
               const SizedBox(height: 12),
               OutlinedButton.icon(
                 onPressed: () => setState(() => _stage = _FlowStage.onboarding),
