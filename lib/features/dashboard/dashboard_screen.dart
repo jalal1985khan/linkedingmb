@@ -5,10 +5,12 @@ import '../../core/theme/app_colors.dart';
 import '../../data/models/business_profile.dart';
 import '../../data/models/scheduled_post.dart';
 import '../auth/auth_controller.dart';
-import '../business_flow/business_profile_screen.dart';
 import '../business_flow/business_flow_controller.dart';
+import '../business_flow/business_profile_screen.dart';
 import '../posts/create_post_flow_screen.dart';
-import '../posts/post_editor_screen.dart';
+import 'analytics_dashboard_screen.dart';
+import 'competitor_analysis_screen.dart';
+import 'reviews_screen.dart';
 import '../scheduler/scheduler_screen.dart';
 import '../settings/automation_settings_screen.dart';
 import 'dashboard_controller.dart';
@@ -16,10 +18,7 @@ import 'widgets/post_card.dart';
 import 'gmbapi_actions_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
-  const DashboardScreen({
-    super.key,
-    this.showScaffold = true,
-  });
+  const DashboardScreen({super.key, this.showScaffold = true});
 
   final bool showScaffold;
 
@@ -52,12 +51,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           IconButton(
             onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AutomationSettingsScreen()),
+              MaterialPageRoute(
+                builder: (_) => const AutomationSettingsScreen(),
+              ),
             ),
             icon: const Icon(Icons.tune_rounded),
           ),
           IconButton(
-            onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+            onPressed: () =>
+                ref.read(authControllerProvider.notifier).signOut(),
             icon: const Icon(Icons.logout_rounded),
           ),
         ],
@@ -72,9 +74,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return dashboardState.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, stackTrace) => Center(
-        child: Text('Something went wrong: $error'),
-      ),
+      error: (error, stackTrace) =>
+          Center(child: Text('Something went wrong: $error')),
       data: (dashboard) {
         final filteredPosts = dashboard.posts.where((post) {
           switch (selectedFilter) {
@@ -96,44 +97,56 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               Text(
                 'Welcome back',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 selectedBusiness.name,
-                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 36),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 36,
+                ),
               ),
               const SizedBox(height: 10),
               const _BusinessSnapshotCard(),
               const SizedBox(height: 12),
               _BusinessIdentityDetails(profile: selectedBusiness),
               const SizedBox(height: 12),
-              
-              // GMBAPI Dashboard Data
-              ref.watch(gmbapiDashboardProvider).when(
-                data: (data) => _GmbapiDashboardWidgets(data: data),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, st) => Text('Failed to load GMBAPI stats: $e', style: const TextStyle(color: Colors.red)),
-              ),
+
               const SizedBox(height: 12),
-              
+
               _QuickManagementMenu(
+                onAnalytics: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const AnalyticsDashboardScreen(),
+                  ),
+                ),
+                onCompetitors: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const CompetitorAnalysisScreen(),
+                  ),
+                ),
                 onEditProfile: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const BusinessProfileScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const BusinessProfileScreen(),
+                  ),
                 ),
                 onReadReviews: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const GmbapiActionsScreen()),
+                  MaterialPageRoute(builder: (_) => const ReviewsScreen()),
                 ),
-                onPhotos: () => _showSnackBar('Photos management coming next'),
                 onPosts: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const CreatePostFlowScreen()),
+                  MaterialPageRoute(
+                    builder: (_) => const CreatePostFlowScreen(),
+                  ),
                 ),
-                onEditProducts: () => _showSnackBar('Products sync coming next'),
-                onEditServices: () => _showSnackBar('Services sync coming next'),
-                onBookings: () => _showSnackBar('Bookings integration coming next'),
-                onQr: () => _showSnackBar('Google profile QR coming next'),
+                onEditProducts: () =>
+                    _showSnackBar('Products sync coming next'),
+                onEditServices: () =>
+                    _showSnackBar('Services sync coming next'),
+                onBookings: () =>
+                    _showSnackBar('Bookings integration coming next'),
               ),
               const SizedBox(height: 12),
               const _ProfileCompletionCard(),
@@ -194,8 +207,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     color: selected ? Colors.white : AppColors.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),
-                  side: BorderSide(color: selected ? AppColors.primary : AppColors.border),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                  side: BorderSide(
+                    color: selected ? AppColors.primary : AppColors.border,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                 );
               }),
             ),
@@ -205,10 +222,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 post: post,
                 onOpen: () => _openEditor(post.id),
                 actions: _actionsForPost(post.status),
-                onActionSelected: (action) => _handlePostAction(
-                  postId: post.id,
-                  action: action,
-                ),
+                onActionSelected: (action) =>
+                    _handlePostAction(postId: post.id, action: action),
               ),
           ],
         );
@@ -285,9 +300,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (!mounted) {
       return;
     }
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => PostEditorScreen(postId: postId)),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => PostEditorScreen(postId: postId)));
     ref.invalidate(dashboardDataProvider);
   }
 
@@ -295,7 +310,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -342,8 +359,8 @@ class _AutoGenerateCard extends StatelessWidget {
                   Text(
                     'Auto Generate Posts',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   const Text(
@@ -353,7 +370,10 @@ class _AutoGenerateCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.textSecondary),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textSecondary,
+            ),
           ],
         ),
       ),
@@ -443,21 +463,21 @@ class _DetailRow extends StatelessWidget {
 
 class _QuickManagementMenu extends StatelessWidget {
   const _QuickManagementMenu({
+    required this.onAnalytics,
+    required this.onCompetitors,
     required this.onEditProfile,
     required this.onReadReviews,
-    required this.onPhotos,
     required this.onPosts,
-    required this.onQr,
     required this.onEditProducts,
     required this.onEditServices,
     required this.onBookings,
   });
 
+  final VoidCallback onAnalytics;
+  final VoidCallback onCompetitors;
   final VoidCallback onEditProfile;
   final VoidCallback onReadReviews;
-  final VoidCallback onPhotos;
   final VoidCallback onPosts;
-  final VoidCallback onQr;
   final VoidCallback onEditProducts;
   final VoidCallback onEditServices;
   final VoidCallback onBookings;
@@ -479,14 +499,46 @@ class _QuickManagementMenu extends StatelessWidget {
         crossAxisSpacing: 4,
         childAspectRatio: 0.95,
         children: [
-          _QuickMenuItem(icon: Icons.edit_outlined, label: 'Edit profile', onTap: onEditProfile),
-          _QuickMenuItem(icon: Icons.star_border_rounded, label: 'Read reviews', onTap: onReadReviews),
-          _QuickMenuItem(icon: Icons.image_outlined, label: 'Photos', onTap: onPhotos),
-          _QuickMenuItem(icon: Icons.post_add_rounded, label: 'Posts', onTap: onPosts),
-          _QuickMenuItem(icon: Icons.qr_code_2_rounded, label: 'Get Google QR', onTap: onQr),
-          _QuickMenuItem(icon: Icons.shopping_bag_outlined, label: 'Edit products', onTap: onEditProducts),
-          _QuickMenuItem(icon: Icons.list_alt_rounded, label: 'Edit services', onTap: onEditServices),
-          _QuickMenuItem(icon: Icons.calendar_month_outlined, label: 'Bookings', onTap: onBookings),
+          _QuickMenuItem(
+            icon: Icons.analytics_outlined,
+            label: 'Analytics',
+            onTap: onAnalytics,
+          ),
+          _QuickMenuItem(
+            icon: Icons.troubleshoot_outlined,
+            label: 'Competitors',
+            onTap: onCompetitors,
+          ),
+          _QuickMenuItem(
+            icon: Icons.star_border_rounded,
+            label: 'Reviews',
+            onTap: onReadReviews,
+          ),
+          _QuickMenuItem(
+            icon: Icons.post_add_rounded,
+            label: 'Posts',
+            onTap: onPosts,
+          ),
+          _QuickMenuItem(
+            icon: Icons.edit_outlined,
+            label: 'Edit profile',
+            onTap: onEditProfile,
+          ),
+          _QuickMenuItem(
+            icon: Icons.shopping_bag_outlined,
+            label: 'Products',
+            onTap: onEditProducts,
+          ),
+          _QuickMenuItem(
+            icon: Icons.list_alt_rounded,
+            label: 'Services',
+            onTap: onEditServices,
+          ),
+          _QuickMenuItem(
+            icon: Icons.calendar_month_outlined,
+            label: 'Bookings',
+            onTap: onBookings,
+          ),
         ],
       ),
     );
@@ -569,110 +621,11 @@ class _StatCard extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(color: color, fontWeight: FontWeight.w600),
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _GmbapiDashboardWidgets extends StatelessWidget {
-  final Map<String, dynamic> data;
-
-  const _GmbapiDashboardWidgets({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    final stats = data['stats'] as Map<String, dynamic>? ?? {};
-    final keywords = data['keywords'] as List<dynamic>? ?? [];
-    final competitors = data['competitors'] as List<dynamic>? ?? [];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Live Insights (GMBAPI)',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _StatItem(label: 'Views', value: '${stats['views'] ?? 0}', icon: Icons.visibility),
-                  _StatItem(label: 'Searches', value: '${stats['searches'] ?? 0}', icon: Icons.search),
-                  _StatItem(label: 'Interactions', value: '${stats['interactions'] ?? 0}', icon: Icons.touch_app),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (keywords.isNotEmpty) ...[
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Top Keywords',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: keywords.map((k) => Chip(
-                    label: Text(k.toString()),
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
-                    side: BorderSide.none,
-                  )).toList(),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-      ],
-    );
-  }
-}
-
-class _StatItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-
-  const _StatItem({required this.label, required this.value, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(icon, color: AppColors.primary, size: 28),
-        const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-        Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-      ],
     );
   }
 }
