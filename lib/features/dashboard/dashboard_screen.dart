@@ -89,7 +89,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 selectedBusiness.name,
                 style: const TextStyle(
                   fontWeight: FontWeight.w800,
-                  fontSize: 36,
+                  fontSize: 26,
                 ),
               ),
               const SizedBox(height: 10),
@@ -135,11 +135,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const _ProfileCompletionCard(),
               const SizedBox(height: 14),
             ],
-            _AutoGenerateCard(
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const CreatePostFlowScreen()),
-              ),
-            ),
+
 
           ],
         );
@@ -159,70 +155,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 }
 
-class _AutoGenerateCard extends StatelessWidget {
-  const _AutoGenerateCard({required this.onTap});
 
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: onTap,
-      child: Ink(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: Colors.white,
-          border: Border.all(color: AppColors.border),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x14000000),
-              blurRadius: 14,
-              offset: Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(
-                color: AppColors.secondary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: const Icon(Icons.auto_awesome, color: AppColors.secondary),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Auto Generate Posts',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'AI collects business context and creates Google posts',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                ],
-              ),
-            ),
-            const Icon(
-              Icons.chevron_right_rounded,
-              color: AppColors.textSecondary,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _BusinessSnapshotCard extends StatelessWidget {
   const _BusinessSnapshotCard();
