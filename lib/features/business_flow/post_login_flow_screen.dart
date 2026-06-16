@@ -91,27 +91,25 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
                 (loc) => loc['name']?.toString() == selectedLocationId,
                 orElse: () => null);
             
-            if (location != null) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  final business = BusinessProfile(
-                    id: selectedLocationId,
-                    name: location['title'] ?? 'Selected Business',
-                    category: location['categories']?['primaryCategory']?['displayName'] ?? '',
-                    location: location['storefrontAddress']?['locality'] ?? '',
-                    address: location['storefrontAddress']?['addressLines']?.firstOrNull ?? '',
-                    phone: location['phoneNumbers']?['primaryPhone'] ?? '',
-                    hoursSummary: '',
-                    website: location['websiteUri'] ?? '',
-                    targetAudience: '',
-                    brandTone: '',
-                    postingFrequency: 4,
-                  );
-                  ref.read(selectedBusinessProvider.notifier).setBusiness(business);
-                }
-              });
-              return const Scaffold(body: Center(child: CircularProgressIndicator()));
-            }
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                final business = BusinessProfile(
+                  id: selectedLocationId,
+                  name: location != null ? (location['title'] ?? 'Selected Business') : 'Selected Business',
+                  category: location != null ? (location['categories']?['primaryCategory']?['displayName'] ?? '') : '',
+                  location: location != null ? (location['storefrontAddress']?['locality'] ?? '') : '',
+                  address: location != null ? (location['storefrontAddress']?['addressLines']?.firstOrNull ?? '') : '',
+                  phone: location != null ? (location['phoneNumbers']?['primaryPhone'] ?? '') : '',
+                  hoursSummary: '',
+                  website: location != null ? (location['websiteUri'] ?? '') : '',
+                  targetAudience: '',
+                  brandTone: '',
+                  postingFrequency: 4,
+                );
+                ref.read(selectedBusinessProvider.notifier).setBusiness(business);
+              }
+            });
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
           }
 
           if (locations.isEmpty) {
