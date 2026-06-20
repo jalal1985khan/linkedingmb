@@ -58,14 +58,20 @@ class CompetitorAnalysisScreen extends ConsumerWidget {
                 );
               }
 
-              return ListView.separated(
-                padding: const EdgeInsets.all(16),
+              return RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(competitorScanProvider);
+                },
+                child: ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
                 itemCount: results.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 16),
                 itemBuilder: (context, index) {
                   final comp = results[index];
                   return _CompetitorCard(competitor: comp);
                 },
+                ),
               );
             },
             loading: () => const Center(

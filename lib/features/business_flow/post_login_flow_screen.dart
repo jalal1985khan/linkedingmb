@@ -125,8 +125,13 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
             return const SizedBox.shrink();
           }
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(gmbapiLocationsProvider);
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
             children: [
               Text(
                 'We found ${locations.length} associated profiles via GMB',
@@ -193,6 +198,7 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
               ),
               const SizedBox(height: 12),
             ],
+            ),
           );
         },
       ),
@@ -442,8 +448,13 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
           if (_selectedRecommendationIds.isEmpty) {
             _selectedRecommendationIds.addAll(recommendations.map((item) => item.id));
           }
-          return ListView(
-            padding: const EdgeInsets.all(16),
+          return RefreshIndicator(
+            onRefresh: () async {
+              ref.invalidate(aiRecommendationsProvider(business.id));
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
             children: [
               const Text(
                 'Choose what you want AI to apply now. You can switch on full auto-apply as well.',
@@ -490,6 +501,7 @@ class _PostLoginFlowScreenState extends ConsumerState<PostLoginFlowScreen> {
                     : const Text('Apply & Continue to Dashboard'),
               ),
             ],
+            ),
           );
         },
       ),

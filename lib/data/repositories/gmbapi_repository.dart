@@ -157,6 +157,38 @@ class GmbapiRepository {
     throw Exception('Failed to reply to review: ${response.statusCode}');
   }
 
+  Future<String> enhanceReviewReply({
+    required String reviewerName,
+    required String starRating,
+    required String reviewComment,
+    String businessName = '',
+    String? locationId,
+  }) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/reviews/reply/enhance');
+    final body = {
+      'reviewer_name': reviewerName,
+      'star_rating': starRating,
+      'review_comment': reviewComment,
+      if (businessName.isNotEmpty) 'business_name': businessName,
+      if (locationId != null) 'location_id': locationId,
+    };
+
+    final response = await http.post(
+      uri,
+      headers: await _getHeaders(),
+      body: jsonEncode(body),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data['success'] == true && data['suggested_reply'] != null) {
+        return data['suggested_reply'];
+      }
+      throw Exception(data['message'] ?? 'Failed to generate AI reply');
+    }
+    throw Exception('Failed to generate AI reply: ${response.statusCode}');
+  }
+
   Future<void> postQna(String question, String answer) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmbapi/qna');
     final response = await http.post(
