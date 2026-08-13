@@ -770,21 +770,22 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                         child: Container(
                           height: 48,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE2E7FF).withOpacity(0.6),
+                            color: const Color(0xFFDCFCE7),
                             borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFBBF7D0)),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: const [
-                              Icon(Icons.check_circle_outline_rounded, color: AppColors.primaryContainer, size: 20),
+                              Icon(Icons.check_circle_rounded, color: Color(0xFF15803D), size: 20),
                               SizedBox(width: 8),
                               Flexible(
                                 child: FittedBox(
                                   fit: BoxFit.scaleDown,
                                   child: Text(
-                                    'Replied by AI',
+                                    'Replied',
                                     style: TextStyle(
-                                      color: AppColors.primaryContainer,
+                                      color: Color(0xFF15803D),
                                       fontWeight: FontWeight.w700,
                                       fontSize: 15,
                                     ),
@@ -813,7 +814,7 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                     ],
                   ),
                 ),
-                if (_isExpanded && reply != null) ...[
+                if (_isExpanded) ...[
                   const SizedBox(height: 16),
                   Container(
                     width: double.infinity,

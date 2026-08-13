@@ -266,7 +266,7 @@ class _DarkSettingsScreenState extends State<DarkSettingsScreen> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: Colors.white,
+            activeThumbColor: Colors.white,
             activeTrackColor: _primaryColor,
             inactiveTrackColor: const Color(0xFF45495E),
           ),

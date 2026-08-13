@@ -103,7 +103,7 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
                         Switch(
                           value: settings.autoSchedulePosts,
                           onChanged: controller.setAutoSchedulePosts,
-                          activeColor: AppColors.primaryContainer,
+                          activeThumbColor: AppColors.primaryContainer,
                         ),
                       ],
                     ),
@@ -176,7 +176,7 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
                         Switch(
                           value: settings.autoApplyRecommendations,
                           onChanged: controller.setAutoApplyRecommendations,
-                          activeColor: AppColors.primaryContainer,
+                          activeThumbColor: AppColors.primaryContainer,
                         ),
                       ],
                     ),

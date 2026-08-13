@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/app_colors.dart';
 
 import '../auth/auth_controller.dart';
-import '../business_flow/business_flow_controller.dart';
 import '../business_flow/business_profile_screen.dart';
+import '../business_flow/presentation/location_switcher_sheet.dart';
+import '../business_flow/providers/active_location_provider.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../dashboard/reviews_screen.dart';
 import '../customers/customers_screen.dart';
 import '../dashboard/analytics_dashboard_screen.dart';
 import '../posts/create_post_flow_screen.dart';
+import '../posts/published_posts_screen.dart';
 import '../scheduler/queue_screen.dart';
 import '../settings/automation_settings_screen.dart';
-import '../settings/dark_settings_screen.dart';
 
 class MainShellScreen extends ConsumerStatefulWidget {
   const MainShellScreen({super.key});
@@ -28,7 +30,8 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedBusiness = ref.watch(selectedBusinessProvider);
+    final activeLocationState = ref.watch(activeLocationProvider);
+    final activeLocation = activeLocationState.activeLocation;
 
     final screens = <Widget>[
       const DashboardScreen(showScaffold: false),
@@ -59,38 +62,70 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade50,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          const CircleAvatar(
-                            radius: 16,
-                            backgroundImage: AssetImage('assets/images/logo.png'),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  selectedBusiness?.name ?? 'No business selected',
-                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Colors.black87),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                const Text(
-                                  'Professional Plan',
-                                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                                ),
-                              ],
+                    InkWell(
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const LocationSwitcherSheet(),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEEF2FF),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(
+                                Icons.storefront_rounded,
+                                color: Color(0xFF6366F1),
+                                size: 20,
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    activeLocation?.name ?? 'Select Business',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
+                                      color: const Color(0xFF1E1B4B),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    activeLocation?.category ?? 'GMB Account',
+                                    style: GoogleFonts.plusJakartaSans(
+                                      color: const Color(0xFF64748B),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(
+                              Icons.unfold_more_rounded,
+                              color: Color(0xFF64748B),
+                              size: 20,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -154,6 +189,14 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                       },
                     ),
                     _DrawerNavItem(
+                      icon: Icons.verified_rounded,
+                      label: 'Published Posts',
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PublishedPostsScreen()));
+                      },
+                    ),
+                    _DrawerNavItem(
                       icon: Icons.tune_rounded,
                       label: 'Automations',
                       onTap: () {
@@ -161,7 +204,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => AutomationSettingsScreen()));
                       },
                     ),
-                    if (selectedBusiness != null)
+                    if (activeLocation != null)
                       _DrawerNavItem(
                         icon: Icons.storefront_rounded,
                         label: 'Business Profile',
@@ -268,14 +311,6 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
           children: screens,
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => setState(() => _index = 3), // Post Media tab
-        backgroundColor: AppColors.primaryContainer,
-        elevation: 6,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.post_add_rounded, color: Colors.white, size: 28),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,

@@ -11,6 +11,7 @@ class BusinessProfile {
     required this.targetAudience,
     required this.brandTone,
     required this.postingFrequency,
+    this.rating = 4.8,
   });
 
   final String id;
@@ -24,6 +25,7 @@ class BusinessProfile {
   final String targetAudience;
   final String brandTone;
   final int postingFrequency;
+  final double rating;
 
   BusinessProfile copyWith({
     String? id,
@@ -37,6 +39,7 @@ class BusinessProfile {
     String? targetAudience,
     String? brandTone,
     int? postingFrequency,
+    double? rating,
   }) {
     return BusinessProfile(
       id: id ?? this.id,
@@ -50,6 +53,7 @@ class BusinessProfile {
       targetAudience: targetAudience ?? this.targetAudience,
       brandTone: brandTone ?? this.brandTone,
       postingFrequency: postingFrequency ?? this.postingFrequency,
+      rating: rating ?? this.rating,
     );
   }
 }

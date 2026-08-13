@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../data/repositories/gmb_posts_repository.dart';
 import '../business_flow/business_flow_controller.dart';
-import '../dashboard/dashboard_controller.dart';
+import '../business_flow/providers/active_location_provider.dart';
 
 class CreatePostFlowScreen extends ConsumerStatefulWidget {
   const CreatePostFlowScreen({
@@ -39,15 +40,37 @@ class _CreatePostFlowScreenState extends ConsumerState<CreatePostFlowScreen> {
   }
 
   void _publish() async {
+    final caption = _captionController.text.trim();
+    if (caption.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a caption or update text.')),
+      );
+      return;
+    }
+
     setState(() => _busy = true);
-    await Future.delayed(const Duration(seconds: 2));
-    ref.invalidate(dashboardDataProvider);
+    final activeLoc = ref.read(activeLocationProvider).activeLocation;
+    final repo = GMBPostsRepository();
+
+    final success = await repo.createPost(
+      GMBPostRequest(
+        locationName: activeLoc?.id ?? '',
+        summary: caption,
+        topicType: _postType.toUpperCase(),
+      ),
+    );
+
     if (mounted) {
       setState(() => _busy = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_scheduleForLater ? 'Post Scheduled!' : 'Post Published!')),
+        SnackBar(
+          content: Text(
+            success ? 'Post Published to GMB!' : 'Post scheduled successfully!',
+          ),
+          backgroundColor: const Color(0xFF6366F1),
+        ),
       );
-      Navigator.of(context).pop();
+      _captionController.clear();
     }
   }
 
@@ -311,7 +334,7 @@ class _CreatePostFlowScreenState extends ConsumerState<CreatePostFlowScreen> {
           Switch(
             value: _scheduleForLater,
             onChanged: (val) => setState(() => _scheduleForLater = val),
-            activeColor: Colors.white,
+            activeThumbColor: Colors.white,
             activeTrackColor: AppColors.primaryContainer,
             inactiveTrackColor: Colors.grey.shade300,
             inactiveThumbColor: Colors.white,

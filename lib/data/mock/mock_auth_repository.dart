@@ -7,6 +7,11 @@ class MockAuthRepository implements AuthRepository {
   AppUser? _currentUser;
 
   @override
+  Future<String?> getAccessToken() async {
+    return 'mock_access_token';
+  }
+
+  @override
   Future<AppUser?> getCurrentUser() async {
     await Future<void>.delayed(const Duration(milliseconds: 700));
     return _currentUser;

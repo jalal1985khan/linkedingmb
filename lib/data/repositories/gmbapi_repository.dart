@@ -43,7 +43,7 @@ class GmbapiRepository {
     final response = await http.post(uri, headers: await _getHeaders(), body: jsonEncode({
       'email': email,
       'password': password,
-      if (name != null) 'name': name,
+      'name': ?name,
     }));
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -117,7 +117,7 @@ class GmbapiRepository {
     final body = {
       'summary': summary,
       'topic_type': topicType,
-      if (mediaUrl != null) 'media_url': mediaUrl,
+      'media_url': ?mediaUrl,
     };
 
     final response = await http.post(
@@ -170,7 +170,7 @@ class GmbapiRepository {
       'star_rating': starRating,
       'review_comment': reviewComment,
       if (businessName.isNotEmpty) 'business_name': businessName,
-      if (locationId != null) 'location_id': locationId,
+      'location_id': ?locationId,
     };
 
     final response = await http.post(
@@ -251,6 +251,34 @@ class GmbapiRepository {
       throw Exception(data['message'] ?? 'Failed to load posts');
     }
     throw Exception('Failed to load posts: ${response.statusCode}');
+  }
+
+  Future<List<dynamic>> getPostsHistory({String? locationId, int limit = 50}) async {
+    try {
+      final queryParams = <String, String>{
+        'platform': 'gmb',
+        'limit': limit.toString(),
+      };
+      if (locationId != null && locationId.isNotEmpty) {
+        queryParams['account_id'] = locationId;
+      }
+
+      final uri = Uri.parse('${ApiConfig.baseUrl}/scheduler/posts/history').replace(queryParameters: queryParams);
+      final response = await http.get(uri, headers: await _getHeaders());
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['history'] is List) return data['history'];
+        if (data['posts'] is List) return data['posts'];
+        if (data['scheduled_posts'] is List) return data['scheduled_posts'];
+        if (data is List) return data;
+      }
+    } catch (_) {}
+
+    try {
+      return await getPosts();
+    } catch (_) {}
+
+    return [];
   }
 
   Future<void> deletePost(String postId) async {

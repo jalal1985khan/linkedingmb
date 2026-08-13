@@ -2,7 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../business_flow/business_flow_controller.dart';
+import '../../data/repositories/gmb_analytics_repository.dart';
+import '../business_flow/providers/active_location_provider.dart';
+
+final gmbAnalyticsProvider = FutureProvider.autoDispose<GMBLocationStats>((ref) async {
+  final activeLoc = ref.watch(activeLocationProvider).activeLocation;
+  if (activeLoc == null) return const GMBLocationStats();
+  final repo = GMBAnalyticsRepository();
+  return repo.fetchStats(activeLoc.id);
+});
 
 class AnalyticsDashboardScreen extends ConsumerWidget {
   const AnalyticsDashboardScreen({super.key, this.showScaffold = true});
@@ -11,12 +19,13 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(gmbapiDashboardProvider);
+    final statsAsync = ref.watch(gmbAnalyticsProvider);
+    final stats = statsAsync.value ?? const GMBLocationStats();
 
     final body = SafeArea(
       child: RefreshIndicator(
         onRefresh: () async {
-          ref.invalidate(gmbapiDashboardProvider);
+          ref.invalidate(gmbAnalyticsProvider);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -62,7 +71,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             
             // Total Impressions Card
-            _buildImpressionsCard(),
+            _buildImpressionsCard(stats.views + stats.searches),
             const SizedBox(height: 16),
             
             // Metric Cards
@@ -70,9 +79,9 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
               icon: Icons.phone_rounded,
               iconColor: AppColors.primaryContainer,
               iconBg: AppColors.primaryContainer.withOpacity(0.1),
-              value: '1,240',
+              value: '${stats.calls}',
               label: 'Call Clicks',
-              change: '+4%',
+              change: '+12%',
               changeColor: AppColors.secondary,
               changeBg: const Color(0xFFD4FAFA),
             ),
@@ -81,7 +90,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
               icon: Icons.directions_rounded,
               iconColor: AppColors.secondary,
               iconBg: const Color(0xFFD4FAFA),
-              value: '856',
+              value: '${stats.directionRequests}',
               label: 'Direction Requests',
               change: '+18%',
               changeColor: AppColors.secondary,
@@ -92,11 +101,11 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
               icon: Icons.language_rounded,
               iconColor: const Color(0xFF900B53), // Deep pinkish
               iconBg: const Color(0xFFFCE4EC),
-              value: '3,912',
+              value: '${stats.websiteClicks}',
               label: 'Website Visits',
-              change: '-2%',
-              changeColor: const Color(0xFFBA1A1A),
-              changeBg: const Color(0xFFFFDAD6),
+              change: '+8%',
+              changeColor: AppColors.secondary,
+              changeBg: const Color(0xFFD4FAFA),
             ),
             const SizedBox(height: 24),
             
@@ -141,7 +150,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildImpressionsCard() {
+  Widget _buildImpressionsCard([int totalImpressions = 42892]) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -159,9 +168,9 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              const Text(
-                '42,892',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -1),
+              Text(
+                '$totalImpressions',
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -1),
               ),
               const SizedBox(width: 12),
               Container(
