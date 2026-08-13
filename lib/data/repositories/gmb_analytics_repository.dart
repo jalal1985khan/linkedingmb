@@ -100,7 +100,38 @@ class GMBAnalyticsRepository {
           locationId.toLowerCase() == 'default' ||
           locationId.toLowerCase() == 'personal_default';
 
-      // 1. Try Activity Chart endpoint (Matching Web dashboardApi.getActivityChartData)
+      // 1. Try dedicated GMB App Dashboard endpoint
+      try {
+        final appDashUrl = isAllOrEmpty
+            ? '${ApiConfig.baseUrl}/api/gmb/app-dashboard'
+            : '${ApiConfig.baseUrl}/api/gmb/app-dashboard?location_id=${Uri.encodeComponent(locationId!)}';
+        final response = await _httpClient.get(
+          Uri.parse(appDashUrl),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        );
+
+        if (response.statusCode == 200) {
+          final decoded = jsonDecode(response.body);
+          if (decoded['success'] == true && decoded['post_activity'] is Map) {
+            final act = decoded['post_activity'];
+            final stats = PostActivityStats(
+              aiGenerated: (act['ai_generated'] ?? 0) as int,
+              manualGenerated: (act['manual_generated'] ?? 0) as int,
+              queued: (act['queued'] ?? 0) as int,
+              posted: (act['posted'] ?? 0) as int,
+            );
+            debugPrint('✅ fetchPostActivity from /api/gmb/app-dashboard (${isAllOrEmpty ? "all" : locationId}): AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Queue=${stats.queued}, Posted=${stats.posted}');
+            return stats;
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error fetching /api/gmb/app-dashboard: $e');
+      }
+
+      // 2. Try Activity Chart endpoint
       try {
         final chartUrl = isAllOrEmpty
             ? '${ApiConfig.baseUrl}/api/dashboard/activity-chart'
