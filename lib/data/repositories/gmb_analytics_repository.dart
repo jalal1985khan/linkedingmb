@@ -225,10 +225,10 @@ class GMBAnalyticsRepository {
           debugPrint('⚠️ Error fetching post history: $e');
         }
 
-        // d) Query /api/gmbapi/posts if location specified
+        // d) Query /api/gmb/posts if location specified
         if (useLocation && !isAllOrEmpty) {
           try {
-            final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmbapi/posts?location_id=${Uri.encodeComponent(locationId!)}');
+            final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts?location_id=${Uri.encodeComponent(locationId!)}');
             final response = await _httpClient.get(gmbUri, headers: {'Authorization': 'Bearer $token'});
             if (response.statusCode == 200) {
               final decoded = jsonDecode(response.body);
