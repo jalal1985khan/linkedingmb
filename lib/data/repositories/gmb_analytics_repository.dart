@@ -94,38 +94,13 @@ class GMBAnalyticsRepository {
         return const PostActivityStats();
       }
 
-      // 1. Try location-specific activity chart endpoint first
-      if (locationId != null && locationId.isNotEmpty) {
-        try {
-          final uri = Uri.parse('${ApiConfig.baseUrl}/api/dashboard/activity-chart?author_urn=${Uri.encodeComponent(locationId)}');
-          final response = await _httpClient.get(
-            uri,
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-          );
+      final locParam = (locationId != null && locationId.isNotEmpty) ? '&account_id=${Uri.encodeComponent(locationId)}&author_urn=${Uri.encodeComponent(locationId)}' : '';
 
-          if (response.statusCode == 200) {
-            final decoded = jsonDecode(response.body);
-            if (decoded['success'] == true && decoded['data'] is List) {
-              final stats = PostActivityStats.fromActivityList(decoded['data']);
-              if (stats.totalCount > 0 && (stats.queued > 0 || stats.posted > 0)) {
-                debugPrint('✅ fetchPostActivity from location activity-chart: AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Queue=${stats.queued}, Posted=${stats.posted}');
-                return stats;
-              }
-            }
-          }
-        } catch (e) {
-          debugPrint('⚠️ Error fetching location activity-chart: $e');
-        }
-      }
-
-      // 2. Try global user activity chart (as web frontend does by default)
+      // 1. Try location-specific GMB activity chart endpoint first
       try {
-        final globalUri = Uri.parse('${ApiConfig.baseUrl}/api/dashboard/activity-chart');
+        final uri = Uri.parse('${ApiConfig.baseUrl}/api/dashboard/activity-chart?platform=gmb$locParam');
         final response = await _httpClient.get(
-          globalUri,
+          uri,
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $token',
@@ -136,26 +111,24 @@ class GMBAnalyticsRepository {
           final decoded = jsonDecode(response.body);
           if (decoded['success'] == true && decoded['data'] is List) {
             final stats = PostActivityStats.fromActivityList(decoded['data']);
-            if (stats.totalCount > 0 && (stats.queued > 0 || stats.posted > 0)) {
-              debugPrint('✅ fetchPostActivity from global activity-chart: AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Queue=${stats.queued}, Posted=${stats.posted}');
-              return stats;
-            }
+            debugPrint('✅ fetchPostActivity from GMB activity-chart: AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Queue=${stats.queued}, Posted=${stats.posted}');
+            return stats;
           }
         }
       } catch (e) {
-        debugPrint('⚠️ Error fetching global activity-chart: $e');
+        debugPrint('⚠️ Error fetching GMB activity-chart: $e');
       }
 
-      // 3. Fallback: Query /api/gmbapi/posts AND /api/scheduler/posts/generated
+      // 2. Fallback: Query /api/gmbapi/posts, /api/scheduler/posts/generated, and /api/scheduler/posts
       try {
         int aiCount = 0;
         int manualCount = 0;
         int queuedCount = 0;
         int postedCount = 0;
 
-        // Fetch posts from /api/gmbapi/posts
+        // Fetch posts from /api/gmbapi/posts (strictly scoped to GMB location)
         try {
-          final gmbPostsUri = Uri.parse('${ApiConfig.baseUrl}/api/gmbapi/posts');
+          final gmbPostsUri = Uri.parse('${ApiConfig.baseUrl}/api/gmbapi/posts${locParam.startsWith('&') ? '?${locParam.substring(1)}' : locParam}');
           final response = await _httpClient.get(
             gmbPostsUri,
             headers: {
@@ -204,9 +177,9 @@ class GMBAnalyticsRepository {
           debugPrint('⚠️ Error fetching gmbapi/posts fallback: $e');
         }
 
-        // Fetch generated AI draft posts from /api/scheduler/posts/generated (matching Web logic)
+        // Fetch GMB generated AI draft posts from /api/scheduler/posts/generated?platform=gmb
         try {
-          final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=all');
+          final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=gmb$locParam');
           final response = await _httpClient.get(
             genUri,
             headers: {
@@ -214,8 +187,6 @@ class GMBAnalyticsRepository {
               'Authorization': 'Bearer $token',
             },
           );
-
-          debugPrint('📊 /api/scheduler/posts/generated HTTP ${response.statusCode}: ${response.body}');
 
           if (response.statusCode == 200) {
             final decoded = jsonDecode(response.body);
@@ -227,16 +198,15 @@ class GMBAnalyticsRepository {
             } else if (decoded is Map && decoded['data'] is List) {
               genPosts = decoded['data'];
             }
-            debugPrint('✅ Found ${genPosts.length} generated draft posts via /api/scheduler/posts/generated');
             aiCount += genPosts.length;
           }
         } catch (e) {
           debugPrint('⚠️ Error fetching generated posts fallback: $e');
         }
 
-        // Fetch scheduled/queued posts from /api/scheduler/posts?platform=all&status=all
+        // Fetch GMB scheduled/queued posts from /api/scheduler/posts?platform=gmb&status=all
         try {
-          final schedUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=all&status=all');
+          final schedUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=gmb&status=all$locParam');
           final response = await _httpClient.get(
             schedUri,
             headers: {
@@ -268,15 +238,14 @@ class GMBAnalyticsRepository {
                 }
               }
             }
-            debugPrint('✅ Processed ${schedPosts.length} scheduled/queued posts from /api/scheduler/posts?platform=all&status=all');
           }
         } catch (e) {
           debugPrint('⚠️ Error fetching scheduled posts fallback: $e');
         }
 
-        // Fetch published post history from /api/scheduler/posts/history?platform=all
+        // Fetch GMB published post history from /api/scheduler/posts/history?platform=gmb
         try {
-          final histUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/history?platform=all');
+          final histUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/history?platform=gmb$locParam');
           final response = await _httpClient.get(
             histUri,
             headers: {
@@ -297,7 +266,6 @@ class GMBAnalyticsRepository {
             }
 
             postedCount += histPosts.length;
-            debugPrint('✅ Processed ${histPosts.length} published history posts from /api/scheduler/posts/history?platform=all');
           }
         } catch (e) {
           debugPrint('⚠️ Error fetching post history fallback: $e');
