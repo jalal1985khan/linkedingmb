@@ -230,14 +230,8 @@ class GMBAnalyticsRepository {
         );
       }
 
-      // Run location-scoped fallback first. If total is 0 and location was specified, fallback to user-wide calculation matching Web
       PostActivityStats stats = await computeFallback(true);
-      if (stats.totalCount == 0 && !isAllOrEmpty) {
-        debugPrint('ℹ️ Location activity returned 0 count, executing user-wide fallback matching Web');
-        stats = await computeFallback(false);
-      }
-
-      debugPrint('✅ fetchPostActivity computed stats: AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Queue=${stats.queued}, Posted=${stats.posted}');
+      debugPrint('✅ fetchPostActivity computed stats for ${isAllOrEmpty ? "all" : locationId}: AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Queue=${stats.queued}, Posted=${stats.posted}');
       return stats;
     } catch (e) {
       debugPrint('❌ Error in fetchPostActivity: $e');
