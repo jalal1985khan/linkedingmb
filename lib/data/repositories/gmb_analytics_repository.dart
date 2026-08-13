@@ -234,9 +234,9 @@ class GMBAnalyticsRepository {
           debugPrint('⚠️ Error fetching generated posts fallback: $e');
         }
 
-        // Fetch scheduled/queued posts from /api/scheduler/posts?status=all
+        // Fetch scheduled/queued posts from /api/scheduler/posts?platform=all&status=all
         try {
-          final schedUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?status=all');
+          final schedUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=all&status=all');
           final response = await _httpClient.get(
             schedUri,
             headers: {
@@ -250,6 +250,8 @@ class GMBAnalyticsRepository {
             List<dynamic> schedPosts = [];
             if (decoded is List) {
               schedPosts = decoded;
+            } else if (decoded is Map && decoded['scheduled_posts'] is List) {
+              schedPosts = decoded['scheduled_posts'];
             } else if (decoded is Map && decoded['posts'] is List) {
               schedPosts = decoded['posts'];
             } else if (decoded is Map && decoded['data'] is List) {
@@ -266,10 +268,39 @@ class GMBAnalyticsRepository {
                 }
               }
             }
-            debugPrint('✅ Processed ${schedPosts.length} scheduled/queued posts from /api/scheduler/posts?status=all');
+            debugPrint('✅ Processed ${schedPosts.length} scheduled/queued posts from /api/scheduler/posts?platform=all&status=all');
           }
         } catch (e) {
           debugPrint('⚠️ Error fetching scheduled posts fallback: $e');
+        }
+
+        // Fetch published post history from /api/scheduler/posts/history?platform=all
+        try {
+          final histUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/history?platform=all');
+          final response = await _httpClient.get(
+            histUri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          );
+
+          if (response.statusCode == 200) {
+            final decoded = jsonDecode(response.body);
+            List<dynamic> histPosts = [];
+            if (decoded is List) {
+              histPosts = decoded;
+            } else if (decoded is Map && decoded['posts'] is List) {
+              histPosts = decoded['posts'];
+            } else if (decoded is Map && decoded['data'] is List) {
+              histPosts = decoded['data'];
+            }
+
+            postedCount += histPosts.length;
+            debugPrint('✅ Processed ${histPosts.length} published history posts from /api/scheduler/posts/history?platform=all');
+          }
+        } catch (e) {
+          debugPrint('⚠️ Error fetching post history fallback: $e');
         }
 
         final computedStats = PostActivityStats(
