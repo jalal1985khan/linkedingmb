@@ -94,9 +94,13 @@ class GMBAnalyticsRepository {
         return const PostActivityStats();
       }
 
+      final locParam = (locationId != null && locationId.isNotEmpty)
+          ? '&account_id=${Uri.encodeComponent(locationId)}&author_urn=${Uri.encodeComponent(locationId)}'
+          : '';
+
       // 1. Try activity chart endpoint (matching Web frontend)
       try {
-        final uri = Uri.parse('${ApiConfig.baseUrl}/api/dashboard/activity-chart');
+        final uri = Uri.parse('${ApiConfig.baseUrl}/api/dashboard/activity-chart?author_urn=${Uri.encodeComponent(locationId ?? "")}');
         final response = await _httpClient.get(
           uri,
           headers: {
