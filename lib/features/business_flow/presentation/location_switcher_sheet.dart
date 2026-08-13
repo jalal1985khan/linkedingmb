@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../data/models/business_profile.dart';
+import '../../dashboard/providers/dashboard_providers.dart';
 import '../providers/active_location_provider.dart';
 
 class LocationSwitcherSheet extends ConsumerStatefulWidget {
@@ -213,6 +214,9 @@ class _LocationSwitcherSheetState
           borderRadius: BorderRadius.circular(16),
           onTap: () {
             ref.read(activeLocationProvider.notifier).selectLocation(location);
+            ref.invalidate(dashboardStatsProvider(location.id));
+            ref.invalidate(postActivityProvider(location.id));
+            ref.invalidate(dashboardReviewsProvider(location.id));
             Navigator.of(context).pop();
           },
           child: Padding(
