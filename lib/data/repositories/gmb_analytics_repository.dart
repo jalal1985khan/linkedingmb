@@ -97,20 +97,16 @@ class GMBAnalyticsRepository {
       final isAllOrEmpty = locationId == null ||
           locationId.isEmpty ||
           locationId.toLowerCase() == 'all' ||
-          locationId.toLowerCase() == 'default';
+          locationId.toLowerCase() == 'default' ||
+          locationId.toLowerCase() == 'personal_default';
 
-      final locParam = isAllOrEmpty
-          ? ''
-          : '&account_id=${Uri.encodeComponent(locationId!)}&author_urn=${Uri.encodeComponent(locationId)}';
-      final chartParam = isAllOrEmpty
-          ? ''
-          : '?author_urn=${Uri.encodeComponent(locationId!)}';
-
-      // 1. Query Activity Chart endpoint first (Matching Web dashboardApi.getActivityChartData)
+      // 1. Try Activity Chart endpoint (Matching Web dashboardApi.getActivityChartData)
       try {
-        final uri = Uri.parse('${ApiConfig.baseUrl}/api/dashboard/activity-chart$chartParam');
+        final chartUrl = isAllOrEmpty
+            ? '${ApiConfig.baseUrl}/api/dashboard/activity-chart'
+            : '${ApiConfig.baseUrl}/api/dashboard/activity-chart?author_urn=${Uri.encodeComponent(locationId!)}';
         final response = await _httpClient.get(
-          uri,
+          Uri.parse(chartUrl),
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer $token',
@@ -121,90 +117,56 @@ class GMBAnalyticsRepository {
           final decoded = jsonDecode(response.body);
           if (decoded['success'] == true && decoded['data'] is List) {
             final stats = PostActivityStats.fromActivityList(decoded['data']);
-            debugPrint('✅ fetchPostActivity for ${isAllOrEmpty ? "all" : locationId}: AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Queue=${stats.queued}, Posted=${stats.posted}');
-            return stats;
+            if (stats.totalCount > 0) {
+              debugPrint('✅ fetchPostActivity from activity-chart (${isAllOrEmpty ? "all" : locationId}): AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Queue=${stats.queued}, Posted=${stats.posted}');
+              return stats;
+            }
           }
         }
       } catch (e) {
         debugPrint('⚠️ Error fetching activity-chart: $e');
       }
 
-      // 2. Fallback calculation using exact Web scheduler APIs (Matching Web lib/api/dashboard.ts)
-      int aiCount = 0;
-      int manualCount = 0;
-      int queuedCount = 0;
-      int postedCount = 0;
+      // Helper function to run the full calculation with or without location parameter (Matching Web fallback)
+      Future<PostActivityStats> computeFallback(bool useLocation) async {
+        int aiCount = 0;
+        int manualCount = 0;
+        int queuedCount = 0;
+        int postedCount = 0;
 
-      // a) Query /api/scheduler/posts/generated?platform=gmb
-      try {
-        final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=gmb$locParam');
-        final response = await _httpClient.get(genUri, headers: {'Authorization': 'Bearer $token'});
-        if (response.statusCode == 200) {
-          final decoded = jsonDecode(response.body);
-          final list = decoded is List ? decoded : (decoded['posts'] ?? decoded['data'] ?? []);
-          if (list is List) {
-            aiCount += list.length;
-            queuedCount += list.length;
-          }
-        }
-      } catch (e) {
-        debugPrint('⚠️ Error fetching generated posts: $e');
-      }
+        final accParam = (useLocation && !isAllOrEmpty)
+            ? '&account_id=${Uri.encodeComponent(locationId!)}'
+            : '';
 
-      // b) Query /api/scheduler/posts?platform=gmb&status=all
-      try {
-        final schedUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=gmb&status=all$locParam');
-        final response = await _httpClient.get(schedUri, headers: {'Authorization': 'Bearer $token'});
-        if (response.statusCode == 200) {
-          final decoded = jsonDecode(response.body);
-          final list = decoded is List ? decoded : (decoded['scheduled_posts'] ?? decoded['posts'] ?? decoded['data'] ?? []);
-          if (list is List) {
-            for (final p in list) {
-              if (p is Map) {
-                final st = (p['status'] ?? '').toString().toLowerCase();
-                if (st == 'posted' || st == 'published' || st == 'success' || st == 'completed' || st == 'live') {
-                  postedCount++;
-                } else {
-                  queuedCount++;
-                }
-              }
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('⚠️ Error fetching scheduled posts: $e');
-      }
-
-      // c) Query /api/scheduler/posts/history?platform=gmb
-      try {
-        final histUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/history?platform=gmb$locParam');
-        final response = await _httpClient.get(histUri, headers: {'Authorization': 'Bearer $token'});
-        if (response.statusCode == 200) {
-          final decoded = jsonDecode(response.body);
-          final list = decoded is List ? decoded : (decoded['posts'] ?? decoded['data'] ?? []);
-          if (list is List) {
-            postedCount += list.length;
-          }
-        }
-      } catch (e) {
-        debugPrint('⚠️ Error fetching post history: $e');
-      }
-
-      // d) Query /api/gmbapi/posts if location is specified
-      if (!isAllOrEmpty) {
+        // a) Query /api/scheduler/posts/generated?platform=all (Matching Web lib/api/dashboard.ts line 93)
         try {
-          final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmbapi/posts?location_id=${Uri.encodeComponent(locationId!)}');
-          final response = await _httpClient.get(gmbUri, headers: {'Authorization': 'Bearer $token'});
+          final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=all$accParam');
+          final response = await _httpClient.get(genUri, headers: {'Authorization': 'Bearer $token'});
           if (response.statusCode == 200) {
             final decoded = jsonDecode(response.body);
-            final list = decoded is Map ? (decoded['posts'] ?? decoded['data'] ?? []) : (decoded is List ? decoded : []);
+            final list = decoded is List ? decoded : (decoded['posts'] ?? decoded['data'] ?? []);
             if (list is List) {
-              for (final item in list) {
-                if (item is Map) {
-                  final isAi = item['is_ai_generated'] == true || item['is_ai'] == true || item['model_used'] != null;
-                  if (isAi) aiCount++; else manualCount++;
-                  final st = item['status']?.toString().toUpperCase() ?? '';
-                  if (st == 'LIVE' || st == 'POSTED' || st == 'PUBLISHED' || st == 'SUCCESS' || st == 'COMPLETED') {
+              // Matching Web lib/api/dashboard.ts lines 129 & 136: Draft posts contribute to both AI and Queue count
+              aiCount += list.length;
+              queuedCount += list.length;
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️ Error fetching generated posts: $e');
+        }
+
+        // b) Query /api/scheduler/posts?status=all&platform=all (Matching Web lib/api/dashboard.ts line 97)
+        try {
+          final schedUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?status=all&platform=all$accParam');
+          final response = await _httpClient.get(schedUri, headers: {'Authorization': 'Bearer $token'});
+          if (response.statusCode == 200) {
+            final decoded = jsonDecode(response.body);
+            final list = decoded is List ? decoded : (decoded['scheduled_posts'] ?? decoded['posts'] ?? decoded['data'] ?? []);
+            if (list is List) {
+              for (final p in list) {
+                if (p is Map) {
+                  final st = (p['status'] ?? '').toString().toLowerCase();
+                  if (st == 'posted' || st == 'published' || st == 'success' || st == 'completed' || st == 'live') {
                     postedCount++;
                   } else {
                     queuedCount++;
@@ -214,18 +176,69 @@ class GMBAnalyticsRepository {
             }
           }
         } catch (e) {
-          debugPrint('⚠️ Error fetching gmbapi/posts: $e');
+          debugPrint('⚠️ Error fetching scheduled posts: $e');
         }
+
+        // c) Query /api/scheduler/posts/history?platform=all (Matching Web lib/api/dashboard.ts line 104)
+        try {
+          final histUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/history?platform=all$accParam');
+          final response = await _httpClient.get(histUri, headers: {'Authorization': 'Bearer $token'});
+          if (response.statusCode == 200) {
+            final decoded = jsonDecode(response.body);
+            final list = decoded is List ? decoded : (decoded['posts'] ?? decoded['data'] ?? []);
+            if (list is List) {
+              postedCount += list.length;
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️ Error fetching post history: $e');
+        }
+
+        // d) Query /api/gmbapi/posts if location specified
+        if (useLocation && !isAllOrEmpty) {
+          try {
+            final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmbapi/posts?location_id=${Uri.encodeComponent(locationId!)}');
+            final response = await _httpClient.get(gmbUri, headers: {'Authorization': 'Bearer $token'});
+            if (response.statusCode == 200) {
+              final decoded = jsonDecode(response.body);
+              final list = decoded is Map ? (decoded['posts'] ?? decoded['data'] ?? []) : (decoded is List ? decoded : []);
+              if (list is List) {
+                for (final item in list) {
+                  if (item is Map) {
+                    final isAi = item['is_ai_generated'] == true || item['is_ai'] == true || item['model_used'] != null;
+                    if (isAi) aiCount++; else manualCount++;
+                    final st = item['status']?.toString().toUpperCase() ?? '';
+                    if (st == 'LIVE' || st == 'POSTED' || st == 'PUBLISHED' || st == 'SUCCESS' || st == 'COMPLETED') {
+                      postedCount++;
+                    } else {
+                      queuedCount++;
+                    }
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            debugPrint('⚠️ Error fetching gmbapi/posts: $e');
+          }
+        }
+
+        return PostActivityStats(
+          aiGenerated: aiCount,
+          manualGenerated: manualCount,
+          queued: queuedCount,
+          posted: postedCount,
+        );
       }
 
-      final computedStats = PostActivityStats(
-        aiGenerated: aiCount,
-        manualGenerated: manualCount,
-        queued: queuedCount,
-        posted: postedCount,
-      );
-      debugPrint('✅ fetchPostActivity computed fallback for ${isAllOrEmpty ? "all" : locationId}: AI=$aiCount, Manual=$manualCount, Queue=$queuedCount, Posted=$postedCount');
-      return computedStats;
+      // Run location-scoped fallback first. If total is 0 and location was specified, fallback to user-wide calculation matching Web
+      PostActivityStats stats = await computeFallback(true);
+      if (stats.totalCount == 0 && !isAllOrEmpty) {
+        debugPrint('ℹ️ Location activity returned 0 count, executing user-wide fallback matching Web');
+        stats = await computeFallback(false);
+      }
+
+      debugPrint('✅ fetchPostActivity computed stats: AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Queue=${stats.queued}, Posted=${stats.posted}');
+      return stats;
     } catch (e) {
       debugPrint('❌ Error in fetchPostActivity: $e');
       return const PostActivityStats();
