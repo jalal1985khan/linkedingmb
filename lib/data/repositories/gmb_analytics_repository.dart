@@ -110,8 +110,8 @@ class GMBAnalyticsRepository {
             final decoded = jsonDecode(response.body);
             if (decoded['success'] == true && decoded['data'] is List) {
               final stats = PostActivityStats.fromActivityList(decoded['data']);
-              if (stats.totalCount > 0) {
-                debugPrint('✅ fetchPostActivity from location activity-chart: AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Posted=${stats.posted}');
+              if (stats.totalCount > 0 && (stats.queued > 0 || stats.posted > 0)) {
+                debugPrint('✅ fetchPostActivity from location activity-chart: AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Queue=${stats.queued}, Posted=${stats.posted}');
                 return stats;
               }
             }
@@ -136,8 +136,8 @@ class GMBAnalyticsRepository {
           final decoded = jsonDecode(response.body);
           if (decoded['success'] == true && decoded['data'] is List) {
             final stats = PostActivityStats.fromActivityList(decoded['data']);
-            if (stats.totalCount > 0) {
-              debugPrint('✅ fetchPostActivity from global activity-chart: AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Posted=${stats.posted}');
+            if (stats.totalCount > 0 && (stats.queued > 0 || stats.posted > 0)) {
+              debugPrint('✅ fetchPostActivity from global activity-chart: AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Queue=${stats.queued}, Posted=${stats.posted}');
               return stats;
             }
           }
