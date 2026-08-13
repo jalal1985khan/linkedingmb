@@ -94,11 +94,9 @@ class GMBAnalyticsRepository {
         return const PostActivityStats();
       }
 
-      final locParam = (locationId != null && locationId.isNotEmpty) ? '&account_id=${Uri.encodeComponent(locationId)}&author_urn=${Uri.encodeComponent(locationId)}' : '';
-
-      // 1. Try location-specific GMB activity chart endpoint first
+      // 1. Try activity chart endpoint (matching Web frontend)
       try {
-        final uri = Uri.parse('${ApiConfig.baseUrl}/api/dashboard/activity-chart?platform=gmb$locParam');
+        final uri = Uri.parse('${ApiConfig.baseUrl}/api/dashboard/activity-chart');
         final response = await _httpClient.get(
           uri,
           headers: {
@@ -111,12 +109,14 @@ class GMBAnalyticsRepository {
           final decoded = jsonDecode(response.body);
           if (decoded['success'] == true && decoded['data'] is List) {
             final stats = PostActivityStats.fromActivityList(decoded['data']);
-            debugPrint('✅ fetchPostActivity from GMB activity-chart: AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Queue=${stats.queued}, Posted=${stats.posted}');
-            return stats;
+            if (stats.totalCount > 0) {
+              debugPrint('✅ fetchPostActivity from activity-chart: AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Queue=${stats.queued}, Posted=${stats.posted}');
+              return stats;
+            }
           }
         }
       } catch (e) {
-        debugPrint('⚠️ Error fetching GMB activity-chart: $e');
+        debugPrint('⚠️ Error fetching activity-chart: $e');
       }
 
       // 2. Fallback: Query /api/gmbapi/posts, /api/scheduler/posts/generated, and /api/scheduler/posts
