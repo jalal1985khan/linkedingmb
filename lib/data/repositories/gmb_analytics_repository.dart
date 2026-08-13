@@ -94,37 +94,41 @@ class GMBAnalyticsRepository {
         return const PostActivityStats();
       }
 
-      final locParam = (locationId != null && locationId.isNotEmpty)
-          ? '&account_id=${Uri.encodeComponent(locationId)}&author_urn=${Uri.encodeComponent(locationId)}'
-          : '';
+      // Helper function to run the full calculation with or without location parameter
+      Future<PostActivityStats> calculateActivity(bool includeLocation) async {
+        final locParam = (includeLocation && locationId != null && locationId.isNotEmpty)
+            ? '&account_id=${Uri.encodeComponent(locationId)}&author_urn=${Uri.encodeComponent(locationId)}'
+            : '';
+        final chartLocParam = (includeLocation && locationId != null && locationId.isNotEmpty)
+            ? '?author_urn=${Uri.encodeComponent(locationId)}'
+            : '';
 
-      // 1. Try activity chart endpoint first
-      try {
-        final uri = Uri.parse('${ApiConfig.baseUrl}/api/dashboard/activity-chart?author_urn=${Uri.encodeComponent(locationId ?? "")}');
-        final response = await _httpClient.get(
-          uri,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-          },
-        );
+        // 1. Try activity chart endpoint
+        try {
+          final uri = Uri.parse('${ApiConfig.baseUrl}/api/dashboard/activity-chart$chartLocParam');
+          final response = await _httpClient.get(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          );
 
-        if (response.statusCode == 200) {
-          final decoded = jsonDecode(response.body);
-          if (decoded['success'] == true && decoded['data'] is List) {
-            final stats = PostActivityStats.fromActivityList(decoded['data']);
-            if (stats.totalCount > 0 && stats.queued > 0 && stats.posted > 0) {
-              debugPrint('✅ fetchPostActivity from activity-chart: AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Queue=${stats.queued}, Posted=${stats.posted}');
-              return stats;
+          if (response.statusCode == 200) {
+            final decoded = jsonDecode(response.body);
+            if (decoded['success'] == true && decoded['data'] is List) {
+              final stats = PostActivityStats.fromActivityList(decoded['data']);
+              if (stats.totalCount > 0 && (stats.queued > 0 || stats.posted > 0)) {
+                debugPrint('✅ fetchPostActivity from activity-chart (includeLocation=$includeLocation): AI=${stats.aiGenerated}, Manual=${stats.manualGenerated}, Queue=${stats.queued}, Posted=${stats.posted}');
+                return stats;
+              }
             }
           }
+        } catch (e) {
+          debugPrint('⚠️ Error fetching activity-chart: $e');
         }
-      } catch (e) {
-        debugPrint('⚠️ Error fetching activity-chart: $e');
-      }
 
-      // 2. Fallback algorithm (Matching socialhive-frontend lib/api/dashboard.ts exactly)
-      try {
+        // 2. Fallback algorithm (Matching socialhive-frontend lib/api/dashboard.ts exactly)
         int aiCount = 0;
         int manualCount = 0;
         int queuedCount = 0;
@@ -283,16 +287,26 @@ class GMBAnalyticsRepository {
           queued: queuedCount,
           posted: postedCount,
         );
-        debugPrint('✅ fetchPostActivity computed (Matching Web UI): AI=$aiCount, Manual=$manualCount, Queue=$queuedCount, Posted=$postedCount');
+        debugPrint('✅ fetchPostActivity computed (includeLocation=$includeLocation): AI=$aiCount, Manual=$manualCount, Queue=$queuedCount, Posted=$postedCount');
         return computedStats;
       } catch (e) {
-        debugPrint('⚠️ Error in fallback post activity calculation: $e');
+        debugPrint('⚠️ Error in calculation: $e');
+        return const PostActivityStats();
       }
-    } catch (e) {
-      debugPrint('❌ Error in fetchPostActivity: $e');
     }
-    return const PostActivityStats();
+
+    // Try location-filtered first. If count is 0, fallback to user-wide calculation matching Web
+    PostActivityStats result = await calculateActivity(true);
+    if (result.totalCount == 0 && locationId != null && locationId.isNotEmpty) {
+      debugPrint('ℹ️ Location-specific activity returned 0 stats, falling back to user-wide activity (matching Web)');
+      result = await calculateActivity(false);
+    }
+    return result;
+  } catch (e) {
+    debugPrint('❌ Error in fetchPostActivity: $e');
   }
+  return const PostActivityStats();
+}
 }
 
 class PostActivityStats {
