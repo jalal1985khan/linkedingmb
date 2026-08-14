@@ -59,11 +59,16 @@ class _AppMediaPickerState extends State<AppMediaPicker> {
         widget.onMediaSelected(photo.path);
       }
     } catch (e) {
+      if (source == ImageSource.camera) {
+        // Fallback to gallery if camera is unavailable (e.g. simulator)
+        _pickImage(ImageSource.gallery);
+        return;
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Could not pick image: ${e.toString()}'),
-            backgroundColor: AppColors.error,
+          const SnackBar(
+            content: Text('Please select an image or enter an Image URL.'),
+            backgroundColor: AppColors.primary,
           ),
         );
       }

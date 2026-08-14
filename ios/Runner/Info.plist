@@ -79,5 +79,9 @@
 				</array>
 			</dict>
 		</array>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>SocialHive requires photo library access to select photos for Google Business posts and profile media.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>SocialHive requires camera access to take photos for Google Business posts and profile media.</string>
 	</dict>
 </plist>
