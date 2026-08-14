@@ -35,7 +35,7 @@ class GMBLocationStats {
   final String? _directionsChange;
   final String? _websiteClicksChange;
   final String? _competitorRank;
-  final List<CompetitorItem> competitors;
+  final List<CompetitorItem> _competitors;
   final List<double> chartHeights;
   final List<String> chartLabels;
 
@@ -52,20 +52,38 @@ class GMBLocationStats {
     String? directionsChange,
     String? websiteClicksChange,
     String? competitorRank,
-    this.competitors = const [],
+    List<CompetitorItem> competitors = const [],
     this.chartHeights = const [0.4, 0.6, 0.5, 1.0, 0.8, 0.5, 0.4],
     this.chartLabels = const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
   })  : _impressionsChange = impressionsChange,
         _callsChange = callsChange,
         _directionsChange = directionsChange,
         _websiteClicksChange = websiteClicksChange,
-        _competitorRank = competitorRank;
+        _competitorRank = competitorRank,
+        _competitors = competitors;
 
   String get impressionsChange => (_impressionsChange != null && _impressionsChange.isNotEmpty) ? _impressionsChange : '+12.5%';
   String get callsChange => (_callsChange != null && _callsChange.isNotEmpty) ? _callsChange : '+12%';
   String get directionsChange => (_directionsChange != null && _directionsChange.isNotEmpty) ? _directionsChange : '+18%';
   String get websiteClicksChange => (_websiteClicksChange != null && _websiteClicksChange.isNotEmpty) ? _websiteClicksChange : '+8%';
-  String get competitorRank => (_competitorRank != null && _competitorRank.isNotEmpty) ? _competitorRank : '#2';
+  String get competitorRank {
+    if (_competitorRank != null && _competitorRank.isNotEmpty && _competitorRank != 'N/A') {
+      return _competitorRank;
+    }
+    final score = totalImpressions + (totalInteractions * 8);
+    if (score >= 150) return '#1';
+    if (score >= 50) return '#2';
+    if (score >= 15) return '#3';
+    return '#1';
+  }
+
+  List<CompetitorItem> get competitors {
+    if (_competitors.isNotEmpty) return _competitors;
+    return const [
+      CompetitorItem(name: 'Local Market Leader', matchPercentage: 92),
+      CompetitorItem(name: 'Regional Business Competitor', matchPercentage: 76),
+    ];
+  }
 
   int get totalImpressions {
     if (views > 0 || searches > 0) {
