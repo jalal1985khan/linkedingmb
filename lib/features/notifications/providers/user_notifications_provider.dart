@@ -90,7 +90,7 @@ class UserNotificationsNotifier extends StateNotifier<AsyncValue<List<AppNotific
         return;
       }
 
-      final url = Uri.parse('${ApiConfig.baseUrl}/api/user-notifications/?limit=50');
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/user-notifications?limit=50');
       final response = await http.get(
         url,
         headers: {
@@ -98,6 +98,10 @@ class UserNotificationsNotifier extends StateNotifier<AsyncValue<List<AppNotific
           'Authorization': 'Bearer $token',
         },
       );
+
+      if (kDebugMode) {
+        print('[UserNotifications] Status: ${response.statusCode}, Body: ${response.body}');
+      }
 
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
