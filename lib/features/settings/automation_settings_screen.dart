@@ -257,7 +257,14 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
                             children: [
                               Row(
                                 children: [
-                                  Text('GMB Auto-Pilot Status', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 14, color: const Color(0xFF14532D))),
+                                  Flexible(
+                                    child: Text(
+                                      'GMB Auto-Pilot Status',
+                                      style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 14, color: const Color(0xFF14532D)),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
                                   const SizedBox(width: 8),
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
