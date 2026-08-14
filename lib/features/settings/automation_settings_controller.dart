@@ -168,21 +168,18 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
       int maxS = state.maxStars;
       bool withComments = state.onlyWithComments;
 
-      if (locationId != null && locationId.isNotEmpty) {
-        final replyUri = Uri.parse(
-          '${ApiConfig.baseUrl}/api/gmb/reviews/auto-reply-settings?location_id=${Uri.encodeComponent(locationId)}',
-        );
-        final replyRes = await http.get(replyUri, headers: headers).timeout(const Duration(seconds: 10));
+      final replyLocParam = (locationId != null && locationId.isNotEmpty) ? '?location_id=${Uri.encodeComponent(locationId)}' : '';
+      final replyUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/settings/auto-reply$replyLocParam');
+      final replyRes = await http.get(replyUri, headers: headers).timeout(const Duration(seconds: 10));
 
-        if (replyRes.statusCode == 200) {
-          final replyData = jsonDecode(replyRes.body);
-          if (replyData is Map<String, dynamic> && replyData['success'] == true) {
-            final st = replyData['settings'] as Map<String, dynamic>? ?? {};
-            autoReply = st['enabled'] ?? true;
-            minS = (st['min_stars'] as num?)?.toInt() ?? 3;
-            maxS = (st['max_stars'] as num?)?.toInt() ?? 5;
-            withComments = st['only_with_comments'] ?? false;
-          }
+      if (replyRes.statusCode == 200) {
+        final replyData = jsonDecode(replyRes.body);
+        if (replyData is Map<String, dynamic> && replyData['success'] == true) {
+          final st = replyData['settings'] as Map<String, dynamic>? ?? {};
+          autoReply = st['enabled'] ?? true;
+          minS = (st['min_stars'] as num?)?.toInt() ?? 3;
+          maxS = (st['max_stars'] as num?)?.toInt() ?? 5;
+          withComments = st['only_with_comments'] ?? false;
         }
       }
 
@@ -302,20 +299,17 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
         throw Exception('Failed to save GMB Auto-Pilot config (${configRes.statusCode})');
       }
 
-      // 2. Save Review Auto-Reply Config
-      if (locationId != null && locationId.isNotEmpty) {
-        final replyUri = Uri.parse(
-          '${ApiConfig.baseUrl}/api/gmb/reviews/auto-reply-settings?location_id=${Uri.encodeComponent(locationId)}',
-        );
-        final replyBody = jsonEncode({
-          "enabled": state.autoReviewReply,
-          "min_stars": state.minStars,
-          "max_stars": state.maxStars,
-          "only_with_comments": state.onlyWithComments,
-        });
+      // 2. Save Review Auto-Reply Config (Unified Web & Mobile API)
+      final replyUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/settings/auto-reply');
+      final replyBody = jsonEncode({
+        "location_id": locationId,
+        "enabled": state.autoReviewReply,
+        "min_stars": state.minStars,
+        "max_stars": state.maxStars,
+        "only_with_comments": state.onlyWithComments,
+      });
 
-        await http.put(replyUri, headers: headers, body: replyBody).timeout(const Duration(seconds: 10));
-      }
+      await http.post(replyUri, headers: headers, body: replyBody).timeout(const Duration(seconds: 10));
 
       state = state.copyWith(
         isSaving: false,
