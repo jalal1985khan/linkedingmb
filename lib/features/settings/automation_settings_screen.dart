@@ -39,6 +39,30 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
     super.dispose();
   }
 
+  Future<void> _selectCustomTime(BuildContext context, AutomationSettingsController controller) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 9, minute: 0),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.primaryContainer,
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF0F172A),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && context.mounted) {
+      final localizations = MaterialLocalizations.of(context);
+      final formatted = localizations.formatTimeOfDay(picked, alwaysUse24HourFormat: false);
+      controller.addPostingSlot(formatted);
+    }
+  }
+
   Widget _buildSectionCard({required String title, required Widget child}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,7 +71,7 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
           title,
           style: GoogleFonts.plusJakartaSans(
             color: const Color(0xFF64748B),
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: FontWeight.w800,
             letterSpacing: 1.1,
           ),
@@ -89,7 +113,7 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
           color: isChecked ? const Color(0xFFF8FAFC) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isChecked ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+            color: isChecked ? const Color(0xFF0F172A) : const Color(0xFFE2E8F0),
             width: isChecked ? 2 : 1,
           ),
         ),
@@ -365,12 +389,12 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
 
                         const SizedBox(height: 20),
 
-                        // Local Search Peak Schedule Times Box
+                        // LOCAL SEARCH PEAK SCHEDULE TIMES SECTION (REDESIGNED FOR MOBILE)
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(18),
                             border: Border.all(color: const Color(0xFFE2E8F0)),
                           ),
                           child: Column(
@@ -378,72 +402,195 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
                             children: [
                               Row(
                                 children: [
-                                  const Icon(Icons.schedule_rounded, size: 18, color: AppColors.primaryContainer),
-                                  const SizedBox(width: 8),
-                                  Text('Local Search Peak Schedule Times', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 13)),
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  ActionChip(
-                                    avatar: const Icon(Icons.auto_awesome_rounded, size: 14, color: AppColors.primaryContainer),
-                                    label: Text('Recommended Peak', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700)),
-                                    backgroundColor: Colors.white,
-                                    side: const BorderSide(color: Color(0xFFCBD5E1)),
-                                    onPressed: () => controller.setPostingSlots(['9:00 AM', '1:00 PM', '5:00 PM']),
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primaryContainer.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(Icons.schedule_rounded, size: 18, color: AppColors.primaryContainer),
                                   ),
-                                  ActionChip(
-                                    avatar: const Icon(Icons.wb_sunny_outlined, size: 14, color: Color(0xFFF59E0B)),
-                                    label: Text('Business Hours', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700)),
-                                    backgroundColor: Colors.white,
-                                    side: const BorderSide(color: Color(0xFFCBD5E1)),
-                                    onPressed: () => controller.setPostingSlots(['10:00 AM', '1:00 PM', '4:00 PM']),
-                                  ),
-                                  ActionChip(
-                                    avatar: const Icon(Icons.nightlight_round_outlined, size: 14, color: Color(0xFF6366F1)),
-                                    label: Text('Evening Demand', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700)),
-                                    backgroundColor: Colors.white,
-                                    side: const BorderSide(color: Color(0xFFCBD5E1)),
-                                    onPressed: () => controller.setPostingSlots(['6:00 PM', '8:00 PM', '9:00 PM']),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Local Search Peak Schedule Times',
+                                          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 13, color: const Color(0xFF0F172A)),
+                                        ),
+                                        Text(
+                                          'Times when local customers search for services on Google Maps.',
+                                          style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B)),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 14),
 
-                              Text('SELECTED POSTING SLOTS (${settings.postingSlots.length})', style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8))),
-                              const SizedBox(height: 6),
+                              // Quick Preset Recommendation Buttons
+                              Text('PRESET STRATEGY SLOTS', style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.8)),
+                              const SizedBox(height: 8),
                               Wrap(
                                 spacing: 8,
                                 runSpacing: 8,
-                                children: settings.postingSlots.map((slot) {
-                                  return Chip(
-                                    backgroundColor: Colors.white,
-                                    side: const BorderSide(color: Color(0xFFCBD5E1)),
-                                    avatar: const Icon(Icons.access_time_rounded, size: 14, color: AppColors.primaryContainer),
-                                    label: Text(slot, style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700)),
-                                    deleteIcon: const Icon(Icons.close_rounded, size: 14, color: Color(0xFF64748B)),
-                                    onDeleted: () => controller.removePostingSlot(slot),
-                                  );
-                                }).toList(),
+                                children: [
+                                  InkWell(
+                                    onTap: () => controller.setPostingSlots(['9:00 AM', '1:00 PM', '5:00 PM']),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.auto_awesome_rounded, size: 14, color: AppColors.primaryContainer),
+                                          const SizedBox(width: 6),
+                                          Text('Recommended Peak', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF1E293B))),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  InkWell(
+                                    onTap: () => controller.setPostingSlots(['10:00 AM', '1:00 PM', '4:00 PM']),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.wb_sunny_outlined, size: 14, color: Color(0xFFD97706)),
+                                          const SizedBox(width: 6),
+                                          Text('Business Hours', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF1E293B))),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  InkWell(
+                                    onTap: () => controller.setPostingSlots(['6:00 PM', '8:00 PM', '9:00 PM']),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: const Color(0xFFCBD5E1)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.nightlight_round_outlined, size: 14, color: Color(0xFF4F46E5)),
+                                          const SizedBox(width: 6),
+                                          Text('Evening Demand', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: const Color(0xFF1E293B))),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
+                              const SizedBox(height: 16),
 
-                              const SizedBox(height: 12),
-                              Text('Add Quick Local Peak Slot:', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B))),
-                              const SizedBox(height: 6),
+                              // Selected Posting Slots List
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'SELECTED POSTING SLOTS (${settings.postingSlots.length})',
+                                    style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.8),
+                                  ),
+                                  InkWell(
+                                    onTap: () => _selectCustomTime(context, controller),
+                                    child: Text('+ Custom Time', style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w800, color: AppColors.primaryContainer)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              settings.postingSlots.isEmpty
+                                  ? Text('No posting slots selected. Add slots below.', style: GoogleFonts.plusJakartaSans(fontSize: 12, color: const Color(0xFF94A3B8), fontStyle: FontStyle.italic))
+                                  : Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: settings.postingSlots.map((slot) {
+                                        return Container(
+                                          padding: const EdgeInsets.only(left: 10, right: 4, top: 4, bottom: 4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(20),
+                                            border: Border.all(color: const Color(0xFFCBD5E1)),
+                                            boxShadow: [
+                                              BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 4, offset: const Offset(0, 2)),
+                                            ],
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(Icons.access_time_rounded, size: 14, color: AppColors.primaryContainer),
+                                              const SizedBox(width: 6),
+                                              Text(slot, style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF0F172A))),
+                                              const SizedBox(width: 4),
+                                              InkWell(
+                                                onTap: () => controller.removePostingSlot(slot),
+                                                borderRadius: BorderRadius.circular(12),
+                                                child: Padding(
+                                                  padding: const EdgeInsets.all(4.0),
+                                                  child: Icon(Icons.close_rounded, size: 14, color: Colors.grey.shade600),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+
+                              const SizedBox(height: 16),
+                              Text('ADD QUICK LOCAL PEAK SLOT:', style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8), letterSpacing: 0.8)),
+                              const SizedBox(height: 8),
                               Wrap(
                                 spacing: 6,
                                 runSpacing: 6,
-                                children: ['+ 8:00 AM', '+ 9:00 AM', '+ 10:00 AM', '+ 12:00 PM', '+ 1:00 PM', '+ 3:00 PM', '+ 5:00 PM', '+ 7:00 PM'].map((slotText) {
-                                  final cleanSlot = slotText.replaceAll('+ ', '');
-                                  final isAlreadyAdded = settings.postingSlots.contains(cleanSlot);
-                                  return ActionChip(
-                                    label: Text(slotText, style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600)),
-                                    backgroundColor: isAlreadyAdded ? const Color(0xFFE2E8F0) : Colors.white,
-                                    onPressed: isAlreadyAdded ? null : () => controller.addPostingSlot(cleanSlot),
+                                children: ['8:00 AM', '9:00 AM', '10:00 AM', '12:00 PM', '1:00 PM', '3:00 PM', '5:00 PM', '7:00 PM', '8:00 PM'].map((slotText) {
+                                  final isAlreadyAdded = settings.postingSlots.contains(slotText);
+                                  return InkWell(
+                                    onTap: isAlreadyAdded ? null : () => controller.addPostingSlot(slotText),
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: isAlreadyAdded ? const Color(0xFFE2E8F0) : Colors.white,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(color: isAlreadyAdded ? const Color(0xFFCBD5E1) : const Color(0xFFE2E8F0)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            isAlreadyAdded ? Icons.check_rounded : Icons.add_rounded,
+                                            size: 12,
+                                            color: isAlreadyAdded ? const Color(0xFF64748B) : AppColors.primaryContainer,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            slotText,
+                                            style: GoogleFonts.plusJakartaSans(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.w700,
+                                              color: isAlreadyAdded ? const Color(0xFF64748B) : const Color(0xFF334155),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   );
                                 }).toList(),
                               ),
