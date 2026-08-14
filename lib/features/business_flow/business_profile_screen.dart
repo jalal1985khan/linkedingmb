@@ -311,22 +311,22 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: business.isManual
+                            color: business.isManualLocation
                                 ? Colors.amber.withValues(alpha: 0.15)
                                 : const Color(0xFF16A34A).withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
-                              color: business.isManual
+                              color: business.isManualLocation
                                   ? Colors.amber.withValues(alpha: 0.3)
                                   : const Color(0xFF16A34A).withValues(alpha: 0.3),
                             ),
                           ),
                           child: Text(
-                            business.isManual ? 'Manual Location' : 'Google Verified',
+                            business.isManualLocation ? 'Manual Location' : 'Google Verified',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: business.isManual ? Colors.amber[700] : const Color(0xFF16A34A),
+                              color: business.isManualLocation ? Colors.amber[700] : const Color(0xFF16A34A),
                             ),
                           ),
                         ),

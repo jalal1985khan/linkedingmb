@@ -83,7 +83,7 @@ class BackendBusinessRepository implements BusinessRepository {
           'Authorization': 'Bearer $token',
         };
 
-        if (profile.isManual) {
+        if (profile.isManualLocation) {
           final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/manual-locations/update');
           await _httpClient.post(
             uri,

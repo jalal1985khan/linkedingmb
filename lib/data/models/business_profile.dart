@@ -84,4 +84,6 @@ class BusinessProfile {
       isManual: isManual ?? this.isManual,
     );
   }
+
+  bool get isManualLocation => isManual == true;
 }
