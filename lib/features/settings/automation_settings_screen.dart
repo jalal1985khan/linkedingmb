@@ -412,13 +412,15 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Generate Images', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14)),
-                                const SizedBox(height: 2),
-                                Text('Automatically create AI graphics for each post.', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B))),
-                              ],
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Generate Images', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14)),
+                                  const SizedBox(height: 2),
+                                  Text('Automatically create AI graphics for each post.', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B))),
+                                ],
+                              ),
                             ),
                             Switch(
                               value: settings.generateImages,
@@ -465,13 +467,15 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Auto-Reply to Reviews', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14)),
-                                const SizedBox(height: 2),
-                                Text('AI drafts & publishes replies after 1h grace period', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B))),
-                              ],
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Auto-Reply to Reviews', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14)),
+                                  const SizedBox(height: 2),
+                                  Text('AI drafts & publishes replies after 1h grace period', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B))),
+                                ],
+                              ),
                             ),
                             Switch(
                               value: settings.autoReviewReply,
@@ -484,12 +488,14 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Minimum Star Rating', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13)),
-                                Text('Only auto-reply to reviews >= min stars', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B))),
-                              ],
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Minimum Star Rating', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13)),
+                                  Text('Only auto-reply to reviews >= min stars', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B))),
+                                ],
+                              ),
                             ),
                             DropdownButton<int>(
                               value: settings.minStars,
