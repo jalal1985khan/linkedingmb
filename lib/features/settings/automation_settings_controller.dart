@@ -313,28 +313,24 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
         "allowed_formats": state.allowedFormats,
       };
 
-      // 1. Save GMB Auto-Pilot Config with dual fallback
-      http.Response? configRes;
-      try {
-        configRes = await http.post(
+      // 1. Save GMB Auto-Pilot Config to BOTH endpoints in parallel for 100% Web & Mobile sync
+      final webConfigPayload = {
+        ...payload,
+        "optimal_posting_times": state.postingSlots.join(','),
+      };
+
+      await Future.wait([
+        http.post(
           Uri.parse('${ApiConfig.baseUrl}/api/gmb/automation/config'),
           headers: headers,
           body: jsonEncode(payload),
-        ).timeout(const Duration(seconds: 10));
-      } catch (e) {
-        debugPrint('⚠️ Initial config post error: $e');
-      }
-
-      if (configRes == null || configRes.statusCode == 404) {
-        // Fallback to /api/automation/scheduler/config
-        try {
-          configRes = await http.put(
-            Uri.parse('${ApiConfig.baseUrl}/api/automation/scheduler/config'),
-            headers: headers,
-            body: jsonEncode(payload),
-          ).timeout(const Duration(seconds: 10));
-        } catch (_) {}
-      }
+        ).catchError((_) => http.Response('', 500)),
+        http.put(
+          Uri.parse('${ApiConfig.baseUrl}/api/automation/scheduler/config'),
+          headers: headers,
+          body: jsonEncode(webConfigPayload),
+        ).catchError((_) => http.Response('', 500)),
+      ]);
 
       // 2. Save Review Auto-Reply Config with dual fallback
       final replyPayload = {
