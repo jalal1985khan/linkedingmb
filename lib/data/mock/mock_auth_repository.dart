@@ -18,6 +18,17 @@ class MockAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<AppUser> loginWithEmail(String email, String password) async {
+    await Future<void>.delayed(const Duration(milliseconds: 1000));
+    _currentUser = AppUser(
+      id: 'u_001',
+      name: email.split('@').first,
+      email: email,
+    );
+    return _currentUser!;
+  }
+
+  @override
   Future<AppUser> signInWithBackendToken(String token) async {
     await Future<void>.delayed(const Duration(milliseconds: 1200));
     _currentUser = const AppUser(

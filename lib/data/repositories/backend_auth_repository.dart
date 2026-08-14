@@ -42,6 +42,40 @@ class BackendAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<AppUser> loginWithEmail(String email, String password) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/auth/login');
+    final response = await _httpClient.post(
+      uri,
+      headers: <String, String>{'Content-Type': 'application/json'},
+      body: jsonEncode(<String, String>{
+        'email': email.trim(),
+        'password': password,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      String errorMessage = 'Login failed (${response.statusCode})';
+      try {
+        final Map<String, dynamic> errorData = jsonDecode(response.body);
+        if (errorData.containsKey('detail')) {
+          errorMessage = errorData['detail'].toString();
+        }
+      } catch (_) {}
+      throw Exception(errorMessage);
+    }
+
+    final Map<String, dynamic> data =
+        jsonDecode(response.body) as Map<String, dynamic>;
+
+    final token = data['access_token'] as String?;
+    if (token == null || token.isEmpty) {
+      throw Exception('Login failed: Token missing from response');
+    }
+
+    return await signInWithBackendToken(token);
+  }
+
+  @override
   Future<void> signOut() async {
     await _secureStorage.delete(key: _tokenStorageKey);
   }

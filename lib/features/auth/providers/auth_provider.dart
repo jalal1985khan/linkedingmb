@@ -118,6 +118,28 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Login using Email & Password via backend API
+  Future<void> loginWithEmail(String email, String password) async {
+    try {
+      state = state.copyWith(isInitializing: true, errorMessage: null);
+      final user = await _authRepo.loginWithEmail(email, password);
+      final hasBusiness = await _checkBusinessProfile(user.id);
+      state = state.copyWith(
+        isInitializing: false,
+        isAuthenticated: true,
+        hasBusinessProfile: hasBusiness,
+        user: user,
+        errorMessage: null,
+      );
+    } catch (e) {
+      debugPrint('❌ Email Login failed: $e');
+      state = state.copyWith(
+        isInitializing: false,
+        errorMessage: e.toString().replaceAll('Exception: ', ''),
+      );
+    }
+  }
+
   /// Authenticate user using JWT token returned from production Google OAuth callback
   Future<void> authenticateWithToken(String token) async {
     try {

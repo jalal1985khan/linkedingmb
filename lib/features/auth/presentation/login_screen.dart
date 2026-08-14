@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../providers/auth_provider.dart';
+import 'email_login_screen.dart';
 import 'in_app_google_auth_screen.dart';
 
 class LoginScreen extends ConsumerWidget {
@@ -251,6 +252,34 @@ class LoginScreen extends ConsumerWidget {
 
 
                   const SizedBox(height: 16),
+
+                  // Option to login using Email & Password
+                  Center(
+                    child: TextButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const EmailLoginScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.mail_outline_rounded,
+                        size: 16,
+                        color: Color(0xFF4945FF),
+                      ),
+                      label: Text(
+                        'Log in using Email',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF4945FF),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
 
                   // Trust Footer
                   Row(
