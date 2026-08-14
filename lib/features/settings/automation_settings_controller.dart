@@ -157,12 +157,20 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
           final cfg = (data['config'] ?? data['data'] ?? data) as Map<String, dynamic>? ?? {};
           isEnabled = cfg['enabled'] ?? true;
           jName = (cfg['job_name'] ?? cfg['job_title'] ?? 'GMB Automation').toString();
-          perWeek = (cfg['posts_per_week'] as num?)?.toInt() ?? 3;
+          perWeek = (cfg['posts_per_week'] as num?)?.toInt() ?? (cfg['max_posts'] as num?)?.toInt() ?? 3;
           
-          if (cfg['posting_slots'] is List) {
+          if (cfg['posting_slots'] is List && (cfg['posting_slots'] as List).isNotEmpty) {
             slots = (cfg['posting_slots'] as List).map((e) => e.toString()).toList();
+          } else if (cfg['optimal_posting_times'] != null) {
+            final opt = cfg['optimal_posting_times'];
+            if (opt is List) {
+              slots = opt.map((e) => e.toString()).toList();
+            } else if (opt is String && opt.toString().trim().isNotEmpty) {
+              slots = opt.toString().split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+            }
           }
-          if (cfg['allowed_formats'] is List) {
+
+          if (cfg['allowed_formats'] is List && (cfg['allowed_formats'] as List).isNotEmpty) {
             formats = (cfg['allowed_formats'] as List).map((e) => e.toString()).toList();
           }
 
@@ -315,8 +323,21 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
 
       // 1. Save GMB Auto-Pilot Config to BOTH endpoints in parallel for 100% Web & Mobile sync
       final webConfigPayload = {
-        ...payload,
+        "enabled": state.enabled,
+        "target_account_id": locationId ?? "",
+        "job_name": state.jobName,
+        "posts_per_week": state.postsPerWeek,
+        "max_posts": state.postsPerWeek,
+        "posting_slots": state.postingSlots,
         "optimal_posting_times": state.postingSlots.join(','),
+        "persona_id": state.personaId,
+        "knowledge_group_id": state.knowledgeGroupId,
+        "allowed_formats": state.allowedFormats,
+        "max_articles": 5,
+        "interval_hours": 15,
+        "schedule_hours_ahead": 24,
+        "generate_images": true,
+        "image_style": "professional",
       };
 
       await Future.wait([
