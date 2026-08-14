@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/app_colors.dart';
 
-import '../auth/auth_controller.dart';
 import '../auth/providers/user_credits_provider.dart';
 import '../business_flow/business_profile_screen.dart';
 import '../business_flow/presentation/location_switcher_sheet.dart';
@@ -16,6 +15,7 @@ import '../dashboard/analytics_dashboard_screen.dart';
 import '../posts/create_post_flow_screen.dart';
 import '../posts/published_posts_screen.dart';
 import '../scheduler/queue_screen.dart';
+import '../settings/app_settings_screen.dart';
 import '../settings/automation_settings_screen.dart';
 
 class MainShellScreen extends ConsumerStatefulWidget {
@@ -217,46 +217,24 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                           );
                         },
                       ),
+                    _DrawerNavItem(
+                      icon: Icons.settings_rounded,
+                      label: 'Settings',
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const AppSettingsScreen()),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Divider(height: 20, color: AppColors.surfaceContainer),
+                child: Divider(height: 16, color: AppColors.surfaceContainer),
               ),
               _buildCreditCard(context, ref.watch(userCreditsProvider)),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('SYSTEM STATUS', style: TextStyle(color: Colors.grey.shade500, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.primaryContainer, shape: BoxShape.circle)),
-                            const SizedBox(width: 8),
-                            const Text('AI Active', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87, fontSize: 14)),
-                          ],
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.logout_rounded, color: Colors.black87, size: 20),
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            ref.read(authControllerProvider.notifier).signOut();
-                          },
-                          constraints: const BoxConstraints(),
-                          padding: EdgeInsets.zero,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
               const SizedBox(height: 16),
             ],
           ),
