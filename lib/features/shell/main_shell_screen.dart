@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 
 import '../auth/auth_controller.dart';
+import '../auth/providers/user_credits_provider.dart';
 import '../business_flow/business_profile_screen.dart';
 import '../business_flow/presentation/location_switcher_sheet.dart';
 import '../business_flow/providers/active_location_provider.dart';
@@ -131,9 +132,10 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                   ],
                 ),
               ),
+              _buildCreditCard(context, ref.watch(userCreditsProvider)),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Divider(height: 32, color: AppColors.surfaceContainer),
+                child: Divider(height: 24, color: AppColors.surfaceContainer),
               ),
               Expanded(
                 child: ListView(
@@ -199,6 +201,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                     _DrawerNavItem(
                       icon: Icons.tune_rounded,
                       label: 'Automations',
+                      badgeText: (ref.watch(userCreditsProvider).valueOrNull?.isZeroCredits ?? false) ? 'Paused' : null,
                       onTap: () {
                         Navigator.of(context).pop();
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => AutomationSettingsScreen()));
@@ -405,6 +408,91 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
     Navigator.of(context).pop();
     setState(() => _index = tabIndex);
   }
+  Widget _buildCreditCard(BuildContext context, AsyncValue<UserCredits> creditsAsync) {
+    final userCredits = creditsAsync.valueOrNull;
+    final credits = userCredits?.availableCredits ?? 0;
+    final isLow = credits <= 10;
+    final isZero = credits <= 0;
+    final isLoading = creditsAsync.isLoading;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isZero
+              ? [const Color(0xFF991B1B), const Color(0xFF7F1D1D)]
+              : isLow
+                  ? [const Color(0xFFC2410C), const Color(0xFF9A3412)]
+                  : [const Color(0xFF4F46E5), const Color(0xFF3730A3)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: (isZero ? Colors.red : isLow ? Colors.orange : Colors.indigo).withOpacity(0.25),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          )
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.18),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isZero ? Icons.warning_amber_rounded : Icons.bolt_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  isLoading ? 'Loading...' : '$credits Credits',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                ),
+                Text(
+                  isZero
+                      ? 'Automation Paused'
+                      : isLow
+                          ? 'Low Credit Balance'
+                          : 'Available Balance',
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.white.withOpacity(0.85),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 18),
+            onPressed: () {
+              ref.read(userCreditsProvider.notifier).fetchCredits();
+            },
+            tooltip: 'Refresh Credits',
+            constraints: const BoxConstraints(),
+            padding: EdgeInsets.zero,
+          )
+        ],
+      ),
+    );
+  }
 }
 
 class _DrawerNavItem extends StatelessWidget {
@@ -414,6 +502,7 @@ class _DrawerNavItem extends StatelessWidget {
     required this.onTap,
     this.selected = false,
     this.isDestructive = false,
+    this.badgeText,
   });
 
   final IconData icon;
@@ -421,6 +510,7 @@ class _DrawerNavItem extends StatelessWidget {
   final VoidCallback onTap;
   final bool selected;
   final bool isDestructive;
+  final String? badgeText;
 
   @override
   Widget build(BuildContext context) {
@@ -451,6 +541,24 @@ class _DrawerNavItem extends StatelessWidget {
             fontSize: 14,
           ),
         ),
+        trailing: badgeText != null
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.red.shade200),
+                ),
+                child: Text(
+                  badgeText!,
+                  style: GoogleFonts.plusJakartaSans(
+                    color: Colors.red.shade700,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              )
+            : null,
         onTap: onTap,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
         dense: true,
