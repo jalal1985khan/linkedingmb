@@ -132,7 +132,6 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                   ],
                 ),
               ),
-              _buildCreditCard(context, ref.watch(userCreditsProvider)),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
                 child: Divider(height: 24, color: AppColors.surfaceContainer),
@@ -223,8 +222,10 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
               ),
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 16),
-                child: Divider(height: 32, color: AppColors.surfaceContainer),
+                child: Divider(height: 20, color: AppColors.surfaceContainer),
               ),
+              _buildCreditCard(context, ref.watch(userCreditsProvider)),
+              const SizedBox(height: 12),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
