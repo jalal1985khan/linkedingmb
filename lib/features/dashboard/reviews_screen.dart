@@ -3,28 +3,54 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../data/repositories/gmb_analytics_repository.dart';
+import '../../data/repositories/gmb_reviews_repository.dart';
 import '../../data/repositories/gmbapi_repository.dart';
 import '../business_flow/providers/active_location_provider.dart';
 import '../settings/automation_settings_controller.dart';
+import 'providers/dashboard_providers.dart';
 
-final locationReviewsProvider =
-    FutureProvider.autoDispose<Map<String, dynamic>>((ref) {
-      return ref.read(gmbapiRepositoryProvider).getLocationReviews();
-    });
-
-int parseReviewRating(Map r) {
-  final val = r['starRating'] ?? r['star_rating'] ?? r['rating'] ?? r['stars'];
-  if (val == null) return 0;
-  if (val is int) return val;
-  if (val is double) return val.round();
-  if (val is String) {
-    final s = val.trim().toUpperCase();
-    const ratingMap = {'ONE': 1, 'TWO': 2, 'THREE': 3, 'FOUR': 4, 'FIVE': 5};
-    if (ratingMap.containsKey(s)) return ratingMap[s]!;
-    return (double.tryParse(s) ?? 0.0).round();
+/// Provider for location-specific reviews supporting both backend repositories
+final customerReviewsFamilyProvider =
+    FutureProvider.family<List<GMBReviewItem>, String>((ref, locationId) async {
+  // 1. Try fetching from GMBReviewsRepository first if locationId is present
+  if (locationId.isNotEmpty) {
+    try {
+      final reviews =
+          await ref.read(gmbReviewsRepositoryProvider).fetchReviews(locationId);
+      if (reviews.isNotEmpty) return reviews;
+    } catch (e) {
+      debugPrint('Notice: GMBReviewsRepository fetch failed: $e');
+    }
   }
-  return 0;
-}
+
+  // 2. Fallback to GmbapiRepository
+  try {
+    final data = await ref.read(gmbapiRepositoryProvider).getLocationReviews();
+    dynamic rawData = data['data'];
+    if (rawData == null &&
+        data['payload'] != null &&
+        data['payload']['data'] != null) {
+      rawData = data['payload']['data'];
+    }
+    List<dynamic> list = [];
+    if (rawData is List) {
+      list = rawData;
+    } else if (rawData is Map && rawData['data'] is List) {
+      list = rawData['data'];
+    } else if (data['reviews'] is List) {
+      list = data['reviews'];
+    }
+
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map(GMBReviewItem.fromJson)
+        .toList();
+  } catch (e) {
+    debugPrint('Notice: GmbapiRepository fetch failed: $e');
+    return [];
+  }
+});
 
 class ReviewsScreen extends ConsumerStatefulWidget {
   const ReviewsScreen({super.key, this.showScaffold = true});
@@ -36,7 +62,7 @@ class ReviewsScreen extends ConsumerStatefulWidget {
 }
 
 class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
-  int _selectedFilter = 0; // 0: All, 1: Unreplied, 2: Negative
+  int _selectedFilter = 0; // 0: All, 1: Unreplied, 2: Positive, 3: Negative
 
   @override
   void initState() {
@@ -44,195 +70,221 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final activeLocation = ref.read(activeLocationProvider).activeLocation;
       ref.read(automationSettingsProvider.notifier).fetchSettings(
-            locationId: activeLocation?.name,
+            locationId: activeLocation?.name ?? activeLocation?.id,
           );
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final activeLocState = ref.watch(activeLocationProvider);
+    final activeLocation = activeLocState.activeLocation;
+    final locationId = activeLocation?.id ?? activeLocation?.name ?? '';
+
+    final reviewsAsync = ref.watch(customerReviewsFamilyProvider(locationId));
+    final statsAsync = ref.watch(dashboardStatsProvider(locationId));
+
     final body = Container(
-      color: const Color(0xFFFAF8FF),
+      color: const Color(0xFFF8FAFC),
       child: SafeArea(
         bottom: false,
-        child: ref.watch(locationReviewsProvider).when(
-          data: (data) {
-            dynamic rawData = data['data'];
-            if (rawData == null && data['payload'] != null && data['payload']['data'] != null) {
-              rawData = data['payload']['data'];
-            }
-            List<dynamic> allReviews = [];
-            if (rawData is List) {
-              allReviews = rawData;
-            } else if (rawData is Map && rawData['data'] is List) {
-              allReviews = rawData['data'];
-            } else if (data['reviews'] is List) {
-              allReviews = data['reviews'];
-            }
-            final pendingReviews = allReviews.where((r) {
-              if (r is! Map) return false;
-              return r['reply'] == null && r['reviewReply'] == null;
-            }).toList();
-            // Using a simple logic for negative reviews: rating <= 2
-            final negativeReviews = allReviews.where((r) {
-              if (r is! Map) return false;
-              int star = parseReviewRating(r);
-              return star > 0 && star <= 2;
-            }).toList();
+        child: reviewsAsync.when(
+          data: (allReviews) {
+            final stats = statsAsync.value ?? const GMBLocationStats();
 
-            int positiveCount = 0;
-            int neutralCount = 0;
-            int negativeCount = 0;
-            double totalStars = 0;
-            int totalReviewsWithStars = 0;
-
-            for (var r in allReviews) {
-              if (r is Map) {
-                int star = parseReviewRating(r);
-                if (star > 0) {
-                  totalStars += star;
-                  totalReviewsWithStars++;
-                  if (star >= 4) {
-                    positiveCount++;
-                  } else if (star == 3) {
-                    neutralCount++;
-                  } else {
-                    negativeCount++;
-                  }
+            // Calculate metrics
+            double rating = stats.averageRating;
+            if (allReviews.isNotEmpty) {
+              final valid = allReviews.where((r) => r.starRating > 0).toList();
+              if (valid.isNotEmpty) {
+                final double sum =
+                    valid.fold<double>(0.0, (acc, r) => acc + r.starRating);
+                final double computedRating = sum / valid.length;
+                if (rating <= 0.0 || computedRating > 0.0) {
+                  rating = computedRating;
                 }
               }
             }
 
-            double averageRating = totalReviewsWithStars > 0 ? (totalStars / totalReviewsWithStars) : 0.0;
-            double positivePercent = totalReviewsWithStars > 0 ? (positiveCount / totalReviewsWithStars) : 0.0;
-            double neutralPercent = totalReviewsWithStars > 0 ? (neutralCount / totalReviewsWithStars) : 0.0;
-            double negativePercent = totalReviewsWithStars > 0 ? (negativeCount / totalReviewsWithStars) : 0.0;
+            final unrepliedReviews = allReviews
+                .where((r) => r.reviewReply == null || r.reviewReply!.trim().isEmpty)
+                .toList();
 
-            double trendPercentage = 0.0;
-            if (allReviews.length > 1) {
-              int half = allReviews.length ~/ 2;
-              var recent = allReviews.take(half);
-              var older = allReviews.skip(half);
-              
-              double recentStars = 0;
-              int recentCount = 0;
-              for (var r in recent) {
-                if (r is Map) {
-                  int star = parseReviewRating(r);
-                  if (star > 0) {
-                    recentStars += star;
-                    recentCount++;
-                  }
-                }
-              }
-              
-              double olderStars = 0;
-              int olderCount = 0;
-              for (var r in older) {
-                if (r is Map) {
-                  int star = parseReviewRating(r);
-                  if (star > 0) {
-                    olderStars += star;
-                    olderCount++;
-                  }
-                }
-              }
-              
-              double recentAvg = recentCount > 0 ? (recentStars / recentCount) : 0;
-              double olderAvg = olderCount > 0 ? (olderStars / olderCount) : 0;
-              
-              if (olderAvg > 0 && recentAvg > 0) {
-                trendPercentage = ((recentAvg - olderAvg) / olderAvg) * 100;
-              } else if (olderAvg == 0 && recentAvg > 0) {
-                trendPercentage = 100.0;
-              }
-            }
+            final positiveReviews =
+                allReviews.where((r) => r.starRating >= 4).toList();
+            final negativeReviews =
+                allReviews.where((r) => r.starRating > 0 && r.starRating <= 2).toList();
 
-            List<dynamic> displayReviews = [];
-            if (_selectedFilter == 0) displayReviews = allReviews;
-            if (_selectedFilter == 1) displayReviews = pendingReviews;
-            if (_selectedFilter == 2) displayReviews = negativeReviews;
+            List<GMBReviewItem> displayReviews = allReviews;
+            if (_selectedFilter == 1) displayReviews = unrepliedReviews;
+            if (_selectedFilter == 2) displayReviews = positiveReviews;
+            if (_selectedFilter == 3) displayReviews = negativeReviews;
 
             return RefreshIndicator(
+              color: const Color(0xFF4F46E5),
               onRefresh: () async {
-                ref.invalidate(locationReviewsProvider);
+                ref.invalidate(customerReviewsFamilyProvider(locationId));
+                ref.invalidate(dashboardStatsProvider(locationId));
                 try {
-                  await ref.read(locationReviewsProvider.future);
-                } catch (_) {}
+                  await Future.wait([
+                    ref.read(customerReviewsFamilyProvider(locationId).future),
+                    ref.read(dashboardStatsProvider(locationId).future),
+                    ref.read(automationSettingsProvider.notifier).fetchSettings(
+                          locationId: activeLocation?.name ?? activeLocation?.id,
+                        ),
+                  ]);
+                } catch (e) {
+                  debugPrint('Refresh error: $e');
+                }
               },
               child: CustomScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
                   SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.all(24.0),
+                      padding: const EdgeInsets.all(20.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Customer Reviews',
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF131B2E),
-                              letterSpacing: -0.5,
+                          // Top Header with Active Location Indicator & Settings Icon
+                          if (activeLocation != null) ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEEF2FF),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: const Color(0xFFC7D2FE)),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.storefront_rounded,
+                                        size: 14,
+                                        color: Color(0xFF4F46E5),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        activeLocation.name,
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF4F46E5),
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: () => _showAutoReplySettingsModal(
+                                      context, locationId),
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(7),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                          color: const Color(0xFFCBD5E1)),
+                                    ),
+                                    child: const Icon(
+                                      Icons.settings_outlined,
+                                      size: 18,
+                                      color: Color(0xFF0F172A),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
+                            const SizedBox(height: 16),
+                          ],
+
+                          // 1. Overall Rating & Distribution Overview Card (Replicated from Dashboard)
+                          _buildReviewsOverviewCard(
+                            context,
+                            rating,
+                            stats.totalReviews > 0
+                                ? stats.totalReviews
+                                : allReviews.length,
+                            allReviews,
                           ),
-                          const SizedBox(height: 8),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Monitor and manage your business reputation\nacross all platforms.',
-                            style: TextStyle(
-                              color: Color(0xFF484556),
-                              fontSize: 16,
-                              height: 1.4,
-                            ),
+                          const SizedBox(height: 20),
+
+                          // 2. Filter Chips
+                          _buildFilters(
+                            allCount: allReviews.length,
+                            unrepliedCount: unrepliedReviews.length,
+                            positiveCount: positiveReviews.length,
+                            negativeCount: negativeReviews.length,
                           ),
-                          const SizedBox(height: 24),
-                          _buildSatisfactionCard(
-                            averageRating,
-                            totalReviewsWithStars,
-                            positivePercent,
-                            neutralPercent,
-                            negativePercent,
-                            trendPercentage,
-                          ),
-                          const SizedBox(height: 24),
-                          _buildAIAssistantCard(pendingReviews.length),
-                          const SizedBox(height: 24),
-                          _buildAutoReplySettingsCard(),
-                          const SizedBox(height: 24),
-                          _buildFilters(allReviews.length, pendingReviews.length),
+                          const SizedBox(height: 16),
                         ],
                       ),
                     ),
                   ),
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          final item = displayReviews[index];
-                          final Map<String, dynamic> safeReview = item is Map ? Map<String, dynamic>.from(item) : {};
-                          return _ReviewCard(review: safeReview);
-                        },
-                        childCount: displayReviews.length,
+
+                  // Reviews List
+                  if (displayReviews.isEmpty)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
+                        child: _buildEmptyState(),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            return _ReviewCard(
+                              review: displayReviews[index],
+                              locationId: locationId,
+                            );
+                          },
+                          childCount: displayReviews.length,
+                        ),
                       ),
                     ),
-                  ),
-                  const SliverToBoxAdapter(child: SizedBox(height: 100)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 80)),
                 ],
               ),
             );
           },
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const Center(
+            child: Padding(
+              padding: EdgeInsets.all(32.0),
+              child: CircularProgressIndicator(color: Color(0xFF4F46E5)),
+            ),
+          ),
           error: (e, st) => Center(
             child: Padding(
               padding: const EdgeInsets.all(32.0),
-              child: Text(
-                'Error loading reviews: $e',
-                style: const TextStyle(color: Colors.red),
-                textAlign: TextAlign.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline_rounded,
+                      size: 40, color: Colors.redAccent),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Error loading customer reviews: $e',
+                    style: GoogleFonts.plusJakartaSans(
+                        color: Colors.redAccent, fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => ref.invalidate(customerReviewsFamilyProvider(locationId)),
+                    icon: const Icon(Icons.refresh_rounded, size: 16),
+                    label: const Text('Retry'),
+                  ),
+                ],
               ),
             ),
           ),
@@ -245,104 +297,149 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAF8FF),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: body,
     );
   }
 
-  Widget _buildSatisfactionCard(double averageRating, int totalReviews, double posPct, double neuPct, double negPct, double trendPct) {
-    bool isPositiveTrend = trendPct >= 0;
-    Color trendColor = isPositiveTrend ? AppColors.primaryContainer : Colors.redAccent;
-    IconData trendIcon = isPositiveTrend ? Icons.trending_up_rounded : Icons.trending_down_rounded;
-    String trendSign = isPositiveTrend ? '+' : '';
+  /// Replicated Overall Rating & Distribution Card from Dashboard Screen
+  Widget _buildReviewsOverviewCard(
+    BuildContext context,
+    double rating,
+    int totalCount,
+    List<GMBReviewItem> reviews,
+  ) {
+    final int count5 = reviews.where((r) => r.starRating == 5).length;
+    final int count4 = reviews.where((r) => r.starRating == 4).length;
+    final int count3 = reviews.where((r) => r.starRating == 3).length;
+    final int count2 = reviews.where((r) => r.starRating == 2).length;
+    final int count1 = reviews.where((r) => r.starRating == 1).length;
+
+    final int calcTotal = count5 + count4 + count3 + count2 + count1;
+    final int baseCount = totalCount > 0 ? totalCount : calcTotal;
+
+    final double p5 = calcTotal > 0 ? count5 / calcTotal : 0.0;
+    final double p4 = calcTotal > 0 ? count4 / calcTotal : 0.0;
+    final double p3 = calcTotal > 0 ? count3 / calcTotal : 0.0;
+    final double p2 = calcTotal > 0 ? count2 / calcTotal : 0.0;
+    final double p1 = calcTotal > 0 ? count1 / calcTotal : 0.0;
+
+    String ratingStatus = 'No Rating';
+    Color statusColor = const Color(0xFF64748B);
+    if (rating >= 4.5) {
+      ratingStatus = 'Excellent';
+      statusColor = const Color(0xFF10B981);
+    } else if (rating >= 4.0) {
+      ratingStatus = 'Very Good';
+      statusColor = const Color(0xFF10B981);
+    } else if (rating >= 3.0) {
+      ratingStatus = 'Good';
+      statusColor = const Color(0xFFF59E0B);
+    } else if (rating >= 2.0) {
+      ratingStatus = 'Average';
+      statusColor = const Color(0xFFF97316);
+    } else if (rating > 0.0) {
+      ratingStatus = 'Needs Attention';
+      statusColor = const Color(0xFFEF4444);
+    }
+
+    final int positiveCount = count5 + count4;
+    final int positivePercent = calcTotal > 0
+        ? ((positiveCount / calcTotal) * 100).round()
+        : (baseCount > 0 && rating >= 4.0 ? 100 : 0);
+
+    final int repliedCount = reviews
+        .where((r) => r.reviewReply != null && r.reviewReply!.trim().isNotEmpty)
+        .length;
+
+    String avgResponse = '-';
+    final repliedReviews = reviews
+        .where((r) =>
+            r.reviewReply != null &&
+            r.createTime.isNotEmpty &&
+            r.replyTime != null &&
+            r.replyTime!.isNotEmpty)
+        .toList();
+    if (repliedReviews.isNotEmpty) {
+      int totalMinutes = 0;
+      int validCount = 0;
+      for (final r in repliedReviews) {
+        try {
+          final cDate = DateTime.parse(r.createTime);
+          final rDate = DateTime.parse(r.replyTime!);
+          final diff = rDate.difference(cDate).inMinutes;
+          if (diff >= 0) {
+            totalMinutes += diff;
+            validCount++;
+          }
+        } catch (_) {}
+      }
+      if (validCount > 0) {
+        final avgMin = totalMinutes ~/ validCount;
+        if (avgMin < 60) {
+          avgResponse = '${avgMin > 0 ? avgMin : 1}m';
+        } else if (avgMin < 1440) {
+          avgResponse = '${avgMin ~/ 60}h';
+        } else {
+          avgResponse = '${avgMin ~/ 1440}d';
+        }
+      }
+    } else if (repliedCount > 0) {
+      avgResponse = 'Fast';
+    }
 
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header Row
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'TOTAL SATISFACTION',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF484556),
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        averageRating.toStringAsFixed(1),
-                        style: const TextStyle(
-                          fontSize: 48,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primaryContainer,
-                          height: 1.0,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: List.generate(5, (i) {
-                              return Icon(
-                                i < averageRating.round() ? Icons.star : Icons.star_border,
-                                color: Colors.amber,
-                                size: 18,
-                              );
-                            }),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Based on $totalReviews reviews',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF797588),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: trendColor.withOpacity(0.1),
+                  color: const Color(0xFFEEF2FF),
                   borderRadius: BorderRadius.circular(12),
                 ),
+                child: const Icon(
+                  Icons.chat_bubble_rounded,
+                  color: Color(0xFF6366F1),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(trendIcon, color: trendColor, size: 20),
-                    const SizedBox(height: 4),
                     Text(
-                      '$trendSign${trendPct.toStringAsFixed(1)}%',
-                      style: TextStyle(
-                        color: trendColor,
-                        fontWeight: FontWeight.w800,
+                      'Reviews Overview',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Track and respond to customer reviews',
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
+                        color: const Color(0xFF64748B),
                       ),
                     ),
                   ],
@@ -350,70 +447,399 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
-          _buildStatBar('Positive', posPct, '${(posPct * 100).round()}%', const Color(0xFF00677F)),
-          const SizedBox(height: 12),
-          _buildStatBar('Neutral', neuPct, '${(neuPct * 100).round()}%', const Color(0xFFC9C3D9)),
-          const SizedBox(height: 12),
-          _buildStatBar('Negative', negPct, '${(negPct * 100).round()}%', const Color(0xFFE88A8A)),
+
+          const SizedBox(height: 20),
+
+          // Rating Overview & Distribution
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Left: Rating Box
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    rating > 0 ? rating.toStringAsFixed(1) : '0.0',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 44,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF0F172A),
+                      height: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: List.generate(
+                      5,
+                      (index) => Icon(
+                        Icons.star_rounded,
+                        size: 18,
+                        color: index < rating.round()
+                            ? const Color(0xFFF59E0B)
+                            : const Color(0xFFCBD5E1),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Text(
+                        ratingStatus,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: statusColor,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Based on $baseCount reviews',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      color: const Color(0xFF94A3B8),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(width: 16),
+              Container(
+                width: 1,
+                height: 100,
+                color: const Color(0xFFF1F5F9),
+              ),
+              const SizedBox(width: 16),
+
+              // Right: Star Distribution Bars
+              Expanded(
+                child: Column(
+                  children: [
+                    _buildStarProgressRow(5, p5, count5),
+                    const SizedBox(height: 6),
+                    _buildStarProgressRow(4, p4, count4),
+                    const SizedBox(height: 6),
+                    _buildStarProgressRow(3, p3, count3),
+                    const SizedBox(height: 6),
+                    _buildStarProgressRow(2, p2, count2),
+                    const SizedBox(height: 6),
+                    _buildStarProgressRow(1, p1, count1),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          const SizedBox(height: 16),
+
+          // Key Metrics Row
+          Row(
+            children: [
+              Expanded(
+                child: _buildMetricPill(
+                  icon: Icons.thumb_up_rounded,
+                  iconColor: const Color(0xFF10B981),
+                  bgColor: const Color(0xFFECFDF5),
+                  label: 'Positive',
+                  value: '$positivePercent%',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildMetricPill(
+                  icon: Icons.mark_chat_read_rounded,
+                  iconColor: const Color(0xFF3B82F6),
+                  bgColor: const Color(0xFFEFF6FF),
+                  label: 'Replied',
+                  value: '$repliedCount',
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _buildMetricPill(
+                  icon: Icons.bolt_rounded,
+                  iconColor: const Color(0xFFF59E0B),
+                  bgColor: const Color(0xFFFFFBEB),
+                  label: 'Avg Speed',
+                  value: avgResponse,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatBar(String label, double percent, String percentText, Color color) {
+  Widget _buildStarProgressRow(int stars, double pct, int count) {
     return Row(
       children: [
         SizedBox(
-          width: 60,
+          width: 24,
           child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFF131B2E),
+            '$stars★',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF64748B),
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 6),
         Expanded(
           child: ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
-              value: percent,
-              backgroundColor: const Color(0xFFEef0ff),
-              color: color,
+              value: pct,
+              backgroundColor: const Color(0xFFF1F5F9),
+              color: stars >= 4
+                  ? const Color(0xFF10B981)
+                  : (stars == 3 ? const Color(0xFFF59E0B) : const Color(0xFFEF4444)),
               minHeight: 8,
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         SizedBox(
-          width: 32,
+          width: 24,
           child: Text(
-            percentText,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF131B2E),
+            '$count',
+            textAlign: TextAlign.end,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF94A3B8),
             ),
-            textAlign: TextAlign.right,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildAutoReplySettingsCard() {
-    final settings = ref.watch(automationSettingsProvider);
-    final controller = ref.read(automationSettingsProvider.notifier);
-    final activeLocation = ref.watch(activeLocationProvider).activeLocation;
+  Widget _buildMetricPill({
+    required IconData icon,
+    required Color iconColor,
+    required Color bgColor,
+    required String label,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: iconColor),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF0F172A),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  label,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF64748B),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAutoReplySettingsModal(BuildContext context, String locationId) {
+    ref.read(automationSettingsProvider.notifier).fetchSettings(locationId: locationId);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => _buildAutoReplySheet(ctx, locationId),
+    );
+  }
+
+  Widget _buildFilters({
+    required int allCount,
+    required int unrepliedCount,
+    required int positiveCount,
+    required int negativeCount,
+  }) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      clipBehavior: Clip.none,
+      child: Row(
+        children: [
+          _buildFilterChip('All Reviews ($allCount)', 0),
+          _buildFilterChip('Unreplied ($unrepliedCount)', 1),
+          _buildFilterChip('Positive ($positiveCount)', 2),
+          _buildFilterChip('Negative ($negativeCount)', 3),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label, int filterIndex) {
+    final isSelected = _selectedFilter == filterIndex;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedFilter = filterIndex),
+      child: Container(
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF4F46E5) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF4F46E5)
+                : const Color(0xFFE2E8F0),
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            color: isSelected ? Colors.white : const Color(0xFF475569),
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+            fontSize: 13,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: const BoxDecoration(
+              color: Color(0xFFEEF2FF),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.rate_review_outlined,
+              size: 32,
+              color: Color(0xFF4F46E5),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'No Reviews Found',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF0F172A),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'There are no customer reviews matching your selected filter.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
+              color: const Color(0xFF64748B),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReviewCard extends ConsumerStatefulWidget {
+  final GMBReviewItem review;
+  final String locationId;
+
+  const _ReviewCard({
+    required this.review,
+    required this.locationId,
+  });
+
+  @override
+  ConsumerState<_ReviewCard> createState() => _ReviewCardState();
+}
+
+class _ReviewCardState extends ConsumerState<_ReviewCard> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final review = widget.review;
+    final reviewerName = review.reviewerName;
+    final profilePhotoUrl = review.reviewerPhoto;
+    final starRating = review.starRating;
+    final comment = review.comment.trim().isNotEmpty
+        ? review.comment.trim()
+        : 'Left a rating without a comment.';
+    final reply = review.reviewReply;
+    final isReplied = reply != null && reply.trim().isNotEmpty;
+
+    String timeAgo = 'Recently';
+    if (review.createTime.isNotEmpty) {
+      try {
+        final time = DateTime.parse(review.createTime);
+        final diff = DateTime.now().difference(time);
+        if (diff.inDays >= 365) {
+          final y = (diff.inDays / 365).floor();
+          timeAgo = '$y year${y == 1 ? '' : 's'} ago';
+        } else if (diff.inDays >= 30) {
+          final m = (diff.inDays / 30).floor();
+          timeAgo = '$m month${m == 1 ? '' : 's'} ago';
+        } else if (diff.inDays > 0) {
+          timeAgo = '${diff.inDays} day${diff.inDays == 1 ? '' : 's'} ago';
+        } else if (diff.inHours > 0) {
+          timeAgo = '${diff.inHours} hour${diff.inHours == 1 ? '' : 's'} ago';
+        } else if (diff.inMinutes > 0) {
+          timeAgo = '${diff.inMinutes} min${diff.inMinutes == 1 ? '' : 's'} ago';
+        } else {
+          timeAgo = 'Just now';
+        }
+      } catch (_) {}
+    }
 
     return Container(
+      margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -426,457 +852,26 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryContainer.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.forum_rounded, color: AppColors.primaryContainer, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            'AI Review Auto-Reply',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 15,
-                              color: const Color(0xFF0F172A),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: settings.autoReviewReply ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: settings.autoReviewReply ? const Color(0xFF86EFAC) : const Color(0xFFCBD5E1),
-                            ),
-                          ),
-                          child: Text(
-                            settings.autoReviewReply ? 'Active' : 'Off',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: settings.autoReviewReply ? const Color(0xFF15803D) : const Color(0xFF64748B),
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Automatically respond to incoming customer reviews.',
-                      style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B)),
-                    ),
-                  ],
-                ),
-              ),
-              Switch(
-                value: settings.autoReviewReply,
-                onChanged: controller.setAutoReviewReply,
-                activeThumbColor: AppColors.primaryContainer,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Minimum Rating', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFF475569))),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<int>(
-                      initialValue: settings.minStars,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                      ),
-                      items: [1, 2, 3, 4, 5].map((s) {
-                        return DropdownMenuItem<int>(
-                          value: s,
-                          child: Text('$s ★', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700)),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) controller.setMinStars(val);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Maximum Rating', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFF475569))),
-                    const SizedBox(height: 6),
-                    DropdownButtonFormField<int>(
-                      initialValue: settings.maxStars,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                      ),
-                      items: [1, 2, 3, 4, 5].map((s) {
-                        return DropdownMenuItem<int>(
-                          value: s,
-                          child: Text('$s ★', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700)),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) controller.setMaxStars(val);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Only reviews within this star rating range will receive auto-replies.',
-            style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF94A3B8)),
-          ),
-          const SizedBox(height: 16),
-          const Divider(height: 1, color: Color(0xFFE2E8F0)),
-          const SizedBox(height: 14),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Only Reply to Written Comments', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13)),
-                    const SizedBox(height: 2),
-                    Text('Ignore reviews that only leave a star rating without text.', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B))),
-                  ],
-                ),
-              ),
-              Switch(
-                value: settings.onlyWithComments,
-                onChanged: controller.setOnlyWithComments,
-                activeThumbColor: AppColors.primaryContainer,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            height: 46,
-            child: ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0F172A),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: settings.isSaving
-                  ? null
-                  : () async {
-                      final success = await controller.saveSettings(
-                        locationId: activeLocation?.name,
-                      );
-                      if (success && mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('✨ Auto-Reply Settings saved & synced!'),
-                            backgroundColor: Color(0xFF16A34A),
-                          ),
-                        );
-                      }
-                    },
-              icon: settings.isSaving
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : const Icon(Icons.save_rounded, size: 18),
-              label: Text(
-                settings.isSaving ? 'Saving Auto-Reply...' : 'Save Auto-Reply Rules',
-                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 13),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAIAssistantCard(int pendingCount) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.primaryContainer,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 24),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'AI Assistant',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: Colors.cyanAccent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Active • Monitoring Feedback',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'I\'m currently scanning $pendingCount new reviews for potential response drafts and sentiment analysis.',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 15,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            height: 48,
-            child: ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: AppColors.primaryContainer,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Configure Automation',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilters(int allCount, int pendingCount) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      clipBehavior: Clip.none,
-      child: Row(
-        children: [
-          _buildFilterChip('All Reviews', _selectedFilter == 0, () => setState(() => _selectedFilter = 0)),
-          _buildFilterChip('Unreplied ($pendingCount)', _selectedFilter == 1, () => setState(() => _selectedFilter = 1)),
-          _buildFilterChip('Negative', _selectedFilter == 2, () => setState(() => _selectedFilter = 2)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(String label, bool isSelected, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : const Color(0xFFE2E7FF).withOpacity(0.6),
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : const Color(0xFF131B2E),
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ReviewCard extends ConsumerStatefulWidget {
-  final Map<String, dynamic> review;
-
-  const _ReviewCard({required this.review});
-
-  @override
-  ConsumerState<_ReviewCard> createState() => _ReviewCardState();
-}
-
-class _ReviewCardState extends ConsumerState<_ReviewCard> {
-  bool _isExpanded = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final review = widget.review;
-    String reviewerName = 'Anonymous';
-    if (review['reviewerName'] != null && review['reviewerName'].toString().isNotEmpty) {
-      reviewerName = review['reviewerName'].toString();
-    } else if (review['reviewer_name'] != null) {
-      reviewerName = review['reviewer_name'].toString();
-    } else if (review['reviewer'] is Map && review['reviewer']['displayName'] != null) {
-      reviewerName = review['reviewer']['displayName'].toString();
-    }
-
-    String? profilePhotoUrl;
-    if (review['profilePhotoUrl'] != null && review['profilePhotoUrl'].toString().isNotEmpty) {
-      profilePhotoUrl = review['profilePhotoUrl'].toString();
-    }
-
-    int starRating = 0;
-    if (review['rating'] != null) {
-      if (review['rating'] is int) {
-        starRating = review['rating'] as int;
-      } else if (review['rating'] is String) {
-        starRating = int.tryParse(review['rating']) ?? 0;
-      }
-    } else if (review['star_rating'] != null) {
-      if (review['star_rating'] is int) {
-        starRating = review['star_rating'] as int;
-      } else if (review['star_rating'] is String) {
-        starRating = int.tryParse(review['star_rating']) ?? 0;
-      }
-    } else if (review['starRating'] != null) {
-      final ratingMap = {'ONE': 1, 'TWO': 2, 'THREE': 3, 'FOUR': 4, 'FIVE': 5};
-      starRating = ratingMap[review['starRating']] ?? 0;
-    }
-
-    String comment = "Left a rating without a comment.";
-    if (review['comment_en'] != null && review['comment_en'].toString().trim().isNotEmpty) {
-      comment = review['comment_en'].toString().trim();
-    } else if (review['comment'] != null && review['comment'].toString().trim().isNotEmpty) {
-      comment = review['comment'].toString().trim();
-    }
-
-    String? reply;
-    if (review['reply_comment'] != null && review['reply_comment'].toString().trim().isNotEmpty) {
-      reply = review['reply_comment'].toString().trim();
-    } else if (review['reply'] != null) {
-      if (review['reply'] is Map && review['reply']['comment'] != null) {
-        reply = review['reply']['comment'].toString();
-      } else if (review['reply'] is String && review['reply'].toString().trim().isNotEmpty && review['reply'].toString() != '1' && review['reply'].toString() != '0') {
-        reply = review['reply'].toString();
-      }
-    } else if (review['reviewReply'] != null && review['reviewReply'] is Map && review['reviewReply']['comment'] != null) {
-      reply = review['reviewReply']['comment'].toString();
-    }
-
-    final reviewId = review['name'] ?? review['reviewId'] ?? review['id'] ?? review['review_id'] ?? review['_id'];
-    final isReplied = reply != null && reply.isNotEmpty;
-
-    String timeAgo = '2h ago'; // default fallback
-    final timeStr = review['createTime'] ?? review['updateTime'] ?? review['created_at'] ?? review['updated_at'] ?? review['timestamp'];
-    if (timeStr != null) {
-      try {
-        final time = DateTime.parse(timeStr.toString());
-        final difference = DateTime.now().difference(time);
-        if (difference.inDays >= 365) {
-          final years = (difference.inDays / 365).floor();
-          timeAgo = '$years year${years == 1 ? '' : 's'} ago';
-        } else if (difference.inDays >= 30) {
-          final months = (difference.inDays / 30).floor();
-          timeAgo = '$months month${months == 1 ? '' : 's'} ago';
-        } else if (difference.inDays > 0) {
-          timeAgo = '${difference.inDays} day${difference.inDays == 1 ? '' : 's'} ago';
-        } else if (difference.inHours > 0) {
-          timeAgo = '${difference.inHours} hour${difference.inHours == 1 ? '' : 's'} ago';
-        } else if (difference.inMinutes > 0) {
-          timeAgo = '${difference.inMinutes} min${difference.inMinutes == 1 ? '' : 's'} ago';
-        } else {
-          timeAgo = 'Just now';
-        }
-      } catch (e) {
-        debugPrint('Error parsing time: $e');
-      }
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
-                radius: 24,
-                backgroundColor: AppColors.primaryContainer.withOpacity(0.1),
-                backgroundImage: profilePhotoUrl != null ? NetworkImage(profilePhotoUrl) : null,
-                child: profilePhotoUrl == null ? Text(
-                  reviewerName.isNotEmpty ? reviewerName[0].toUpperCase() : 'A',
-                  style: const TextStyle(
-                    color: AppColors.primaryContainer,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
-                ) : null,
+                radius: 22,
+                backgroundColor: const Color(0xFFEEF2FF),
+                backgroundImage: profilePhotoUrl != null && profilePhotoUrl.isNotEmpty
+                    ? NetworkImage(profilePhotoUrl)
+                    : null,
+                child: profilePhotoUrl == null || profilePhotoUrl.isEmpty
+                    ? Text(
+                        reviewerName.isNotEmpty
+                            ? reviewerName[0].toUpperCase()
+                            : 'A',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: const Color(0xFF4F46E5),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      )
+                    : null,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -885,18 +880,20 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                   children: [
                     Text(
                       reviewerName,
-                      style: const TextStyle(
+                      style: GoogleFonts.plusJakartaSans(
                         fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                        color: Color(0xFF131B2E),
+                        fontSize: 15,
+                        color: const Color(0xFF0F172A),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: List.generate(5, (index) {
                         return Icon(
-                          index < starRating ? Icons.star_rounded : Icons.star_border_rounded,
-                          color: Colors.amber,
+                          index < starRating
+                              ? Icons.star_rounded
+                              : Icons.star_border_rounded,
+                          color: const Color(0xFFF59E0B),
                           size: 16,
                         );
                       }),
@@ -906,47 +903,54 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
               ),
               Text(
                 timeAgo,
-                style: const TextStyle(
-                  color: Color(0xFF797588),
-                  fontSize: 13,
+                style: GoogleFonts.plusJakartaSans(
+                  color: const Color(0xFF94A3B8),
+                  fontSize: 12,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Text(
             comment,
-            style: const TextStyle(
-              color: Color(0xFF484556),
+            style: GoogleFonts.plusJakartaSans(
+              color: const Color(0xFF334155),
               height: 1.5,
-              fontSize: 15,
+              fontSize: 14,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
+
           if (!isReplied)
             Row(
               children: [
                 Expanded(
                   child: SizedBox(
-                    height: 48,
+                    height: 44,
                     child: ElevatedButton.icon(
-                      onPressed: () => _showReplyDialog(context, ref, reviewId?.toString() ?? '', comment, isAi: true, reviewerName: reviewerName, rating: starRating),
-                      icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 20),
-                      label: const FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          'Reply with AI',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                          ),
+                      onPressed: () => _showReplyDialog(
+                        context,
+                        ref,
+                        review.id,
+                        comment,
+                        isAi: true,
+                        reviewerName: reviewerName,
+                        rating: starRating,
+                      ),
+                      icon: const Icon(Icons.auto_awesome_rounded,
+                          color: Colors.white, size: 18),
+                      label: Text(
+                        'Reply with AI',
+                        style: GoogleFonts.plusJakartaSans(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryContainer,
+                        backgroundColor: const Color(0xFF4F46E5),
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -954,28 +958,40 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 GestureDetector(
-                  onTap: () => _showReplyDialog(context, ref, reviewId?.toString() ?? '', comment, isAi: false),
+                  onTap: () => _showReplyDialog(
+                    context,
+                    ref,
+                    review.id,
+                    comment,
+                    isAi: false,
+                  ),
                   child: Container(
-                    height: 48,
-                    width: 48,
+                    height: 44,
+                    width: 44,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE2E7FF),
+                      color: const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Center(child: Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFF484556))),
+                    child: const Center(
+                      child: Icon(Icons.chat_bubble_outline_rounded,
+                          color: Color(0xFF475569), size: 20),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Container(
-                  height: 48,
-                  width: 48,
+                  height: 44,
+                  width: 44,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE2E7FF),
+                    color: const Color(0xFFFEF2F2),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Center(child: Icon(Icons.flag_outlined, color: Colors.red)),
+                  child: const Center(
+                    child: Icon(Icons.flag_outlined,
+                        color: Color(0xFFEF4444), size: 20),
+                  ),
                 ),
               ],
             )
@@ -992,46 +1008,44 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                     children: [
                       Expanded(
                         child: Container(
-                          height: 48,
+                          height: 44,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
                           decoration: BoxDecoration(
                             color: const Color(0xFFDCFCE7),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: const Color(0xFFBBF7D0)),
                           ),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
-                              Icon(Icons.check_circle_rounded, color: Color(0xFF15803D), size: 20),
-                              SizedBox(width: 8),
-                              Flexible(
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    'Replied',
-                                    style: TextStyle(
-                                      color: Color(0xFF15803D),
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 15,
-                                    ),
-                                  ),
+                            children: [
+                              const Icon(Icons.check_circle_rounded,
+                                  color: Color(0xFF15803D), size: 18),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Replied to Customer',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: const Color(0xFF15803D),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                       Container(
-                        height: 48,
-                        width: 48,
+                        height: 44,
+                        width: 44,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE2E7FF).withOpacity(0.6),
+                          color: const Color(0xFFF1F5F9),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Center(
                           child: Icon(
-                            _isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.chat_bubble_outline_rounded,
-                            color: const Color(0xFF484556),
+                            _isExpanded
+                                ? Icons.keyboard_arrow_up_rounded
+                                : Icons.chat_bubble_outline_rounded,
+                            color: const Color(0xFF475569),
                           ),
                         ),
                       ),
@@ -1039,39 +1053,40 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                   ),
                 ),
                 if (_isExpanded) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8F9FE),
+                      color: const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE2E7FF), width: 1),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          children: const [
-                            Icon(Icons.subdirectory_arrow_right_rounded, color: AppColors.primaryContainer, size: 18),
-                            SizedBox(width: 8),
+                          children: [
+                            const Icon(Icons.subdirectory_arrow_right_rounded,
+                                color: Color(0xFF4F46E5), size: 16),
+                            const SizedBox(width: 6),
                             Text(
-                              'Owner response',
-                              style: TextStyle(
+                              'Owner Response',
+                              style: GoogleFonts.plusJakartaSans(
                                 fontWeight: FontWeight.bold,
-                                color: AppColors.primaryContainer,
-                                fontSize: 13,
+                                color: const Color(0xFF4F46E5),
+                                fontSize: 12,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Text(
                           reply,
-                          style: const TextStyle(
-                            color: Color(0xFF484556),
-                            height: 1.5,
-                            fontSize: 14,
+                          style: GoogleFonts.plusJakartaSans(
+                            color: const Color(0xFF334155),
+                            height: 1.45,
+                            fontSize: 13,
                           ),
                         ),
                       ],
@@ -1085,11 +1100,15 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
     );
   }
 
-  void _showReplyDialog(BuildContext context, WidgetRef ref, String reviewId, String originalComment, {bool isAi = false, int rating = 5, String reviewerName = 'Anonymous'}) {
-    if (reviewId.isEmpty) {
-      debugPrint("Warning: reviewId is empty, reply might fail.");
-    }
-    
+  void _showReplyDialog(
+    BuildContext context,
+    WidgetRef ref,
+    String reviewId,
+    String originalComment, {
+    bool isAi = false,
+    int rating = 5,
+    String reviewerName = 'Customer',
+  }) {
     final textController = TextEditingController();
     bool isGeneratingAi = isAi;
     bool aiGenerationFailed = false;
@@ -1102,16 +1121,20 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
         return StatefulBuilder(
           builder: (context, setState) {
             if (isGeneratingAi) {
-              // Fire the async request once
               isGeneratingAi = false;
               final ratings = ['ONE', 'TWO', 'THREE', 'FOUR', 'FIVE'];
-              final starStr = rating > 0 && rating <= 5 ? ratings[rating - 1] : 'FIVE';
-              
-              ref.read(gmbapiRepositoryProvider).enhanceReviewReply(
-                reviewerName: reviewerName,
-                starRating: starStr,
-                reviewComment: originalComment,
-              ).then((generatedText) {
+              final starStr =
+                  rating > 0 && rating <= 5 ? ratings[rating - 1] : 'FIVE';
+
+              ref
+                  .read(gmbapiRepositoryProvider)
+                  .enhanceReviewReply(
+                    reviewerName: reviewerName,
+                    starRating: starStr,
+                    reviewComment: originalComment,
+                    locationId: widget.locationId,
+                  )
+                  .then((generatedText) {
                 if (context.mounted) {
                   setState(() {
                     textController.text = generatedText;
@@ -1124,49 +1147,74 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                   });
                 }
               });
-              isGeneratingAi = true; // Set back to true to show loading indicator
+              isGeneratingAi = true;
             }
+
             return AlertDialog(
               insetPadding: const EdgeInsets.symmetric(horizontal: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
               title: Row(
                 children: [
-                  if (isAi)
-                    const Icon(Icons.auto_awesome_rounded, color: AppColors.primaryContainer)
-                  else
-                    const Icon(Icons.chat_bubble_outline_rounded, color: AppColors.primaryContainer),
+                  Icon(
+                    isAi
+                        ? Icons.auto_awesome_rounded
+                        : Icons.chat_bubble_outline_rounded,
+                    color: const Color(0xFF4F46E5),
+                  ),
                   const SizedBox(width: 8),
-                  Text(isAi ? 'AI Generated Reply' : 'Manual Reply'),
+                  Text(
+                    isAi ? 'AI Generated Reply' : 'Manual Reply',
+                    style: GoogleFonts.plusJakartaSans(
+                        fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ],
               ),
               content: SizedBox(
                 width: MediaQuery.of(context).size.width,
-                child: isGeneratingAi && textController.text.isEmpty && !aiGenerationFailed
-                    ? const Padding(
-                        padding: EdgeInsets.all(24.0),
+                child: isGeneratingAi &&
+                        textController.text.isEmpty &&
+                        !aiGenerationFailed
+                    ? Padding(
+                        padding: const EdgeInsets.all(24.0),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            CircularProgressIndicator(color: AppColors.primaryContainer),
-                            SizedBox(height: 16),
-                            Text("AI is reading the review...", style: TextStyle(color: Color(0xFF797588))),
+                            const CircularProgressIndicator(
+                                color: Color(0xFF4F46E5)),
+                            const SizedBox(height: 16),
+                            Text(
+                              "AI is crafting a personalized response...",
+                              style: GoogleFonts.plusJakartaSans(
+                                  color: const Color(0xFF64748B), fontSize: 13),
+                            ),
                           ],
                         ),
                       )
                     : TextField(
                         controller: textController,
                         maxLines: 4,
+                        style: GoogleFonts.plusJakartaSans(fontSize: 14),
                         decoration: InputDecoration(
-                          hintText: aiGenerationFailed ? 'AI generation failed. Type your reply here...' : 'Type your reply here...',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primaryContainer, width: 2)),
+                          hintText: aiGenerationFailed
+                              ? 'AI generation failed. Type your reply here...'
+                              : 'Type your reply here...',
+                          border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF4F46E5), width: 2),
+                          ),
                         ),
                       ),
               ),
-            actions: [
+              actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel', style: TextStyle(color: Color(0xFF484556))),
+                  child: Text('Cancel',
+                      style: GoogleFonts.plusJakartaSans(
+                          color: const Color(0xFF64748B))),
                 ),
                 ElevatedButton(
                   onPressed: isSubmitting
@@ -1177,20 +1225,39 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
 
                           setState(() => isSubmitting = true);
                           try {
-                            await ref
-                                .read(gmbapiRepositoryProvider)
-                                .replyToReview(reviewId, replyText);
+                            // 1. Try GmbapiRepository
+                            try {
+                              await ref
+                                  .read(gmbapiRepositoryProvider)
+                                  .replyToReview(reviewId, replyText);
+                            } catch (_) {
+                              // 2. Fallback to GMBReviewsRepository
+                              await ref
+                                  .read(gmbReviewsRepositoryProvider)
+                                  .postReply(
+                                      reviewName: reviewId, replyText: replyText);
+                            }
+
                             if (context.mounted) {
                               Navigator.pop(context);
-                              ref.invalidate(locationReviewsProvider);
+                              ref.invalidate(
+                                  customerReviewsFamilyProvider(widget.locationId));
+                              ref.invalidate(
+                                  dashboardReviewsProvider(widget.locationId));
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Reply posted successfully!')),
+                                const SnackBar(
+                                  content: Text('✨ Reply posted successfully!'),
+                                  backgroundColor: Color(0xFF16A34A),
+                                ),
                               );
                             }
                           } catch (e) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Failed to post reply: $e'), backgroundColor: Colors.red),
+                                SnackBar(
+                                  content: Text('Failed to post reply: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
                               );
                             }
                           } finally {
@@ -1200,19 +1267,327 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                           }
                         },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryContainer,
+                    backgroundColor: const Color(0xFF4F46E5),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                   child: isSubmitting
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Post Reply', style: TextStyle(fontWeight: FontWeight.bold)),
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2))
+                      : Text('Post Reply',
+                          style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.bold)),
                 ),
               ],
             );
           },
         );
       },
+    );
+  }
+}
+
+Widget _buildAutoReplySheet(BuildContext context, String locationId) {
+  return AutoReplySettingsModalSheet(
+    key: ValueKey('auto_reply_sheet_$locationId'),
+    locationId: locationId,
+  );
+}
+
+class AutoReplySettingsModalSheet extends ConsumerWidget {
+  final String locationId;
+
+  const AutoReplySettingsModalSheet({super.key, required this.locationId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(automationSettingsProvider);
+    final controller = ref.read(automationSettingsProvider.notifier);
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle indicator bar
+              Center(
+                child: Container(
+                  width: 38,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFCBD5E1),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Title Row with Icon and Close Button
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryContainer.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.forum_rounded,
+                      color: AppColors.primaryContainer,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'AI Review Auto-Reply',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Automatically respond to incoming customer reviews.',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded,
+                        color: Color(0xFF64748B)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Active Switch Row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Automation Status',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                          color: const Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        settings.autoReviewReply ? 'Active & monitoring' : 'Off',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          color: settings.autoReviewReply
+                              ? const Color(0xFF15803D)
+                              : const Color(0xFF64748B),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Switch(
+                    value: settings.autoReviewReply,
+                    onChanged: controller.setAutoReviewReply,
+                    activeThumbColor: AppColors.primaryContainer,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Star Rating Range Dropdowns
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Minimum Rating',
+                            style: GoogleFonts.plusJakartaSans(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                                color: const Color(0xFF475569))),
+                        const SizedBox(height: 6),
+                        DropdownButtonFormField<int>(
+                          initialValue: settings.minStars,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    const BorderSide(color: Color(0xFFE2E8F0))),
+                          ),
+                          items: [1, 2, 3, 4, 5].map((s) {
+                            return DropdownMenuItem<int>(
+                              value: s,
+                              child: Text('$s ★',
+                                  style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 13, fontWeight: FontWeight.w700)),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) controller.setMinStars(val);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Maximum Rating',
+                            style: GoogleFonts.plusJakartaSans(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                                color: const Color(0xFF475569))),
+                        const SizedBox(height: 6),
+                        DropdownButtonFormField<int>(
+                          initialValue: settings.maxStars,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 12),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    const BorderSide(color: Color(0xFFE2E8F0))),
+                          ),
+                          items: [1, 2, 3, 4, 5].map((s) {
+                            return DropdownMenuItem<int>(
+                              value: s,
+                              child: Text('$s ★',
+                                  style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 13, fontWeight: FontWeight.w700)),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) controller.setMaxStars(val);
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Only reviews within this star rating range will receive auto-replies.',
+                style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11, color: const Color(0xFF94A3B8)),
+              ),
+              const SizedBox(height: 16),
+              const Divider(height: 1, color: Color(0xFFE2E8F0)),
+              const SizedBox(height: 14),
+
+              // Written Comment Only Toggle
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Only Reply to Written Comments',
+                            style: GoogleFonts.plusJakartaSans(
+                                fontWeight: FontWeight.w700, fontSize: 13)),
+                        const SizedBox(height: 2),
+                        Text(
+                            'Ignore reviews that only leave a star rating without text.',
+                            style: GoogleFonts.plusJakartaSans(
+                                fontSize: 11, color: const Color(0xFF64748B))),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: settings.onlyWithComments,
+                    onChanged: controller.setOnlyWithComments,
+                    activeThumbColor: AppColors.primaryContainer,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // Save Rules Button
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F172A),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: settings.isSaving
+                      ? null
+                      : () async {
+                          final success = await controller.saveSettings(
+                            locationId: locationId,
+                          );
+                          if (success && context.mounted) {
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content:
+                                    Text('✨ Auto-Reply Settings saved & synced!'),
+                                backgroundColor: Color(0xFF16A34A),
+                              ),
+                            );
+                          }
+                        },
+                  icon: settings.isSaving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.save_rounded, size: 18),
+                  label: Text(
+                    settings.isSaving
+                        ? 'Saving Auto-Reply Rules...'
+                        : 'Save Auto-Reply Rules',
+                    style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w800, fontSize: 13),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

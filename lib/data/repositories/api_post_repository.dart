@@ -24,35 +24,39 @@ class ApiPostRepository implements PostRepository {
   }
 
   PostStatus _parseStatus(String? statusStr) {
-    if (statusStr == null) return PostStatus.draft;
-    final s = statusStr.toLowerCase();
-    if (s == 'published' || s == 'success' || s == 'completed') return PostStatus.published;
-    if (s == 'scheduled') return PostStatus.scheduled;
-    if (s == 'queued' || s == 'pending') return PostStatus.queued;
+    if (statusStr == null || statusStr.isEmpty) return PostStatus.scheduled;
+    final s = statusStr.toLowerCase().trim();
+    if (s == 'published' || s == 'success' || s == 'completed' || s == 'posted') return PostStatus.published;
+    if (s == 'scheduled' || s == 'approved') return PostStatus.scheduled;
+    if (s == 'queued' || s == 'pending' || s == 'waiting') return PostStatus.queued;
     if (s == 'failed' || s == 'error') return PostStatus.failed;
-    return PostStatus.draft;
+    if (s == 'draft') return PostStatus.draft;
+    return PostStatus.scheduled;
   }
 
   ScheduledPost _mapToScheduledPost(Map<String, dynamic> json) {
     final rawId = json['_id'] ?? json['id'] ?? json['postId'] ?? json['name'] ?? DateTime.now().millisecondsSinceEpoch.toString();
-    final summary = json['summary'] ?? json['content'] ?? json['text'] ?? json['title'] ?? 'Google Business Post';
+    final summary = json['title'] ?? json['summary'] ?? json['caption'] ?? json['content'] ?? json['text'] ?? 'Scheduled Post';
+    final previewText = json['content'] ?? json['caption'] ?? json['summary'] ?? summary.toString();
     final topicType = json['topic_type'] ?? json['topicType'] ?? json['contentType'] ?? 'STANDARD';
 
     DateTime schedAt = DateTime.now();
-    final rawDate = json['scheduled_time'] ?? json['scheduled_at'] ?? json['createTime'] ?? json['created_at'];
+    final rawDate = json['scheduled_time'] ?? json['scheduled_at'] ?? json['scheduledAt'] ?? json['createTime'] ?? json['created_at'];
     if (rawDate != null) {
       try {
         schedAt = DateTime.parse(rawDate.toString());
       } catch (_) {}
     }
 
+    final plat = (json['platform'] ?? 'GOOGLE BUSINESS').toString().toUpperCase();
+
     return ScheduledPost(
       id: rawId.toString(),
       title: summary.toString().length > 60 ? '${summary.toString().substring(0, 57)}...' : summary.toString(),
-      preview: summary.toString(),
-      platform: 'GOOGLE BUSINESS',
+      preview: previewText.toString(),
+      platform: plat.contains('GMB') ? 'GOOGLE BUSINESS' : plat,
       status: _parseStatus(json['status']?.toString()),
-      isAiGenerated: json['is_ai_generated'] == true || json['isAiGenerated'] == true,
+      isAiGenerated: json['is_ai_generated'] == true || json['isAiGenerated'] == true || json['ai_generated'] == true,
       scheduledAt: schedAt,
       contentType: topicType.toString(),
     );
@@ -66,33 +70,63 @@ class ApiPostRepository implements PostRepository {
         return const DashboardData(queuedCount: 0, aiGeneratedCount: 0, posts: []);
       }
 
-      final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts');
-      final response = await _httpClient.get(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
       List<ScheduledPost> posts = [];
-      if (response.statusCode == 200) {
-        final decoded = jsonDecode(response.body);
-        List rawList = [];
-        if (decoded is Map<String, dynamic>) {
-          if (decoded['posts'] is List) {
-            rawList = decoded['posts'];
-          } else if (decoded['data'] is List) {
-            rawList = decoded['data'];
-          }
-        } else if (decoded is List) {
-          rawList = decoded;
-        }
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      };
 
-        posts = rawList.whereType<Map<String, dynamic>>().map(_mapToScheduledPost).toList();
+      // 1. Fetch main scheduler posts (same endpoint as Web app)
+      try {
+        final schedulerUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?limit=50');
+        final response = await _httpClient.get(schedulerUri, headers: headers);
+        if (response.statusCode == 200) {
+          final decoded = jsonDecode(response.body);
+          List rawList = [];
+          if (decoded is Map<String, dynamic>) {
+            if (decoded['scheduled_posts'] is List) {
+              rawList = decoded['scheduled_posts'];
+            } else if (decoded['posts'] is List) {
+              rawList = decoded['posts'];
+            } else if (decoded['data'] is List) {
+              rawList = decoded['data'];
+            }
+          } else if (decoded is List) {
+            rawList = decoded;
+          }
+
+          posts = rawList.whereType<Map<String, dynamic>>().map(_mapToScheduledPost).toList();
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error fetching /api/scheduler/posts: $e');
       }
 
-      final queued = posts.where((p) => p.status == PostStatus.queued || p.status == PostStatus.scheduled).length;
+      // 2. Fetch GMB specific posts as fallback / secondary merge
+      try {
+        final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts');
+        final response = await _httpClient.get(gmbUri, headers: headers);
+        if (response.statusCode == 200) {
+          final decoded = jsonDecode(response.body);
+          List rawList = [];
+          if (decoded is Map<String, dynamic> && decoded['posts'] is List) {
+            rawList = decoded['posts'];
+          } else if (decoded is List) {
+            rawList = decoded;
+          }
+
+          final gmbPosts = rawList.whereType<Map<String, dynamic>>().map(_mapToScheduledPost).toList();
+          final existingIds = posts.map((p) => p.id).toSet();
+          for (final gp in gmbPosts) {
+            if (!existingIds.contains(gp.id)) {
+              posts.add(gp);
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error fetching /api/gmb/posts: $e');
+      }
+
+      final queued = posts.where((p) => p.status == PostStatus.queued || p.status == PostStatus.scheduled || p.status == PostStatus.draft).length;
       final aiGen = posts.where((p) => p.isAiGenerated).length;
 
       return DashboardData(

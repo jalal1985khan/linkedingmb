@@ -24,7 +24,7 @@ class PostGenerationScreen extends ConsumerStatefulWidget {
 class _PostGenerationScreenState extends ConsumerState<PostGenerationScreen> {
   final _topicController = TextEditingController();
   String _goal = 'Engagement';
-  String _contentType = 'Image';
+  String _contentType = 'STANDARD';
   String _mediaStyle = 'Professional';
   bool _generating = false;
   ScheduledPost? _draft;
@@ -91,10 +91,11 @@ class _PostGenerationScreenState extends ConsumerState<PostGenerationScreen> {
               fillColor: Colors.white,
             ),
             items: const [
-              DropdownMenuItem(value: 'Image', child: Text('Image')),
-              DropdownMenuItem(value: 'Offer', child: Text('Offer')),
-              DropdownMenuItem(value: 'Update', child: Text('Update')),
-              DropdownMenuItem(value: 'Event', child: Text('Event')),
+              DropdownMenuItem(value: 'STANDARD', child: Text('Standard Update')),
+              DropdownMenuItem(value: 'OFFER', child: Text('Offer')),
+              DropdownMenuItem(value: 'EVENT', child: Text('Event')),
+              DropdownMenuItem(value: 'PRODUCT', child: Text('Product')),
+              DropdownMenuItem(value: 'ALERT', child: Text('Alert')),
             ],
             onChanged: (value) => setState(() => _contentType = value ?? _contentType),
           ),
@@ -202,7 +203,7 @@ class _PostGenerationScreenState extends ConsumerState<PostGenerationScreen> {
       ref.invalidate(dashboardDataProvider);
 
       final autoScheduleEnabled =
-          ref.read(automationSettingsProvider).autoSchedulePosts;
+          ref.read(automationSettingsProvider).enabled;
       if (autoScheduleEnabled) {
         await ref.read(postRepositoryProvider).schedulePost(
               postId: draft.id,

@@ -224,23 +224,65 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
       pId ??= 'socialhive';
       kgId ??= 'SocialHive Official Group';
 
-      // 3. Fetch Review Auto-Reply Config with dual fallback
+      // 3. Fetch Review Auto-Reply Config matching Web app endpoint behavior exactly
       bool autoReply = state.autoReviewReply;
       int minS = state.minStars;
       int maxS = state.maxStars;
       bool withComments = state.onlyWithComments;
 
       try {
-        final locParam = (locationId != null && locationId.isNotEmpty) ? '?location_id=${Uri.encodeComponent(locationId)}' : '';
-        final res = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/gmb/settings/auto-reply$locParam'), headers: headers).timeout(const Duration(seconds: 8));
-        if (res.statusCode == 200) {
+        http.Response? res;
+        try {
+          final url = (locationId != null && locationId.isNotEmpty)
+              ? '${ApiConfig.baseUrl}/api/gmb/settings/auto-reply?location_id=${Uri.encodeComponent(locationId)}'
+              : '${ApiConfig.baseUrl}/api/gmb/settings/auto-reply';
+          res = await http
+              .get(Uri.parse(url), headers: headers)
+              .timeout(const Duration(seconds: 8));
+        } catch (_) {}
+
+        if (res == null || res.statusCode != 200) {
+          try {
+            res = await http
+                .get(
+                    Uri.parse(
+                        '${ApiConfig.baseUrl}/api/gmb/settings/auto-reply'),
+                    headers: headers)
+                .timeout(const Duration(seconds: 8));
+          } catch (_) {}
+        }
+
+        if (res != null && res.statusCode == 200) {
           final data = jsonDecode(res.body);
           if (data is Map<String, dynamic>) {
-            final cfg = (data['settings'] ?? data['data'] ?? data) as Map<String, dynamic>? ?? {};
-            autoReply = cfg['enabled'] ?? false;
-            minS = (cfg['min_stars'] as num?)?.toInt() ?? 3;
-            maxS = (cfg['max_stars'] as num?)?.toInt() ?? 5;
-            withComments = cfg['only_with_comments'] ?? false;
+            Map<String, dynamic> cfg = {};
+            if (data['settings'] is Map<String, dynamic>) {
+              cfg = Map<String, dynamic>.from(data['settings']);
+            } else if (data['data'] is Map<String, dynamic>) {
+              cfg = Map<String, dynamic>.from(data['data']);
+            } else {
+              cfg = Map<String, dynamic>.from(data);
+            }
+
+            if (cfg.isNotEmpty) {
+              if (cfg.containsKey('enabled') || cfg.containsKey('auto_reply') || cfg.containsKey('auto_review_reply')) {
+                final rawVal = cfg['enabled'] ?? cfg['auto_reply'] ?? cfg['auto_review_reply'];
+                autoReply = (rawVal == true ||
+                    rawVal == 1 ||
+                    rawVal.toString().toLowerCase() == 'true' ||
+                    rawVal.toString() == '1');
+              }
+              minS = (cfg['min_stars'] as num?)?.toInt() ?? 3;
+              maxS = (cfg['max_stars'] as num?)?.toInt() ?? 5;
+              if (cfg.containsKey('only_with_comments')) {
+                final rawComments = cfg['only_with_comments'];
+                withComments = (rawComments == true ||
+                    rawComments == 1 ||
+                    rawComments.toString().toLowerCase() == 'true' ||
+                    rawComments.toString() == '1');
+              }
+              debugPrint('✅ [AutoReply] Parsed settings: enabled=$autoReply, minS=$minS, maxS=$maxS, withComments=$withComments');
+            }
           }
         }
       } catch (e) {
@@ -415,7 +457,7 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
         ).catchError((_) => http.Response('', 500)),
       ]);
 
-      // 2. Save Review Auto-Reply Config with dual fallback
+      // 2. Save Review Auto-Reply Config to both endpoints for 100% Web & Mobile sync
       final replyPayload = {
         "location_id": locationId,
         "enabled": state.autoReviewReply,
@@ -424,24 +466,31 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
         "only_with_comments": state.onlyWithComments,
       };
 
-      http.Response? replyRes;
-      try {
-        replyRes = await http.post(
-          Uri.parse('${ApiConfig.baseUrl}/api/gmb/settings/auto-reply'),
-          headers: headers,
-          body: jsonEncode(replyPayload),
-        ).timeout(const Duration(seconds: 10));
-      } catch (_) {}
+      final targetLoc = (locationId != null && locationId.isNotEmpty)
+          ? locationId
+          : 'default';
+      final locQuery = '?location_id=${Uri.encodeComponent(targetLoc)}';
 
-      if (replyRes == null || replyRes.statusCode == 404 || replyRes.statusCode == 422) {
-        try {
-          final targetLoc = (locationId != null && locationId.isNotEmpty) ? locationId : 'default';
-          replyRes = await http.put(
-            Uri.parse('${ApiConfig.baseUrl}/api/gmb/reviews/auto-reply-settings?location_id=${Uri.encodeComponent(targetLoc)}'),
+      try {
+        await Future.wait([
+          http.post(
+            Uri.parse('${ApiConfig.baseUrl}/api/gmb/settings/auto-reply'),
             headers: headers,
             body: jsonEncode(replyPayload),
-          ).timeout(const Duration(seconds: 10));
-        } catch (_) {}
+          ).catchError((_) => http.Response('', 500)),
+          http.post(
+            Uri.parse('${ApiConfig.baseUrl}/api/gmb/reviews/auto-reply-settings$locQuery'),
+            headers: headers,
+            body: jsonEncode(replyPayload),
+          ).catchError((_) => http.Response('', 500)),
+          http.put(
+            Uri.parse('${ApiConfig.baseUrl}/api/gmb/reviews/auto-reply-settings$locQuery'),
+            headers: headers,
+            body: jsonEncode(replyPayload),
+          ).catchError((_) => http.Response('', 500)),
+        ]);
+      } catch (e) {
+        debugPrint('⚠️ Error saving auto-reply settings: $e');
       }
 
       state = state.copyWith(
