@@ -169,9 +169,20 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
               slots = opt.toString().split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
             }
           }
+          final rawFormats = [];
+          if (cfg['allowed_formats'] is List) rawFormats.addAll(cfg['allowed_formats']);
+          if (cfg['content_formats'] is List) rawFormats.addAll(cfg['content_formats']);
 
-          if (cfg['allowed_formats'] is List && (cfg['allowed_formats'] as List).isNotEmpty) {
-            formats = (cfg['allowed_formats'] as List).map((e) => e.toString()).toList();
+          final setFormats = <String>{};
+          for (var item in rawFormats) {
+            final s = item.toString();
+            setFormats.add(s);
+            if (formatPairs.containsKey(s)) {
+              setFormats.add(formatPairs[s]!);
+            }
+          }
+          if (setFormats.isNotEmpty) {
+            formats = setFormats.toList();
           }
 
           pId = cfg['persona_id']?.toString();
@@ -188,29 +199,21 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
       int maxS = state.maxStars;
       bool withComments = state.onlyWithComments;
 
-      http.Response? replyRes;
-      final safeTargetLoc = (locationId != null && locationId.isNotEmpty) ? locationId : 'default';
-      final safeLocQuery = '?location_id=${Uri.encodeComponent(safeTargetLoc)}';
-
       try {
-        replyRes = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/gmb/settings/auto-reply$locParam'), headers: headers).timeout(const Duration(seconds: 8));
-      } catch (_) {}
-
-      if (replyRes == null || replyRes.statusCode == 404 || replyRes.statusCode == 422) {
-        try {
-          replyRes = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/gmb/reviews/auto-reply-settings$safeLocQuery'), headers: headers).timeout(const Duration(seconds: 8));
-        } catch (_) {}
-      }
-
-      if (replyRes != null && replyRes.statusCode == 200) {
-        final replyData = jsonDecode(replyRes.body);
-        if (replyData is Map<String, dynamic> && replyData['success'] == true) {
-          final st = replyData['settings'] as Map<String, dynamic>? ?? {};
-          autoReply = st['enabled'] ?? true;
-          minS = (st['min_stars'] as num?)?.toInt() ?? 3;
-          maxS = (st['max_stars'] as num?)?.toInt() ?? 5;
-          withComments = st['only_with_comments'] ?? false;
+        final locParam = (locationId != null && locationId.isNotEmpty) ? '?location_id=${Uri.encodeComponent(locationId)}' : '';
+        final res = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/gmb/settings/auto-reply$locParam'), headers: headers).timeout(const Duration(seconds: 8));
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body);
+          if (data is Map<String, dynamic>) {
+            final cfg = (data['settings'] ?? data['data'] ?? data) as Map<String, dynamic>? ?? {};
+            autoReply = cfg['enabled'] ?? false;
+            minS = (cfg['min_stars'] as num?)?.toInt() ?? 3;
+            maxS = (cfg['max_stars'] as num?)?.toInt() ?? 5;
+            withComments = cfg['only_with_comments'] ?? false;
+          }
         }
+      } catch (e) {
+        debugPrint('⚠️ Error fetching review auto-reply settings: $e');
       }
 
       state = state.copyWith(
@@ -237,6 +240,23 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
       );
     }
   }
+
+  static const Map<String, String> formatPairs = {
+    'video_reels': 'VIDEO',
+    'VIDEO': 'video_reels',
+    'branded_images': 'TEXT_IMAGE',
+    'TEXT_IMAGE': 'branded_images',
+    'promotional_offers': 'OFFER',
+    'OFFER': 'promotional_offers',
+    'events_announcements': 'EVENT',
+    'EVENT': 'events_announcements',
+    'product_spotlights': 'PRODUCT',
+    'PRODUCT': 'product_spotlights',
+    'service_highlights': 'SERVICE',
+    'SERVICE': 'service_highlights',
+    'quick_tips': 'TEXT_ONLY',
+    'TEXT_ONLY': 'quick_tips',
+  };
 
   Future<List<Map<String, String>>> _fetchDropdownItems(String url, Map<String, String> headers, String key) async {
     try {
@@ -281,10 +301,16 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
 
   void toggleAllowedFormat(String format) {
     final current = List<String>.from(state.allowedFormats);
-    if (current.contains(format)) {
+    final paired = formatPairs[format];
+    final hasPrimary = current.contains(format);
+    final hasPaired = paired != null && current.contains(paired);
+
+    if (hasPrimary || hasPaired) {
       current.remove(format);
+      if (paired != null) current.remove(paired);
     } else {
       current.add(format);
+      if (paired != null) current.add(paired);
     }
     state = state.copyWith(allowedFormats: current);
   }
