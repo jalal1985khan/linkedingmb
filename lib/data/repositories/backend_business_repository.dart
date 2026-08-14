@@ -93,6 +93,16 @@ class BackendBusinessRepository implements BusinessRepository {
         ? _string(location['websiteUri'])
         : _string(location['website']);
 
+    double ratingVal = 0.0;
+    final rawRating = location['averageRating'] ?? location['rating'] ?? location['average_rating'] ?? location['overall_rating'];
+    if (rawRating != null) {
+      if (rawRating is num) {
+        ratingVal = rawRating.toDouble();
+      } else if (rawRating is String) {
+        ratingVal = double.tryParse(rawRating) ?? 0.0;
+      }
+    }
+
     return BusinessProfile(
       id: id.isNotEmpty ? id : 'unknown_${DateTime.now().millisecondsSinceEpoch}',
       name: title.isNotEmpty ? title : 'Untitled Business',
@@ -105,6 +115,7 @@ class BackendBusinessRepository implements BusinessRepository {
       targetAudience: 'Local customers',
       brandTone: 'Professional',
       postingFrequency: 4,
+      rating: ratingVal,
     );
   }
 

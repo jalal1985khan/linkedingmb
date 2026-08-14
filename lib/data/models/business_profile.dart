@@ -11,7 +11,7 @@ class BusinessProfile {
     required this.targetAudience,
     required this.brandTone,
     required this.postingFrequency,
-    this.rating = 4.8,
+    this.rating = 0.0,
   });
 
   final String id;
