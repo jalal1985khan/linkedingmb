@@ -248,27 +248,7 @@ class LoginScreen extends ConsumerWidget {
                       ),
                     ),
 
-                  const SizedBox(height: 16),
 
-                  // Option to enter/paste token if redirected to Web dashboard
-                  Center(
-                    child: TextButton.icon(
-                      onPressed: () => _showTokenDialog(context, ref),
-                      icon: const Icon(
-                        Icons.key_rounded,
-                        size: 16,
-                        color: Color(0xFF6366F1),
-                      ),
-                      label: Text(
-                        'Already signed in or have a token?',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF6366F1),
-                        ),
-                      ),
-                    ),
-                  ),
 
                   const SizedBox(height: 16),
 
@@ -463,95 +443,4 @@ class _GoogleGLogoPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-void _showTokenDialog(BuildContext context, WidgetRef ref) {
-  final controller = TextEditingController();
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Text(
-          'Authenticate Session',
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF1E1B4B),
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Paste the authentication token or redirected callback URL from your browser:',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 13,
-                color: const Color(0xFF64748B),
-              ),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: controller,
-              maxLines: 3,
-              style: GoogleFonts.plusJakartaSans(fontSize: 12),
-              decoration: InputDecoration(
-                hintText: 'e.g. https://www.socialhive.pro/auth/google/callback?token=eyJ...',
-                hintStyle: GoogleFonts.plusJakartaSans(fontSize: 11, color: Colors.grey),
-                filled: true,
-                fillColor: const Color(0xFFF8F7FF),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF6366F1), width: 1.5),
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.plusJakartaSans(color: const Color(0xFF64748B)),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final raw = controller.text.trim();
-              Navigator.of(context).pop();
-              if (raw.isNotEmpty) {
-                String token = raw;
-                if (token.contains('token=')) {
-                  try {
-                    final uri = Uri.parse(token);
-                    token = uri.queryParameters['token'] ?? token;
-                  } catch (_) {}
-                }
-                ref.read(authProvider.notifier).authenticateWithToken(token);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF6366F1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              'Authenticate',
-              style: GoogleFonts.plusJakartaSans(
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      );
-    },
-  );
-}
+
