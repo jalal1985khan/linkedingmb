@@ -96,10 +96,62 @@ class GMBPostsRepository {
   final FlutterSecureStorage _secureStorage;
   static const _tokenKey = 'auth_access_token';
 
+  Future<String?> uploadImage(String filePath) async {
+    try {
+      final token = await _secureStorage.read(key: _tokenKey);
+      if (token == null || token.isEmpty) return null;
+
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/image/upload');
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Authorization'] = 'Bearer $token';
+      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+
+      final streamedResponse = await _httpClient.send(request);
+      final response = await http.Response.fromStream(streamedResponse);
+
+      debugPrint('📤 Image upload status: ${response.statusCode}');
+      debugPrint('📤 Image upload body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['url'] as String?;
+      }
+    } catch (e) {
+      debugPrint('❌ Error uploading image file: $e');
+    }
+    return null;
+  }
+
   Future<bool> createPost(GMBPostRequest post) async {
     try {
       final token = await _secureStorage.read(key: _tokenKey);
       if (token == null || token.isEmpty) return false;
+
+      String? finalMediaUrl = post.mediaUrl;
+      // Auto-upload local file paths to backend before creating post
+      if (finalMediaUrl != null && finalMediaUrl.isNotEmpty && !finalMediaUrl.startsWith('http')) {
+        debugPrint('📷 Local image file detected ($finalMediaUrl), uploading to server...');
+        final uploadedUrl = await uploadImage(finalMediaUrl);
+        if (uploadedUrl != null && uploadedUrl.isNotEmpty) {
+          finalMediaUrl = uploadedUrl;
+          debugPrint('✅ Image uploaded successfully: $finalMediaUrl');
+        }
+      }
+
+      final postPayload = GMBPostRequest(
+        locationName: post.locationName,
+        summary: post.summary,
+        topicType: post.topicType,
+        callToActionType: post.callToActionType,
+        callToActionUrl: post.callToActionUrl,
+        mediaUrl: finalMediaUrl,
+        eventTitle: post.eventTitle,
+        eventSchedule: post.eventSchedule,
+        couponCode: post.couponCode,
+        redeemUrl: post.redeemUrl,
+        termsConditions: post.termsConditions,
+        scheduledTime: post.scheduledTime,
+      );
 
       final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts/create');
       final response = await _httpClient.post(
@@ -108,7 +160,7 @@ class GMBPostsRepository {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode(post.toJson()),
+        body: jsonEncode(postPayload.toJson()),
       );
 
       debugPrint('📝 Post create status: ${response.statusCode}');
