@@ -168,11 +168,21 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
     final body = SafeArea(
       child: settings.isLoading
           ? const Center(child: CircularProgressIndicator(color: AppColors.primaryContainer))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+          : RefreshIndicator(
+              color: AppColors.primaryContainer,
+              backgroundColor: Colors.white,
+              onRefresh: () async {
+                final activeLocation = ref.read(activeLocationProvider).activeLocation;
+                await controller.fetchSettings(
+                  locationId: activeLocation?.name,
+                );
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   // Profile & Connected Location Header
                   Container(
                     padding: const EdgeInsets.all(20),
@@ -753,6 +763,7 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
                 ],
               ),
             ),
+          ),
     );
 
     if (!widget.showScaffold) {
