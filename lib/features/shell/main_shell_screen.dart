@@ -12,7 +12,7 @@ import '../dashboard/dashboard_screen.dart';
 import '../dashboard/reviews_screen.dart';
 import '../customers/customers_screen.dart';
 import '../dashboard/analytics_dashboard_screen.dart';
-import '../notifications/notifications_sheet.dart';
+import '../notifications/notification_end_drawer.dart';
 import '../notifications/providers/user_notifications_provider.dart';
 import '../posts/create_post_flow_screen.dart';
 import '../posts/published_posts_screen.dart';
@@ -54,6 +54,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
 
     return Scaffold(
       key: _scaffoldKey,
+      endDrawer: const NotificationEndDrawer(),
       drawer: Drawer(
         backgroundColor: Colors.white,
         child: SafeArea(
@@ -272,7 +273,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary),
-                      onPressed: () => NotificationsSheet.show(context),
+                      onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
                     ),
                     if (unreadCount > 0)
                       Positioned(
