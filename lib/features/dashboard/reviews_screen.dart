@@ -39,6 +39,17 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
   int _selectedFilter = 0; // 0: All, 1: Unreplied, 2: Negative
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final activeLocation = ref.read(activeLocationProvider).activeLocation;
+      ref.read(automationSettingsProvider.notifier).fetchSettings(
+            locationId: activeLocation?.name,
+          );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final body = Container(
       color: const Color(0xFFFAF8FF),
