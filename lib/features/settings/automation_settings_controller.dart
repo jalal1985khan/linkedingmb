@@ -10,22 +10,16 @@ class AutomationSettingsState {
   final bool isLoading;
   final bool isSaving;
   final bool enabled;
-  final String timingMode; // 'interval' or 'specific'
-  final int intervalHours;
-  final int scheduleHoursAhead;
-  final String optimalPostingTimes;
-  final int maxArticles;
-  final int maxPosts;
+  final String jobName;
+  final int postsPerWeek;
+  final List<String> postingSlots;
   final String? personaId;
-  final String? templateId;
   final String? knowledgeGroupId;
-  final bool generateImages;
-  final String imageStyle;
+  final List<String> allowedFormats;
   final bool autoReviewReply;
   final int minStars;
   final bool onlyWithComments;
   final List<Map<String, String>> personas;
-  final List<Map<String, String>> templates;
   final List<Map<String, String>> knowledgeGroups;
   final String? errorMessage;
   final String? successMessage;
@@ -34,22 +28,20 @@ class AutomationSettingsState {
     this.isLoading = true,
     this.isSaving = false,
     this.enabled = true,
-    this.timingMode = 'interval',
-    this.intervalHours = 20,
-    this.scheduleHoursAhead = 31,
-    this.optimalPostingTimes = '09:00, 13:00, 17:00',
-    this.maxArticles = 1,
-    this.maxPosts = 1,
+    this.jobName = 'GMB Automation',
+    this.postsPerWeek = 3,
+    this.postingSlots = const ['9:00 AM', '1:00 PM', '5:00 PM'],
     this.personaId,
-    this.templateId,
     this.knowledgeGroupId,
-    this.generateImages = true,
-    this.imageStyle = 'professional',
+    this.allowedFormats = const [
+      'product_spotlights',
+      'service_highlights',
+      'quick_tips',
+    ],
     this.autoReviewReply = true,
     this.minStars = 4,
     this.onlyWithComments = false,
     this.personas = const [],
-    this.templates = const [],
     this.knowledgeGroups = const [],
     this.errorMessage,
     this.successMessage,
@@ -59,22 +51,16 @@ class AutomationSettingsState {
     bool? isLoading,
     bool? isSaving,
     bool? enabled,
-    String? timingMode,
-    int? intervalHours,
-    int? scheduleHoursAhead,
-    String? optimalPostingTimes,
-    int? maxArticles,
-    int? maxPosts,
+    String? jobName,
+    int? postsPerWeek,
+    List<String>? postingSlots,
     String? personaId,
-    String? templateId,
     String? knowledgeGroupId,
-    bool? generateImages,
-    String? imageStyle,
+    List<String>? allowedFormats,
     bool? autoReviewReply,
     int? minStars,
     bool? onlyWithComments,
     List<Map<String, String>>? personas,
-    List<Map<String, String>>? templates,
     List<Map<String, String>>? knowledgeGroups,
     String? errorMessage,
     String? successMessage,
@@ -83,22 +69,16 @@ class AutomationSettingsState {
       isLoading: isLoading ?? this.isLoading,
       isSaving: isSaving ?? this.isSaving,
       enabled: enabled ?? this.enabled,
-      timingMode: timingMode ?? this.timingMode,
-      intervalHours: intervalHours ?? this.intervalHours,
-      scheduleHoursAhead: scheduleHoursAhead ?? this.scheduleHoursAhead,
-      optimalPostingTimes: optimalPostingTimes ?? this.optimalPostingTimes,
-      maxArticles: maxArticles ?? this.maxArticles,
-      maxPosts: maxPosts ?? this.maxPosts,
+      jobName: jobName ?? this.jobName,
+      postsPerWeek: postsPerWeek ?? this.postsPerWeek,
+      postingSlots: postingSlots ?? this.postingSlots,
       personaId: personaId ?? this.personaId,
-      templateId: templateId ?? this.templateId,
       knowledgeGroupId: knowledgeGroupId ?? this.knowledgeGroupId,
-      generateImages: generateImages ?? this.generateImages,
-      imageStyle: imageStyle ?? this.imageStyle,
+      allowedFormats: allowedFormats ?? this.allowedFormats,
       autoReviewReply: autoReviewReply ?? this.autoReviewReply,
       minStars: minStars ?? this.minStars,
       onlyWithComments: onlyWithComments ?? this.onlyWithComments,
       personas: personas ?? this.personas,
-      templates: templates ?? this.templates,
       knowledgeGroups: knowledgeGroups ?? this.knowledgeGroups,
       errorMessage: errorMessage,
       successMessage: successMessage,
@@ -127,71 +107,59 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
         'Authorization': 'Bearer $token',
       };
 
-      // 1. Fetch Personas, Templates & Knowledge Groups in parallel
+      // 1. Fetch Personas & Knowledge Groups in parallel
       final personasFuture = _fetchDropdownItems('${ApiConfig.baseUrl}/api/personas', headers, 'personas');
-      final templatesFuture = _fetchDropdownItems('${ApiConfig.baseUrl}/api/templates', headers, 'templates');
       final groupsFuture = _fetchDropdownItems('${ApiConfig.baseUrl}/api/knowledge-groups', headers, 'groups');
 
-      final results = await Future.wait([personasFuture, templatesFuture, groupsFuture]);
+      final results = await Future.wait([personasFuture, groupsFuture]);
       final fetchedPersonas = results[0];
-      final fetchedTemplates = results[1];
-      final fetchedGroups = results[2];
+      final fetchedGroups = results[1];
 
-      // 2. Fetch Post Automation Config from backend
-      final configUri = Uri.parse('${ApiConfig.baseUrl}/api/automation/scheduler/config');
+      // Add default "socialhive" persona & "SocialHive Official Group" if empty
+      if (fetchedPersonas.every((p) => p['id'] != 'socialhive')) {
+        fetchedPersonas.insert(0, {'id': 'socialhive', 'name': 'socialhive'});
+      }
+      if (fetchedGroups.every((g) => g['id'] != 'SocialHive Official Group')) {
+        fetchedGroups.insert(0, {'id': 'SocialHive Official Group', 'name': 'SocialHive Official Group'});
+      }
+
+      // 2. Fetch GMB Auto-Pilot Config from backend
+      final locParam = locationId != null ? '?location_id=${Uri.encodeComponent(locationId)}' : '';
+      final configUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/automation/config$locParam');
       final configRes = await http.get(configUri, headers: headers).timeout(const Duration(seconds: 10));
 
       bool isEnabled = state.enabled;
-      String tMode = state.timingMode;
-      int interval = state.intervalHours;
-      int schedAhead = state.scheduleHoursAhead;
-      String optTimes = state.optimalPostingTimes;
-      int articles = state.maxArticles;
-      int postsCount = state.maxPosts;
+      String jName = state.jobName;
+      int perWeek = state.postsPerWeek;
+      List<String> slots = List.from(state.postingSlots);
       String? pId = state.personaId;
-      String? tId = state.templateId;
       String? kgId = state.knowledgeGroupId;
-      bool genImages = state.generateImages;
-      String style = state.imageStyle;
+      List<String> formats = List.from(state.allowedFormats);
 
       if (configRes.statusCode == 200) {
         final data = jsonDecode(configRes.body);
         if (data is Map<String, dynamic> && data['success'] == true) {
           final cfg = data['config'] as Map<String, dynamic>? ?? {};
           isEnabled = cfg['enabled'] ?? true;
-          tMode = (cfg['timing_mode'] ?? 'interval').toString();
-          interval = (cfg['interval_hours'] as num?)?.toInt() ?? 20;
-          schedAhead = (cfg['schedule_hours_ahead'] as num?)?.toInt() ?? 31;
+          jName = (cfg['job_name'] ?? 'GMB Automation').toString();
+          perWeek = (cfg['posts_per_week'] as num?)?.toInt() ?? 3;
           
-          final optRaw = cfg['optimal_posting_times'];
-          if (optRaw is List) {
-            optTimes = optRaw.join(', ');
-          } else if (optRaw != null) {
-            optTimes = optRaw.toString();
+          if (cfg['posting_slots'] is List) {
+            slots = (cfg['posting_slots'] as List).map((e) => e.toString()).toList();
+          }
+          if (cfg['allowed_formats'] is List) {
+            formats = (cfg['allowed_formats'] as List).map((e) => e.toString()).toList();
           }
 
-          articles = (cfg['max_articles'] as num?)?.toInt() ?? 1;
-          postsCount = (cfg['max_posts'] as num?)?.toInt() ?? 1;
           pId = cfg['persona_id']?.toString();
-          tId = cfg['template_id']?.toString();
           kgId = cfg['knowledge_group_id']?.toString();
-          genImages = cfg['generate_images'] ?? true;
-          style = (cfg['image_style'] ?? 'professional').toString();
         }
       }
 
-      // Default dropdown selection if not set
-      if ((pId == null || pId.isEmpty) && fetchedPersonas.isNotEmpty) {
-        pId = fetchedPersonas.first['id'];
-      }
-      if ((tId == null || tId.isEmpty) && fetchedTemplates.isNotEmpty) {
-        tId = fetchedTemplates.first['id'];
-      }
-      if ((kgId == null || kgId.isEmpty) && fetchedGroups.isNotEmpty) {
-        kgId = fetchedGroups.first['id'];
-      }
+      pId ??= 'socialhive';
+      kgId ??= 'SocialHive Official Group';
 
-      // 3. Fetch Review Auto-Reply Config from backend (if locationId provided)
+      // 3. Fetch Review Auto-Reply Config
       bool autoReply = state.autoReviewReply;
       int stars = state.minStars;
       bool withComments = state.onlyWithComments;
@@ -216,29 +184,23 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
       state = state.copyWith(
         isLoading: false,
         enabled: isEnabled,
-        timingMode: tMode,
-        intervalHours: interval,
-        scheduleHoursAhead: schedAhead,
-        optimalPostingTimes: optTimes,
-        maxArticles: articles,
-        maxPosts: postsCount,
+        jobName: jName,
+        postsPerWeek: perWeek,
+        postingSlots: slots,
         personaId: pId,
-        templateId: tId,
         knowledgeGroupId: kgId,
-        generateImages: genImages,
-        imageStyle: style,
+        allowedFormats: formats,
         autoReviewReply: autoReply,
         minStars: stars,
         onlyWithComments: withComments,
         personas: fetchedPersonas,
-        templates: fetchedTemplates,
         knowledgeGroups: fetchedGroups,
       );
     } catch (e) {
-      debugPrint('⚠️ Error loading automation settings: $e');
+      debugPrint('⚠️ Error loading GMB autopilot settings: $e');
       state = state.copyWith(
         isLoading: false,
-        errorMessage: 'Failed to load settings from backend',
+        errorMessage: 'Failed to load GMB Auto-Pilot settings from backend',
       );
     }
   }
@@ -255,7 +217,7 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
           rawList = data[key] ?? data['items'] ?? data['data'] ?? [];
         }
         return rawList.map<Map<String, String>>((item) {
-          final id = (item['_id'] ?? item['id'] ?? item['persona_id'] ?? item['template_id'] ?? item['group_id'] ?? '').toString();
+          final id = (item['_id'] ?? item['id'] ?? item['persona_id'] ?? item['group_id'] ?? '').toString();
           final name = (item['name'] ?? item['persona_name'] ?? item['title'] ?? id).toString();
           return {'id': id, 'name': name};
         }).where((m) => m['id']!.isNotEmpty).toList();
@@ -267,20 +229,33 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
   }
 
   void setEnabled(bool val) => state = state.copyWith(enabled: val);
-  void setTimingMode(String val) => state = state.copyWith(timingMode: val);
-  void setIntervalHours(int val) => state = state.copyWith(intervalHours: val);
-  void setScheduleHoursAhead(int val) => state = state.copyWith(scheduleHoursAhead: val);
-  void setOptimalPostingTimes(String val) => state = state.copyWith(optimalPostingTimes: val);
-  void setMaxArticles(int val) => state = state.copyWith(maxArticles: val);
-  void setMaxPosts(int val) => state = state.copyWith(maxPosts: val);
+  void setJobName(String val) => state = state.copyWith(jobName: val);
+  void setPostsPerWeek(int val) => state = state.copyWith(postsPerWeek: val);
+  
+  void addPostingSlot(String slot) {
+    if (!state.postingSlots.contains(slot)) {
+      state = state.copyWith(postingSlots: [...state.postingSlots, slot]);
+    }
+  }
+
+  void removePostingSlot(String slot) {
+    state = state.copyWith(postingSlots: state.postingSlots.where((s) => s != slot).toList());
+  }
+
+  void toggleAllowedFormat(String format) {
+    final current = List<String>.from(state.allowedFormats);
+    if (current.contains(format)) {
+      current.remove(format);
+    } else {
+      current.add(format);
+    }
+    state = state.copyWith(allowedFormats: current);
+  }
+
   void setPersonaId(String? val) => state = state.copyWith(personaId: val);
-  void setTemplateId(String? val) => state = state.copyWith(templateId: val);
   void setKnowledgeGroupId(String? val) => state = state.copyWith(knowledgeGroupId: val);
-  void setGenerateImages(bool val) => state = state.copyWith(generateImages: val);
-  void setImageStyle(String val) => state = state.copyWith(imageStyle: val);
   void setAutoReviewReply(bool val) => state = state.copyWith(autoReviewReply: val);
   void setMinStars(int val) => state = state.copyWith(minStars: val);
-  void setOnlyWithComments(bool val) => state = state.copyWith(onlyWithComments: val);
 
   Future<bool> saveSettings({String? locationId}) async {
     state = state.copyWith(isSaving: true, errorMessage: null, successMessage: null);
@@ -296,30 +271,42 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
         'Authorization': 'Bearer $token',
       };
 
-      // 1. Save Post Automation Config to backend
-      final configUri = Uri.parse('${ApiConfig.baseUrl}/api/automation/scheduler/config');
+      // 1. Save GMB Auto-Pilot Config to backend
+      final configUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/automation/config');
       final configBody = jsonEncode({
+        "location_id": locationId,
+        "job_name": state.jobName,
         "enabled": state.enabled,
-        "timing_mode": state.timingMode,
-        "interval_hours": state.intervalHours,
-        "schedule_hours_ahead": state.scheduleHoursAhead,
-        "optimal_posting_times": state.optimalPostingTimes,
-        "max_articles": state.maxArticles,
-        "max_posts": state.maxPosts,
+        "posts_per_week": state.postsPerWeek,
+        "posting_slots": state.postingSlots,
         "persona_id": state.personaId,
-        "template_id": state.templateId,
         "knowledge_group_id": state.knowledgeGroupId,
-        "generate_images": state.generateImages,
-        "image_style": state.imageStyle,
+        "allowed_formats": state.allowedFormats,
       });
 
-      final configRes = await http.put(configUri, headers: headers, body: configBody).timeout(const Duration(seconds: 10));
+      final configRes = await http.post(configUri, headers: headers, body: configBody).timeout(const Duration(seconds: 10));
 
       if (configRes.statusCode != 200) {
-        throw Exception('Failed to update automation config (${configRes.statusCode})');
+        throw Exception('Failed to save GMB Auto-Pilot config (${configRes.statusCode})');
       }
 
-      // 2. Save Review Auto-Reply Config to backend (if locationId provided)
+      // Also trigger blueprint generation & auto-scheduling on backend
+      try {
+        await http.post(
+          Uri.parse('${ApiConfig.baseUrl}/api/gmb/automation/generate-blueprint'),
+          headers: headers,
+          body: jsonEncode({
+            "location_id": locationId ?? "",
+            "posts_per_week": state.postsPerWeek,
+            "allowed_formats": state.allowedFormats,
+            "auto_schedule": true
+          }),
+        ).timeout(const Duration(seconds: 10));
+      } catch (e) {
+        debugPrint('⚠️ Blueprint trigger notification: $e');
+      }
+
+      // 2. Save Review Auto-Reply Config
       if (locationId != null && locationId.isNotEmpty) {
         final replyUri = Uri.parse(
           '${ApiConfig.baseUrl}/api/gmb/reviews/auto-reply-settings?location_id=${Uri.encodeComponent(locationId)}',
@@ -336,11 +323,11 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
 
       state = state.copyWith(
         isSaving: false,
-        successMessage: 'Automation configuration saved successfully!',
+        successMessage: 'GMB Auto-Pilot configuration saved & synced with backend!',
       );
       return true;
     } catch (e) {
-      debugPrint('❌ Error saving automation settings: $e');
+      debugPrint('❌ Error saving GMB Auto-Pilot settings: $e');
       state = state.copyWith(
         isSaving: false,
         errorMessage: 'Failed to save settings to backend. Please try again.',

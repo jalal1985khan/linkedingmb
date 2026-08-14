@@ -20,6 +20,8 @@ class AutomationSettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScreen> {
+  final _jobNameController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -31,6 +33,12 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
     });
   }
 
+  @override
+  void dispose() {
+    _jobNameController.dispose();
+    super.dispose();
+  }
+
   Widget _buildSectionCard({required String title, required Widget child}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -38,10 +46,10 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
         Text(
           title,
           style: GoogleFonts.plusJakartaSans(
-            color: const Color(0xFF94A3B8),
-            fontSize: 11,
+            color: const Color(0xFF64748B),
+            fontSize: 12,
             fontWeight: FontWeight.w800,
-            letterSpacing: 1.2,
+            letterSpacing: 1.1,
           ),
         ),
         const SizedBox(height: 8),
@@ -65,6 +73,59 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
     );
   }
 
+  Widget _buildFormatCheckboxTile({
+    required String label,
+    required String formatKey,
+    required IconData icon,
+    required bool isChecked,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: isChecked ? const Color(0xFFF8FAFC) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isChecked ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+            width: isChecked ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: isChecked ? const Color(0xFF0F172A) : Colors.white,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: isChecked ? const Color(0xFF0F172A) : const Color(0xFFCBD5E1)),
+              ),
+              child: isChecked
+                  ? const Icon(Icons.check, size: 16, color: Colors.white)
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Icon(icon, size: 20, color: isChecked ? AppColors.primaryContainer : const Color(0xFF64748B)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: isChecked ? const Color(0xFF0F172A) : const Color(0xFF475569),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final settings = ref.watch(automationSettingsProvider);
@@ -75,6 +136,10 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
     final userName = user?.name.isNotEmpty == true ? user!.name : 'GMB Account';
     final userEmail = user?.email ?? '';
     final initial = userName.isNotEmpty ? userName.substring(0, 1).toUpperCase() : 'U';
+
+    if (!settings.isLoading && _jobNameController.text != settings.jobName) {
+      _jobNameController.text = settings.jobName;
+    }
 
     final body = SafeArea(
       child: settings.isLoading
@@ -137,11 +202,6 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
                             ],
                           ),
                         ),
-                        Switch(
-                          value: settings.enabled,
-                          onChanged: controller.setEnabled,
-                          activeThumbColor: AppColors.primaryContainer,
-                        ),
                       ],
                     ),
                   ),
@@ -179,151 +239,115 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
                     ),
                   ],
 
-                  // 1. SCHEDULE & TIMING CARD
-                  _buildSectionCard(
-                    title: 'SCHEDULE & TIMING',
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  // 1. GMB AUTO-PILOT EXECUTION STATUS CARD
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFBBF7D0)),
+                    ),
+                    child: Row(
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ChoiceChip(
-                                label: Text('Interval Mode', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w600)),
-                                selected: settings.timingMode == 'interval',
-                                selectedColor: const Color(0xFFEEF2FF),
-                                labelStyle: GoogleFonts.plusJakartaSans(
-                                  color: settings.timingMode == 'interval' ? AppColors.primaryContainer : const Color(0xFF64748B),
-                                ),
-                                onSelected: (_) => controller.setTimingMode('interval'),
+                        const Icon(Icons.bolt_rounded, color: Color(0xFF16A34A), size: 24),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text('GMB Auto-Pilot Status', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 14, color: const Color(0xFF14532D))),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDCFCE7),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: const Color(0xFF86EFAC)),
+                                    ),
+                                    child: Text(
+                                      settings.enabled ? '100% Active' : 'Paused',
+                                      style: GoogleFonts.plusJakartaSans(color: const Color(0xFF15803D), fontSize: 10, fontWeight: FontWeight.w800),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: ChoiceChip(
-                                label: Text('Specific Times', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w600)),
-                                selected: settings.timingMode == 'specific',
-                                selectedColor: const Color(0xFFEEF2FF),
-                                labelStyle: GoogleFonts.plusJakartaSans(
-                                  color: settings.timingMode == 'specific' ? AppColors.primaryContainer : const Color(0xFF64748B),
-                                ),
-                                onSelected: (_) => controller.setTimingMode('specific'),
+                              const SizedBox(height: 2),
+                              Text(
+                                settings.enabled
+                                    ? 'Auto-Pilot is ACTIVE. Posts will automatically generate & publish to Google.'
+                                    : 'Auto-Pilot is PAUSED.',
+                                style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF166534)),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 18),
-
-                        if (settings.timingMode == 'interval') ...[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Run Interval', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13, color: const Color(0xFF475569))),
-                              Text('Every ${settings.intervalHours}h', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.primaryContainer)),
-                            ],
-                          ),
-                          Slider(
-                            value: settings.intervalHours.toDouble(),
-                            min: 1,
-                            max: 72,
-                            divisions: 71,
-                            activeColor: AppColors.primaryContainer,
-                            onChanged: (val) => controller.setIntervalHours(val.toInt()),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text('Schedule Ahead', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13, color: const Color(0xFF475569))),
-                              Text('${settings.scheduleHoursAhead}h ahead', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.primaryContainer)),
-                            ],
-                          ),
-                          Slider(
-                            value: settings.scheduleHoursAhead.toDouble(),
-                            min: 1,
-                            max: 72,
-                            divisions: 71,
-                            activeColor: AppColors.primaryContainer,
-                            onChanged: (val) => controller.setScheduleHoursAhead(val.toInt()),
-                          ),
-                        ] else ...[
-                          Text('Optimal Posting Times (comma separated)', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13)),
-                          const SizedBox(height: 8),
-                          TextFormField(
-                            initialValue: settings.optimalPostingTimes,
-                            onChanged: controller.setOptimalPostingTimes,
-                            decoration: InputDecoration(
-                              hintText: 'e.g. 09:00, 13:00, 17:00',
-                              filled: true,
-                              fillColor: const Color(0xFFF8F7FF),
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                            ),
-                          ),
-                        ],
+                        Switch(
+                          value: settings.enabled,
+                          onChanged: controller.setEnabled,
+                          activeThumbColor: const Color(0xFF16A34A),
+                        ),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
-                  // 2. CONTENT STRATEGY CARD
+                  // 2. AUTO-PILOT POSTING RULES & FORMATS
                   _buildSectionCard(
-                    title: 'CONTENT STRATEGY',
+                    title: 'AUTO-PILOT POSTING RULES & FORMATS',
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Job Title & Frequency Row
                         Row(
                           children: [
                             Expanded(
+                              flex: 3,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Articles', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13)),
+                                  Text('Automation Job Title', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFF475569))),
                                   const SizedBox(height: 6),
-                                  DropdownButtonFormField<int>(
-                                    initialValue: settings.maxArticles,
+                                  TextFormField(
+                                    controller: _jobNameController,
+                                    onChanged: controller.setJobName,
                                     decoration: InputDecoration(
+                                      hintText: 'GMB Automation',
                                       filled: true,
-                                      fillColor: const Color(0xFFF8F7FF),
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                      fillColor: const Color(0xFFF8FAFC),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
                                     ),
-                                    items: [1, 2, 3, 5, 10].map((val) {
-                                      return DropdownMenuItem<int>(
-                                        value: val,
-                                        child: Text('$val article${val > 1 ? 's' : ''}', style: GoogleFonts.plusJakartaSans(fontSize: 13)),
-                                      );
-                                    }).toList(),
-                                    onChanged: (val) {
-                                      if (val != null) controller.setMaxArticles(val);
-                                    },
                                   ),
                                 ],
                               ),
                             ),
                             const SizedBox(width: 14),
                             Expanded(
+                              flex: 2,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Posts', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13)),
+                                  Text('Weekly Frequency', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFF475569))),
                                   const SizedBox(height: 6),
                                   DropdownButtonFormField<int>(
-                                    initialValue: settings.maxPosts,
+                                    initialValue: settings.postsPerWeek,
                                     decoration: InputDecoration(
                                       filled: true,
-                                      fillColor: const Color(0xFFF8F7FF),
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                      fillColor: const Color(0xFFF8FAFC),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
                                     ),
-                                    items: [1, 2, 3, 5].map((val) {
+                                    items: [1, 2, 3, 5, 7].map((freq) {
                                       return DropdownMenuItem<int>(
-                                        value: val,
-                                        child: Text('$val post${val > 1 ? 's' : ''}', style: GoogleFonts.plusJakartaSans(fontSize: 13)),
+                                        value: freq,
+                                        child: Text('$freq / wk', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700)),
                                       );
                                     }).toList(),
                                     onChanged: (val) {
-                                      if (val != null) controller.setMaxPosts(val);
+                                      if (val != null) controller.setPostsPerWeek(val);
                                     },
                                   ),
                                 ],
@@ -331,18 +355,79 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
                             ),
                           ],
                         ),
-                        const SizedBox(height: 16),
 
-                        // Persona Selector
-                        Text('Persona', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13)),
+                        const SizedBox(height: 20),
+
+                        // Local Search Peak Schedule Times Box
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.schedule_rounded, size: 18, color: AppColors.primaryContainer),
+                                  const SizedBox(width: 8),
+                                  Text('Local Search Peak Schedule Times', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 13)),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text('Times when local customers search for services on Google Maps.', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B))),
+                              const SizedBox(height: 12),
+
+                              Text('SELECTED POSTING SLOTS (${settings.postingSlots.length})', style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8))),
+                              const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: settings.postingSlots.map((slot) {
+                                  return Chip(
+                                    backgroundColor: Colors.white,
+                                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                                    avatar: const Icon(Icons.access_time_rounded, size: 14, color: AppColors.primaryContainer),
+                                    label: Text(slot, style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700)),
+                                    deleteIcon: const Icon(Icons.close_rounded, size: 14, color: Color(0xFF64748B)),
+                                    onDeleted: () => controller.removePostingSlot(slot),
+                                  );
+                                }).toList(),
+                              ),
+
+                              const SizedBox(height: 12),
+                              Text('Add Quick Local Peak Slot:', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B))),
+                              const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: ['+ 8:00 AM', '+ 9:00 AM', '+ 10:00 AM', '+ 12:00 PM', '+ 1:00 PM', '+ 3:00 PM', '+ 5:00 PM', '+ 7:00 PM'].map((slotText) {
+                                  final cleanSlot = slotText.replaceAll('+ ', '');
+                                  final isAlreadyAdded = settings.postingSlots.contains(cleanSlot);
+                                  return ActionChip(
+                                    label: Text(slotText, style: GoogleFonts.plusJakartaSans(fontSize: 11, fontWeight: FontWeight.w600)),
+                                    backgroundColor: isAlreadyAdded ? const Color(0xFFE2E8F0) : Colors.white,
+                                    onPressed: isAlreadyAdded ? null : () => controller.addPostingSlot(cleanSlot),
+                                  );
+                                }).toList(),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // AI Persona & Voice Dropdown
+                        Text('AI Persona & Voice', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFF475569))),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
-                          initialValue: settings.personas.any((p) => p['id'] == settings.personaId) ? settings.personaId : null,
+                          initialValue: settings.personas.any((p) => p['id'] == settings.personaId) ? settings.personaId : 'socialhive',
                           decoration: InputDecoration(
-                            hintText: 'Select Persona',
                             filled: true,
-                            fillColor: const Color(0xFFF8F7FF),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            fillColor: const Color(0xFFF8FAFC),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
                           ),
                           items: settings.personas.map((p) {
@@ -353,40 +438,18 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
                           }).toList(),
                           onChanged: controller.setPersonaId,
                         ),
+
                         const SizedBox(height: 16),
 
-                        // Template Selector
-                        Text('Template', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13)),
+                        // Knowledge Base Group Dropdown
+                        Text('Knowledge Base Group', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFF475569))),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<String>(
-                          initialValue: settings.templates.any((t) => t['id'] == settings.templateId) ? settings.templateId : null,
+                          initialValue: settings.knowledgeGroups.any((k) => k['id'] == settings.knowledgeGroupId) ? settings.knowledgeGroupId : 'SocialHive Official Group',
                           decoration: InputDecoration(
-                            hintText: 'Default New Template',
                             filled: true,
-                            fillColor: const Color(0xFFF8F7FF),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                          ),
-                          items: settings.templates.map((t) {
-                            return DropdownMenuItem<String>(
-                              value: t['id'],
-                              child: Text(t['name']!, style: GoogleFonts.plusJakartaSans(fontSize: 13), overflow: TextOverflow.ellipsis),
-                            );
-                          }).toList(),
-                          onChanged: controller.setTemplateId,
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Knowledge Group Selector
-                        Text('Knowledge Group', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13)),
-                        const SizedBox(height: 6),
-                        DropdownButtonFormField<String>(
-                          initialValue: settings.knowledgeGroups.any((k) => k['id'] == settings.knowledgeGroupId) ? settings.knowledgeGroupId : null,
-                          decoration: InputDecoration(
-                            hintText: 'Select RSS / Knowledge Group',
-                            filled: true,
-                            fillColor: const Color(0xFFF8F7FF),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            fillColor: const Color(0xFFF8FAFC),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
                           ),
                           items: settings.knowledgeGroups.map((k) {
@@ -403,54 +466,66 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
 
                   const SizedBox(height: 20),
 
-                  // 3. VISUALS CARD
+                  // 3. ALLOWED GMB CONTENT FORMATS CARD
                   _buildSectionCard(
-                    title: 'VISUALS',
+                    title: 'ALLOWED GMB CONTENT FORMATS',
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Generate Images', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 14)),
-                                  const SizedBox(height: 2),
-                                  Text('Automatically create AI graphics for each post.', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B))),
-                                ],
-                              ),
-                            ),
-                            Switch(
-                              value: settings.generateImages,
-                              onChanged: controller.setGenerateImages,
-                              activeThumbColor: AppColors.primaryContainer,
-                            ),
-                          ],
+                        _buildFormatCheckboxTile(
+                          label: 'AI Motion Video Reels',
+                          formatKey: 'video_reels',
+                          icon: Icons.videocam_outlined,
+                          isChecked: settings.allowedFormats.contains('video_reels'),
+                          onTap: () => controller.toggleAllowedFormat('video_reels'),
                         ),
-                        const SizedBox(height: 16),
-                        Text('Image Style', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13)),
-                        const SizedBox(height: 6),
-                        DropdownButtonFormField<String>(
-                          initialValue: ['professional', 'modern', 'vibrant', 'minimalist', 'realistic'].contains(settings.imageStyle.toLowerCase())
-                              ? settings.imageStyle.toLowerCase()
-                              : 'professional',
-                          decoration: InputDecoration(
-                            filled: true,
-                            fillColor: const Color(0xFFF8F7FF),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                          ),
-                          items: ['professional', 'modern', 'vibrant', 'minimalist', 'realistic'].map((st) {
-                            return DropdownMenuItem<String>(
-                              value: st,
-                              child: Text(st[0].toUpperCase() + st.substring(1), style: GoogleFonts.plusJakartaSans(fontSize: 13)),
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null) controller.setImageStyle(val);
-                          },
+                        const SizedBox(height: 10),
+                        _buildFormatCheckboxTile(
+                          label: 'Branded Images & Graphics',
+                          formatKey: 'branded_images',
+                          icon: Icons.image_outlined,
+                          isChecked: settings.allowedFormats.contains('branded_images'),
+                          onTap: () => controller.toggleAllowedFormat('branded_images'),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildFormatCheckboxTile(
+                          label: 'Promotional Offers & Deals',
+                          formatKey: 'promotional_offers',
+                          icon: Icons.local_offer_outlined,
+                          isChecked: settings.allowedFormats.contains('promotional_offers'),
+                          onTap: () => controller.toggleAllowedFormat('promotional_offers'),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildFormatCheckboxTile(
+                          label: 'Events & Announcements',
+                          formatKey: 'events_announcements',
+                          icon: Icons.event_outlined,
+                          isChecked: settings.allowedFormats.contains('events_announcements'),
+                          onTap: () => controller.toggleAllowedFormat('events_announcements'),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildFormatCheckboxTile(
+                          label: 'Product Spotlights',
+                          formatKey: 'product_spotlights',
+                          icon: Icons.shopping_bag_outlined,
+                          isChecked: settings.allowedFormats.contains('product_spotlights'),
+                          onTap: () => controller.toggleAllowedFormat('product_spotlights'),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildFormatCheckboxTile(
+                          label: 'Service Highlights',
+                          formatKey: 'service_highlights',
+                          icon: Icons.build_outlined,
+                          isChecked: settings.allowedFormats.contains('service_highlights'),
+                          onTap: () => controller.toggleAllowedFormat('service_highlights'),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildFormatCheckboxTile(
+                          label: 'Quick Tips & Text Updates',
+                          formatKey: 'quick_tips',
+                          icon: Icons.article_outlined,
+                          isChecked: settings.allowedFormats.contains('quick_tips'),
+                          onTap: () => controller.toggleAllowedFormat('quick_tips'),
                         ),
                       ],
                     ),
@@ -520,10 +595,10 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
                   // SAVE BUTTON
                   SizedBox(
                     width: double.infinity,
-                    height: 52,
+                    height: 54,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryContainer,
+                        backgroundColor: const Color(0xFF0F172A),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -537,7 +612,7 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
                               if (success && context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('✅ Automation configuration saved to backend MongoDB!'),
+                                    content: Text('✨ GMB Auto-Pilot Configuration updated & synced live!'),
                                     backgroundColor: Color(0xFF16A34A),
                                   ),
                                 );
@@ -545,14 +620,14 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
                             },
                       icon: settings.isSaving
                           ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Icon(Icons.save_rounded, size: 20),
+                          : const Icon(Icons.auto_awesome_rounded, size: 20),
                       label: Text(
-                        settings.isSaving ? 'Saving to Backend...' : 'Save Automation Config',
-                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 15),
+                        settings.isSaving ? 'Saving Auto-Pilot Rules...' : 'Save & Update GMB Auto-Pilot',
+                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 15),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                 ],
               ),
             ),
@@ -569,7 +644,7 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
           icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1E1B4B)),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text('Automation Config', style: GoogleFonts.plusJakartaSans(color: const Color(0xFF1E1B4B), fontWeight: FontWeight.w700, fontSize: 18)),
+        title: Text('GMB Auto-Pilot Hub', style: GoogleFonts.plusJakartaSans(color: const Color(0xFF1E1B4B), fontWeight: FontWeight.w700, fontSize: 18)),
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
