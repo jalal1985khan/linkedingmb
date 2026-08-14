@@ -62,28 +62,12 @@ class GMBLocationStats {
         _competitorRank = competitorRank,
         _competitors = competitors;
 
-  String get impressionsChange => (_impressionsChange != null && _impressionsChange.isNotEmpty) ? _impressionsChange : '+12.5%';
-  String get callsChange => (_callsChange != null && _callsChange.isNotEmpty) ? _callsChange : '+12%';
-  String get directionsChange => (_directionsChange != null && _directionsChange.isNotEmpty) ? _directionsChange : '+18%';
-  String get websiteClicksChange => (_websiteClicksChange != null && _websiteClicksChange.isNotEmpty) ? _websiteClicksChange : '+8%';
-  String get competitorRank {
-    if (_competitorRank != null && _competitorRank.isNotEmpty && _competitorRank != 'N/A') {
-      return _competitorRank;
-    }
-    final score = totalImpressions + (totalInteractions * 8);
-    if (score >= 150) return '#1';
-    if (score >= 50) return '#2';
-    if (score >= 15) return '#3';
-    return '#1';
-  }
-
-  List<CompetitorItem> get competitors {
-    if (_competitors.isNotEmpty) return _competitors;
-    return const [
-      CompetitorItem(name: 'Local Market Leader', matchPercentage: 92),
-      CompetitorItem(name: 'Regional Business Competitor', matchPercentage: 76),
-    ];
-  }
+  String get impressionsChange => (_impressionsChange != null && _impressionsChange.isNotEmpty) ? _impressionsChange : '+0%';
+  String get callsChange => (_callsChange != null && _callsChange.isNotEmpty) ? _callsChange : '+0%';
+  String get directionsChange => (_directionsChange != null && _directionsChange.isNotEmpty) ? _directionsChange : '+0%';
+  String get websiteClicksChange => (_websiteClicksChange != null && _websiteClicksChange.isNotEmpty) ? _websiteClicksChange : '+0%';
+  String get competitorRank => (_competitorRank != null && _competitorRank.isNotEmpty) ? _competitorRank : '#1';
+  List<CompetitorItem> get competitors => _competitors;
 
   int get totalImpressions {
     if (views > 0 || searches > 0) {
