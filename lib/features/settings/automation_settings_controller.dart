@@ -336,12 +336,16 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
         'Authorization': 'Bearer $token',
       };
 
+      final safeAccountTarget = (locationId != null && locationId.trim().isNotEmpty) ? locationId : "personal_default";
+
       final payload = {
         "location_id": locationId,
+        "target_account_id": safeAccountTarget,
         "job_name": state.jobName,
         "enabled": state.enabled,
         "posts_per_week": state.postsPerWeek,
         "posting_slots": state.postingSlots,
+        "optimal_posting_times": state.postingSlots.join(', '),
         "persona_id": state.personaId,
         "knowledge_group_id": state.knowledgeGroupId,
         "allowed_formats": state.allowedFormats,
@@ -350,15 +354,16 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
       // 1. Save GMB Auto-Pilot Config to BOTH endpoints in parallel for 100% Web & Mobile sync
       final webConfigPayload = {
         "enabled": state.enabled,
-        "target_account_id": locationId ?? "",
+        "target_account_id": safeAccountTarget,
         "job_name": state.jobName,
         "posts_per_week": state.postsPerWeek,
         "max_posts": state.postsPerWeek,
         "posting_slots": state.postingSlots,
-        "optimal_posting_times": state.postingSlots.join(','),
+        "optimal_posting_times": state.postingSlots.join(', '),
         "persona_id": state.personaId,
         "knowledge_group_id": state.knowledgeGroupId,
         "allowed_formats": state.allowedFormats,
+        "content_formats": state.allowedFormats,
         "max_articles": 5,
         "interval_hours": 15,
         "schedule_hours_ahead": 24,
