@@ -232,6 +232,10 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
   void setJobName(String val) => state = state.copyWith(jobName: val);
   void setPostsPerWeek(int val) => state = state.copyWith(postsPerWeek: val);
   
+  void setPostingSlots(List<String> slots) {
+    state = state.copyWith(postingSlots: slots);
+  }
+
   void addPostingSlot(String slot) {
     if (!state.postingSlots.contains(slot)) {
       state = state.copyWith(postingSlots: [...state.postingSlots, slot]);

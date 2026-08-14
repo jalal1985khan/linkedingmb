@@ -384,8 +384,35 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
                                 ],
                               ),
                               const SizedBox(height: 2),
-                              Text('Times when local customers search for services on Google Maps.', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B))),
                               const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  ActionChip(
+                                    avatar: const Icon(Icons.auto_awesome_rounded, size: 14, color: AppColors.primaryContainer),
+                                    label: Text('Recommended Peak', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700)),
+                                    backgroundColor: Colors.white,
+                                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                                    onPressed: () => controller.setPostingSlots(['9:00 AM', '1:00 PM', '5:00 PM']),
+                                  ),
+                                  ActionChip(
+                                    avatar: const Icon(Icons.wb_sunny_outlined, size: 14, color: Color(0xFFF59E0B)),
+                                    label: Text('Business Hours', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700)),
+                                    backgroundColor: Colors.white,
+                                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                                    onPressed: () => controller.setPostingSlots(['10:00 AM', '1:00 PM', '4:00 PM']),
+                                  ),
+                                  ActionChip(
+                                    avatar: const Icon(Icons.nightlight_round_outlined, size: 14, color: Color(0xFF6366F1)),
+                                    label: Text('Evening Demand', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700)),
+                                    backgroundColor: Colors.white,
+                                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                                    onPressed: () => controller.setPostingSlots(['6:00 PM', '8:00 PM', '9:00 PM']),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
 
                               Text('SELECTED POSTING SLOTS (${settings.postingSlots.length})', style: GoogleFonts.plusJakartaSans(fontSize: 10, fontWeight: FontWeight.w800, color: const Color(0xFF94A3B8))),
                               const SizedBox(height: 6),
