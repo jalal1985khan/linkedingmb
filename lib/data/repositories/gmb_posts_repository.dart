@@ -8,10 +8,15 @@ import '../../core/config/api_config.dart';
 class GMBPostRequest {
   final String locationName;
   final String summary;
-  final String? topicType; // STANDARD, EVENT, OFFER
-  final String? callToActionType; // LEARN_MORE, CALL, BOOK, SHOP, GET_OFFER
+  final String topicType; // STANDARD, EVENT, OFFER
+  final String? callToActionType; // NONE, BOOK, ORDER, SHOP, LEARN_MORE, SIGN_UP, CALL
   final String? callToActionUrl;
   final String? mediaUrl;
+  final String? eventTitle;
+  final Map<String, dynamic>? eventSchedule;
+  final String? couponCode;
+  final String? redeemUrl;
+  final String? termsConditions;
   final String? scheduledTime;
 
   const GMBPostRequest({
@@ -21,6 +26,11 @@ class GMBPostRequest {
     this.callToActionType,
     this.callToActionUrl,
     this.mediaUrl,
+    this.eventTitle,
+    this.eventSchedule,
+    this.couponCode,
+    this.redeemUrl,
+    this.termsConditions,
     this.scheduledTime,
   });
 
@@ -28,18 +38,43 @@ class GMBPostRequest {
     final body = <String, dynamic>{
       'location_name': locationName,
       'summary': summary,
-      'topic_type': topicType ?? 'STANDARD',
+      'topic_type': topicType,
     };
 
-    if (callToActionType != null && callToActionType!.isNotEmpty) {
+    if (callToActionType != null && callToActionType != 'NONE') {
+      body['call_to_action'] = {
+        'actionType': callToActionType,
+        'url': callToActionUrl ?? '',
+      };
       body['action_type'] = callToActionType;
-      if (callToActionUrl != null && callToActionUrl!.isNotEmpty) {
-        body['action_url'] = callToActionUrl;
-      }
+      body['action_url'] = callToActionUrl ?? '';
     }
 
     if (mediaUrl != null && mediaUrl!.isNotEmpty) {
       body['media_url'] = mediaUrl;
+      body['media'] = [
+        {
+          'mediaFormat': 'PHOTO',
+          'sourceUrl': mediaUrl,
+        }
+      ];
+    }
+
+    if (topicType == 'EVENT' || topicType == 'OFFER') {
+      if (eventTitle != null && eventTitle!.isNotEmpty) {
+        body['event'] = {
+          'title': eventTitle,
+          if (eventSchedule != null) 'schedule': eventSchedule,
+        };
+      }
+    }
+
+    if (topicType == 'OFFER') {
+      final offerObj = <String, dynamic>{};
+      if (couponCode != null && couponCode!.isNotEmpty) offerObj['couponCode'] = couponCode;
+      if (redeemUrl != null && redeemUrl!.isNotEmpty) offerObj['redeemOnlineUrl'] = redeemUrl;
+      if (termsConditions != null && termsConditions!.isNotEmpty) offerObj['termsConditions'] = termsConditions;
+      if (offerObj.isNotEmpty) body['offer'] = offerObj;
     }
 
     if (scheduledTime != null && scheduledTime!.isNotEmpty) {
@@ -77,6 +112,7 @@ class GMBPostsRepository {
       );
 
       debugPrint('📝 Post create status: ${response.statusCode}');
+      debugPrint('📝 Post create body: ${response.body}');
       return response.statusCode == 200;
     } catch (e) {
       debugPrint('❌ Error creating GMB post: $e');
