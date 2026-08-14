@@ -449,17 +449,12 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
     required bool isDark,
     required Color borderColor,
   }) {
-    final competitorsList = stats.competitors.isNotEmpty
-        ? stats.competitors
-        : const [
-            CompetitorItem(name: 'Urban Brew Coffee', matchPercentage: 98),
-            CompetitorItem(name: 'City Roast & Co.', matchPercentage: 82),
-          ];
+    final competitorsList = stats.competitors;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A), // Dark navy container
+        color: const Color(0xFF0F172A),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: isDark ? const Color(0xFF334155) : Colors.transparent),
       ),
@@ -491,18 +486,17 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
                 ],
               ),
               Container(
-                width: 50,
-                height: 50,
-                decoration: const BoxDecoration(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
                   color: AppColors.primary,
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   stats.competitorRank,
                   style: GoogleFonts.inter(
                     color: Colors.white,
-                    fontSize: 20,
+                    fontSize: 16,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -511,62 +505,81 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
 
-          // Competitors List
-          ...competitorsList.map((comp) {
-            final percentage = comp.matchPercentage / 100.0;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 16.0),
-              child: Column(
+          if (competitorsList.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12.0),
+              child: Row(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        comp.name,
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
+                  const Icon(Icons.info_outline_rounded, color: Color(0xFF94A3B8), size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Search visibility benchmarking is actively tracking local competitors.',
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF94A3B8),
+                        fontSize: 13,
                       ),
-                      Text(
-                        '${comp.matchPercentage}% Match',
-                        style: GoogleFonts.inter(
-                          color: const Color(0xFF38BDF8),
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Stack(
-                    children: [
-                      Container(
-                        height: 6,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                      ),
-                      FractionallySizedBox(
-                        widthFactor: percentage.clamp(0.05, 1.0),
-                        child: Container(
-                          height: 6,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(3),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF38BDF8), AppColors.primary],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
-            );
-          }),
+            )
+          else
+            ...competitorsList.map((comp) {
+              final percentage = comp.matchPercentage / 100.0;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          comp.name,
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          '${comp.matchPercentage}% Match',
+                          style: GoogleFonts.inter(
+                            color: const Color(0xFF38BDF8),
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Stack(
+                      children: [
+                        Container(
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                        ),
+                        FractionallySizedBox(
+                          widthFactor: percentage.clamp(0.05, 1.0),
+                          child: Container(
+                            height: 6,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(3),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF38BDF8), AppColors.primary],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }),
 
           const SizedBox(height: 12),
 
