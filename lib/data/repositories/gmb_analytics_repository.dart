@@ -104,7 +104,7 @@ class GMBAnalyticsRepository {
       try {
         final appDashUrl = isAllOrEmpty
             ? '${ApiConfig.baseUrl}/api/gmb/app-dashboard'
-            : '${ApiConfig.baseUrl}/api/gmb/app-dashboard?location_id=${Uri.encodeComponent(locationId!)}';
+            : '${ApiConfig.baseUrl}/api/gmb/app-dashboard?location_id=${Uri.encodeComponent(locationId)}';
         final response = await _httpClient.get(
           Uri.parse(appDashUrl),
           headers: {
@@ -135,7 +135,7 @@ class GMBAnalyticsRepository {
       try {
         final chartUrl = isAllOrEmpty
             ? '${ApiConfig.baseUrl}/api/dashboard/activity-chart'
-            : '${ApiConfig.baseUrl}/api/dashboard/activity-chart?author_urn=${Uri.encodeComponent(locationId!)}';
+            : '${ApiConfig.baseUrl}/api/dashboard/activity-chart?author_urn=${Uri.encodeComponent(locationId)}';
         final response = await _httpClient.get(
           Uri.parse(chartUrl),
           headers: {
@@ -166,7 +166,7 @@ class GMBAnalyticsRepository {
         int postedCount = 0;
 
         final accParam = (useLocation && !isAllOrEmpty)
-            ? '&account_id=${Uri.encodeComponent(locationId!)}'
+            ? '&account_id=${Uri.encodeComponent(locationId)}'
             : '';
 
         // a) Query /api/scheduler/posts/generated?platform=all (Matching Web lib/api/dashboard.ts line 93)
@@ -228,7 +228,7 @@ class GMBAnalyticsRepository {
         // d) Query /api/gmb/posts if location specified
         if (useLocation && !isAllOrEmpty) {
           try {
-            final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts?location_id=${Uri.encodeComponent(locationId!)}');
+            final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts?location_id=${Uri.encodeComponent(locationId)}');
             final response = await _httpClient.get(gmbUri, headers: {'Authorization': 'Bearer $token'});
             if (response.statusCode == 200) {
               final decoded = jsonDecode(response.body);
@@ -237,7 +237,11 @@ class GMBAnalyticsRepository {
                 for (final item in list) {
                   if (item is Map) {
                     final isAi = item['is_ai_generated'] == true || item['is_ai'] == true || item['model_used'] != null;
-                    if (isAi) aiCount++; else manualCount++;
+                    if (isAi) {
+                      aiCount++;
+                    } else {
+                      manualCount++;
+                    }
                     final st = item['status']?.toString().toUpperCase() ?? '';
                     if (st == 'LIVE' || st == 'POSTED' || st == 'PUBLISHED' || st == 'SUCCESS' || st == 'COMPLETED') {
                       postedCount++;

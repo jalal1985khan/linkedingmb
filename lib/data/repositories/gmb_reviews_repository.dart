@@ -37,11 +37,17 @@ class GMBReviewItem {
         final s = json['starRating'].toString().toUpperCase();
         if (s.contains('FIVE')) {
           rating = 5;
-        } else if (s.contains('FOUR')) rating = 4;
-        else if (s.contains('THREE')) rating = 3;
-        else if (s.contains('TWO')) rating = 2;
-        else if (s.contains('ONE')) rating = 1;
-        else rating = int.tryParse(s) ?? 5;
+        } else if (s.contains('FOUR')) {
+          rating = 4;
+        } else if (s.contains('THREE')) {
+          rating = 3;
+        } else if (s.contains('TWO')) {
+          rating = 2;
+        } else if (s.contains('ONE')) {
+          rating = 1;
+        } else {
+          rating = int.tryParse(s) ?? 5;
+        }
       }
     }
 
