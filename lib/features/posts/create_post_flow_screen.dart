@@ -536,7 +536,9 @@ class _CreatePostFlowScreenState extends ConsumerState<CreatePostFlowScreen> {
               label: 'Post Media / Photo (Optional)',
               subtitle: 'Select an image from gallery or take a photo with camera.',
               onMediaSelected: (pathOrUrl) {
-                _mediaUrlController.text = pathOrUrl;
+                setState(() {
+                  _mediaUrlController.text = pathOrUrl;
+                });
               },
             ),
             const SizedBox(height: 16),

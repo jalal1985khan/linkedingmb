@@ -292,7 +292,9 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
             label: 'Post Media / Image',
             subtitle: 'Select an image from gallery, take a photo, or provide a URL.',
             onMediaSelected: (pathOrUrl) {
-              _mediaUrlController.text = pathOrUrl;
+              setState(() {
+                _mediaUrlController.text = pathOrUrl;
+              });
             },
           ),
         ],
