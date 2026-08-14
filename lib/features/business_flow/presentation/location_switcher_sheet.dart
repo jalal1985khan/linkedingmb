@@ -162,31 +162,6 @@ class _LocationSwitcherSheetState
             ),
           ),
 
-          const SizedBox(height: 16),
-
-          // Add New Location Action
-          OutlinedButton.icon(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Navigate to business onboarding flow
-            },
-            icon: const Icon(Icons.add_location_alt_outlined, size: 18),
-            label: Text(
-              'Connect New GMB Location',
-              style: GoogleFonts.plusJakartaSans(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF6366F1),
-              side: const BorderSide(color: Color(0xFFC7D2FE)),
-              minimumSize: const Size.fromHeight(48),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-          ),
         ],
       ),
     );
