@@ -13,10 +13,7 @@ class BusinessProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<BusinessProfileScreen> createState() => _BusinessProfileScreenState();
 }
 
-class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController;
-
+class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   late final TextEditingController _nameController;
   late final TextEditingController _categoryController;
   late final TextEditingController _descriptionController;
@@ -41,8 +38,6 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
-
     final business = ref.read(selectedBusinessProvider);
     _nameController = TextEditingController(text: business?.name ?? '');
     _categoryController = TextEditingController(text: business?.category ?? '');
@@ -65,7 +60,6 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen>
 
   @override
   void dispose() {
-    _tabController.dispose();
     _nameController.dispose();
     _categoryController.dispose();
     _descriptionController.dispose();
@@ -96,72 +90,73 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen>
 
     final profileScore = ref.watch(profileCompletenessProvider(business));
 
-    return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFAFAFAF).withValues(alpha: 0.05),
-      appBar: AppBar(
-        title: const Text('Business Profile', style: TextStyle(fontWeight: FontWeight.bold)),
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: ElevatedButton.icon(
-              onPressed: _saving ? null : () => _saveProfile(business),
-              icon: _saving
-                  ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.check, size: 16),
-              label: Text(_saving ? 'Saving...' : 'Save'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    return DefaultTabController(
+      length: 4,
+      child: Scaffold(
+        backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFAFAFAF).withValues(alpha: 0.05),
+        appBar: AppBar(
+          title: const Text('Business Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+          elevation: 0,
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: ElevatedButton.icon(
+                onPressed: _saving ? null : () => _saveProfile(business),
+                icon: _saving
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.check, size: 16),
+                label: Text(_saving ? 'Saving...' : 'Save'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Business Identity Card & Profile Strength Header
-          _buildHeaderCard(context, business, profileScore, isDark),
+          ],
+        ),
+        body: Column(
+          children: [
+            // Business Identity Card & Profile Strength Header
+            _buildHeaderCard(context, business, profileScore, isDark),
 
-          // Navigation Tabs
-          Container(
-            color: isDark ? const Color(0xFF1E293B) : Colors.white,
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              labelColor: AppColors.primary,
-              unselectedLabelColor: isDark ? Colors.white70 : AppColors.textSecondary,
-              indicatorColor: AppColors.primary,
-              indicatorWeight: 3,
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-              tabs: const [
-                Tab(icon: Icon(Icons.info_outline, size: 18), text: 'Basic Info'),
-                Tab(icon: Icon(Icons.location_on_outlined, size: 18), text: 'Contact & Location'),
-                Tab(icon: Icon(Icons.access_time_outlined, size: 18), text: 'Operating Hours'),
-                Tab(icon: Icon(Icons.auto_awesome_outlined, size: 18), text: 'Brand & AI Persona'),
-              ],
+            // Navigation Tabs
+            Container(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              child: TabBar(
+                isScrollable: true,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: isDark ? Colors.white70 : AppColors.textSecondary,
+                indicatorColor: AppColors.primary,
+                indicatorWeight: 3,
+                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                tabs: const [
+                  Tab(icon: Icon(Icons.info_outline, size: 18), text: 'Basic Info'),
+                  Tab(icon: Icon(Icons.location_on_outlined, size: 18), text: 'Contact & Location'),
+                  Tab(icon: Icon(Icons.access_time_outlined, size: 18), text: 'Operating Hours'),
+                  Tab(icon: Icon(Icons.auto_awesome_outlined, size: 18), text: 'Brand & AI Persona'),
+                ],
+              ),
             ),
-          ),
 
-          // Tab Views
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildBasicInfoTab(isDark),
-                _buildContactLocationTab(isDark),
-                _buildHoursTab(isDark),
-                _buildBrandPersonaTab(isDark),
-              ],
+            // Tab Views
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildBasicInfoTab(isDark),
+                  _buildContactLocationTab(isDark),
+                  _buildHoursTab(isDark),
+                  _buildBrandPersonaTab(isDark),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
