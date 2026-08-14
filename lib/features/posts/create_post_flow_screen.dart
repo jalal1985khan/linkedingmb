@@ -252,10 +252,17 @@ class _CreatePostFlowScreenState extends ConsumerState<CreatePostFlowScreen> {
         children: [
           Row(
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 20,
-                backgroundImage: AssetImage('assets/images/user_avatar.jpg'),
-                backgroundColor: AppColors.surfaceContainer,
+                backgroundColor: AppColors.primaryContainer.withValues(alpha: 0.15),
+                child: Text(
+                  businessName.isNotEmpty ? businessName.substring(0, 1).toUpperCase() : 'B',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: AppColors.primaryContainer,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(

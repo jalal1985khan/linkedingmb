@@ -25,6 +25,11 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
     final settings = ref.watch(automationSettingsProvider);
     final controller = ref.read(automationSettingsProvider.notifier);
 
+    final user = ref.watch(authControllerProvider).valueOrNull;
+    final userName = user?.name.isNotEmpty == true ? user!.name : 'GMB Account';
+    final userEmail = user?.email ?? '';
+    final initial = userName.isNotEmpty ? userName.substring(0, 1).toUpperCase() : 'U';
+
     final body = SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -43,18 +48,26 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
               ),
               child: Row(
                 children: [
-                  const CircleAvatar(
-                    radius: 30,
-                    backgroundImage: AssetImage('assets/images/user_avatar.jpg'),
+                  CircleAvatar(
+                    radius: 26,
+                    backgroundColor: AppColors.primaryContainer.withValues(alpha: 0.15),
+                    child: Text(
+                      initial,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 20,
+                        color: AppColors.primaryContainer,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Sarah Jenkins', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                        const SizedBox(height: 4),
-                        Text('CEO, Nexus Dynamics', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                        Text(userName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                        const SizedBox(height: 2),
+                        Text(userEmail, style: TextStyle(fontSize: 12, color: Colors.grey.shade600), maxLines: 1, overflow: TextOverflow.ellipsis),
                       ],
                     ),
                   ),
