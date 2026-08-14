@@ -8,6 +8,8 @@ import '../../../data/models/app_user.dart';
 import '../../../data/repositories/backend_auth_repository.dart';
 import '../../../data/repositories/backend_business_repository.dart';
 
+import 'user_credits_provider.dart';
+
 class AuthState {
   final bool isInitializing;
   final bool isAuthenticated;
@@ -46,8 +48,9 @@ final backendBusinessRepoProvider = Provider((ref) => BackendBusinessRepository(
 class AuthNotifier extends StateNotifier<AuthState> {
   final BackendAuthRepository _authRepo;
   final BackendBusinessRepository _businessRepo;
+  final UserCreditsNotifier? _creditsNotifier;
 
-  AuthNotifier(this._authRepo, this._businessRepo) : super(const AuthState()) {
+  AuthNotifier(this._authRepo, this._businessRepo, [this._creditsNotifier]) : super(const AuthState()) {
     _initialize();
   }
 
@@ -124,6 +127,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(isInitializing: true, errorMessage: null);
       final user = await _authRepo.loginWithEmail(email, password);
       final hasBusiness = await _checkBusinessProfile(user.id);
+      _creditsNotifier?.fetchCredits();
       state = state.copyWith(
         isInitializing: false,
         isAuthenticated: true,
@@ -147,7 +151,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       final user = await _authRepo.signInWithBackendToken(token);
       final hasBusiness = await _checkBusinessProfile(user.id);
-
+      _creditsNotifier?.fetchCredits();
       state = state.copyWith(
         isInitializing: false,
         isAuthenticated: true,
@@ -196,6 +200,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   final authRepo = ref.watch(backendAuthRepoProvider);
   final businessRepo = ref.watch(backendBusinessRepoProvider);
-  return AuthNotifier(authRepo, businessRepo);
+  final creditsNotifier = ref.watch(userCreditsProvider.notifier);
+  return AuthNotifier(authRepo, businessRepo, creditsNotifier);
 });
 

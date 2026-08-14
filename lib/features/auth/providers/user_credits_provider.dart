@@ -23,9 +23,17 @@ class UserCredits {
   bool get isLowCredits => availableCredits <= 10;
 
   factory UserCredits.fromJson(Map<String, dynamic> json) {
-    final creditsObj = json['credits'] is Map<String, dynamic>
-        ? json['credits']
-        : <String, dynamic>{};
+    Map<String, dynamic> target = json;
+    if (json['subscription'] is Map<String, dynamic>) {
+      target = json['subscription'] as Map<String, dynamic>;
+    }
+
+    Map<String, dynamic> creditsObj = target;
+    if (target['credits'] is Map<String, dynamic>) {
+      creditsObj = target['credits'] as Map<String, dynamic>;
+    } else if (json['credits'] is Map<String, dynamic>) {
+      creditsObj = json['credits'] as Map<String, dynamic>;
+    }
 
     int parseVal(dynamic v) {
       if (v is int) return v;
@@ -34,11 +42,33 @@ class UserCredits {
       return 0;
     }
 
+    final available = parseVal(
+      creditsObj['available_credits'] ??
+      target['available_credits'] ??
+      json['available_credits'],
+    );
+
+    final earned = parseVal(
+      creditsObj['total_earned'] ??
+      target['total_earned'] ??
+      json['total_earned'],
+    );
+
+    final spent = parseVal(
+      creditsObj['total_spent'] ??
+      target['total_spent'] ??
+      json['total_spent'],
+    );
+
+    final subType = (target['subscription_type'] ??
+      json['subscription_type'] ??
+      'trial').toString();
+
     return UserCredits(
-      availableCredits: parseVal(creditsObj['available_credits'] ?? json['available_credits']),
-      totalEarned: parseVal(creditsObj['total_earned'] ?? json['total_earned']),
-      totalSpent: parseVal(creditsObj['total_spent'] ?? json['total_spent']),
-      subscriptionType: (json['subscription_type'] ?? 'trial').toString(),
+      availableCredits: available,
+      totalEarned: earned,
+      totalSpent: spent,
+      subscriptionType: subType,
     );
   }
 }
@@ -58,6 +88,7 @@ class UserCreditsNotifier extends StateNotifier<AsyncValue<UserCredits>> {
         return;
       }
 
+      // Call my-subscription endpoint (returns complete user subscription & credit info)
       final uri = Uri.parse('${ApiConfig.baseUrl}/api/subscription/my-subscription');
       final response = await http.get(
         uri,
@@ -71,11 +102,32 @@ class UserCreditsNotifier extends StateNotifier<AsyncValue<UserCredits>> {
         final data = jsonDecode(response.body);
         if (data is Map<String, dynamic>) {
           final credits = UserCredits.fromJson(data);
+          debugPrint('✅ User credits fetched successfully: ${credits.availableCredits} credits (${credits.subscriptionType})');
           state = AsyncValue.data(credits);
           return;
         }
+      } else {
+        // Try fallback to /my-credits if /my-subscription returns non-200
+        final fallbackUri = Uri.parse('${ApiConfig.baseUrl}/api/subscription/my-credits');
+        final fallbackResponse = await http.get(
+          fallbackUri,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+        ).timeout(const Duration(seconds: 10));
+
+        if (fallbackResponse.statusCode == 200) {
+          final data = jsonDecode(fallbackResponse.body);
+          if (data is Map<String, dynamic>) {
+            final credits = UserCredits.fromJson(data);
+            debugPrint('✅ User credits fetched from fallback /my-credits: ${credits.availableCredits} credits');
+            state = AsyncValue.data(credits);
+            return;
+          }
+        }
       }
-      // If endpoint call fails or returns non-200, fallback cleanly to 0
+
       state = AsyncValue.data(state.valueOrNull ?? const UserCredits());
     } catch (e) {
       debugPrint('⚠️ Error fetching user credits: $e');
