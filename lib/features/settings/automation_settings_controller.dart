@@ -111,18 +111,49 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
         'Authorization': 'Bearer $token',
       };
 
+      final accParam = (locationId != null && locationId.isNotEmpty) ? '?account_id=${Uri.encodeComponent(locationId)}' : '';
+
       // 1. Fetch Personas & Knowledge Groups in parallel
-      final personasFuture = _fetchDropdownItems('${ApiConfig.baseUrl}/api/personas', headers, 'personas');
-      final groupsFuture = _fetchDropdownItems('${ApiConfig.baseUrl}/api/knowledge-groups', headers, 'groups');
+      final personasFuture = _fetchDropdownItems('${ApiConfig.baseUrl}/api/personas$accParam', headers, 'personas');
+      final groupsFuture = _fetchDropdownItems('${ApiConfig.baseUrl}/api/knowledge-groups$accParam', headers, 'groups');
 
       final results = await Future.wait([personasFuture, groupsFuture]);
-      final fetchedPersonas = results[0];
-      final fetchedGroups = results[1];
+      final rawPersonas = results[0];
+      final rawGroups = results[1];
 
-      if (fetchedPersonas.every((p) => p['id'] != 'socialhive')) {
+      // Deduplicate Personas by name and id
+      final fetchedPersonas = <Map<String, String>>[];
+      final personaSeen = <String>{};
+      for (var p in rawPersonas) {
+        final nameKey = (p['name'] ?? '').toLowerCase().trim();
+        final idKey = (p['id'] ?? '').toLowerCase().trim();
+        if ((nameKey.isNotEmpty && personaSeen.contains(nameKey)) || (idKey.isNotEmpty && personaSeen.contains(idKey))) {
+          continue;
+        }
+        if (nameKey.isNotEmpty) personaSeen.add(nameKey);
+        if (idKey.isNotEmpty) personaSeen.add(idKey);
+        fetchedPersonas.add(p);
+      }
+
+      if (!personaSeen.contains('socialhive')) {
         fetchedPersonas.insert(0, {'id': 'socialhive', 'name': 'socialhive'});
       }
-      if (fetchedGroups.every((g) => g['id'] != 'SocialHive Official Group')) {
+
+      // Deduplicate Knowledge Groups by name and id
+      final fetchedGroups = <Map<String, String>>[];
+      final groupSeen = <String>{};
+      for (var g in rawGroups) {
+        final nameKey = (g['name'] ?? '').toLowerCase().trim();
+        final idKey = (g['id'] ?? '').toLowerCase().trim();
+        if ((nameKey.isNotEmpty && groupSeen.contains(nameKey)) || (idKey.isNotEmpty && groupSeen.contains(idKey))) {
+          continue;
+        }
+        if (nameKey.isNotEmpty) groupSeen.add(nameKey);
+        if (idKey.isNotEmpty) groupSeen.add(idKey);
+        fetchedGroups.add(g);
+      }
+
+      if (!groupSeen.contains('socialhive official group')) {
         fetchedGroups.insert(0, {'id': 'SocialHive Official Group', 'name': 'SocialHive Official Group'});
       }
 
