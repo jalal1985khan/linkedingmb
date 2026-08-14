@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -27,7 +28,7 @@ class AppMediaPicker extends StatefulWidget {
 
 class _AppMediaPickerState extends State<AppMediaPicker> {
   final ImagePicker _picker = ImagePicker();
-  XFile? _pickedFile;
+  String? _localPath;
   late final TextEditingController _urlController;
   bool _showUrlInput = false;
 
@@ -35,6 +36,9 @@ class _AppMediaPickerState extends State<AppMediaPicker> {
   void initState() {
     super.initState();
     _urlController = TextEditingController(text: widget.initialUrl);
+    if (widget.initialUrl.isNotEmpty && !widget.initialUrl.startsWith('http')) {
+      _localPath = widget.initialUrl;
+    }
   }
 
   @override
@@ -45,45 +49,55 @@ class _AppMediaPickerState extends State<AppMediaPicker> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final XFile? photo = await _picker.pickImage(source: source);
-      if (photo != null) {
+      String? pickedPath;
+
+      // 1. Primary: Try ImagePicker
+      try {
+        final XFile? photo = await _picker.pickImage(source: source);
+        if (photo != null) {
+          pickedPath = photo.path;
+        }
+      } catch (e) {
+        debugPrint('⚠️ ImagePicker unavailable ($e), attempting FilePicker fallback...');
+      }
+
+      // 2. Secondary: Fallback to FilePicker if ImagePicker returned null or failed on Desktop/Simulator
+      if (pickedPath == null && (kIsWeb || Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
+        try {
+          final PlatformFile? file = await FilePicker.pickFile(
+            type: FileType.image,
+          );
+          if (file != null) {
+            pickedPath = file.path;
+          }
+        } catch (err) {
+          debugPrint('⚠️ FilePicker error: $err');
+        }
+      }
+
+      if (pickedPath != null && pickedPath.isNotEmpty) {
         setState(() {
-          _pickedFile = photo;
-          _urlController.text = photo.path;
+          _localPath = pickedPath;
+          _urlController.text = pickedPath!;
         });
-        widget.onMediaSelected(photo.path);
+        widget.onMediaSelected(pickedPath);
       }
     } catch (e) {
-      debugPrint('❌ ImagePicker Exception: $e');
-      if (source == ImageSource.camera) {
-        // Fallback to gallery if camera is unavailable (e.g. simulator/desktop)
-        _pickImage(ImageSource.gallery);
-        return;
-      }
+      debugPrint('❌ Media Selection Exception: $e');
       if (mounted) {
-        final errStr = e.toString().toLowerCase();
-        if (errStr.contains('access') || errStr.contains('permission')) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Photo library access permission required in Settings.'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Media selection error: ${e.toString()}'),
-              backgroundColor: AppColors.primary,
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Media selection error: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
     }
   }
 
   void _clearMedia() {
     setState(() {
-      _pickedFile = null;
+      _localPath = null;
       _urlController.clear();
     });
     widget.onMediaSelected('');
@@ -97,7 +111,7 @@ class _AppMediaPickerState extends State<AppMediaPicker> {
     final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
     final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
-    final currentMedia = _pickedFile?.path ?? _urlController.text.trim();
+    final currentMedia = _localPath ?? _urlController.text.trim();
     final hasMedia = currentMedia.isNotEmpty;
 
     return Container(
@@ -159,10 +173,10 @@ class _AppMediaPickerState extends State<AppMediaPicker> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(12),
-                child: _pickedFile != null
+                child: _localPath != null
                     ? (kIsWeb
-                        ? Image.network(_pickedFile!.path, fit: BoxFit.cover)
-                        : Image.file(File(_pickedFile!.path), fit: BoxFit.cover))
+                        ? Image.network(_localPath!, fit: BoxFit.cover)
+                        : Image.file(File(_localPath!), fit: BoxFit.cover))
                     : Image.network(
                         currentMedia,
                         fit: BoxFit.cover,
@@ -230,7 +244,7 @@ class _AppMediaPickerState extends State<AppMediaPicker> {
               style: GoogleFonts.inter(fontSize: 13, color: textPrimary),
               onChanged: (val) {
                 setState(() {
-                  _pickedFile = null;
+                  _localPath = null;
                 });
                 widget.onMediaSelected(val.trim());
               },
