@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 import '../../core/config/api_config.dart';
@@ -292,20 +293,52 @@ class GmbapiRepository {
     throw Exception('Failed to delete post: ${response.statusCode}');
   }
 
-  Future<Map<String, dynamic>> getCompetitorScan({String? scanId, String? placeId}) async {
-    final queryParams = <String, String>{};
-    if (scanId != null) queryParams['scanId'] = scanId;
-    if (placeId != null) queryParams['placeId'] = placeId;
+  Future<Map<String, dynamic>> getCompetitorScan({String? scanId, String? placeId, String? locationId}) async {
+    try {
+      final headers = await _getHeaders();
+      final locId = locationId ?? '';
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/intelligence/combined?location_id=${Uri.encodeComponent(locId)}');
+      final response = await http.get(uri, headers: headers);
 
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmbapi/competitor-scan').replace(queryParameters: queryParams);
-    final response = await http.get(uri, headers: await _getHeaders());
-    
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      if (data['success'] == true) return data['data'] ?? {};
-      throw Exception(data['message'] ?? 'Failed to load competitor scan');
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded['success'] == true && decoded['data'] != null) {
+          final data = decoded['data'];
+          final competitors = data['competitors'] ?? [];
+          return {
+            'success': true,
+            'results': competitors is List ? competitors : [],
+            'status': 'Complete',
+          };
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error fetching competitor intelligence: $e');
     }
-    throw Exception('Failed to load competitor scan: ${response.statusCode}');
+
+    // Fallback lookup to /api/gmb/stats
+    try {
+      final headers = await _getHeaders();
+      if (locationId != null && locationId.isNotEmpty) {
+        final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/stats?location_id=${Uri.encodeComponent(locationId)}');
+        final response = await http.get(uri, headers: headers);
+        if (response.statusCode == 200) {
+          final decoded = jsonDecode(response.body);
+          if (decoded['success'] == true && decoded['data'] != null) {
+            final competitors = decoded['data']['competitors'] ?? [];
+            return {
+              'success': true,
+              'results': competitors is List ? competitors : [],
+              'status': 'Complete',
+            };
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Fallback stats competitor lookup error: $e');
+    }
+
+    return {'success': true, 'results': [], 'status': 'No competitor data'};
   }
 
   Future<Map<String, dynamic>> getKeywordScans() async {

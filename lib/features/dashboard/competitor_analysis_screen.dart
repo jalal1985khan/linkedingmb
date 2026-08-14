@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../data/repositories/gmbapi_repository.dart';
+import '../business_flow/providers/active_location_provider.dart';
 
 final competitorScanProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
   (ref) {
-    return ref.read(gmbapiRepositoryProvider).getCompetitorScan();
+    final activeLoc = ref.watch(activeLocationProvider).activeLocation;
+    return ref.read(gmbapiRepositoryProvider).getCompetitorScan(locationId: activeLoc?.id);
   },
 );
 
