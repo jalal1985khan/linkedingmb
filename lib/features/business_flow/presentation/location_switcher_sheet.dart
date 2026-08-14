@@ -173,6 +173,23 @@ class _LocationSwitcherSheetState
     required BusinessProfile location,
     required bool isSelected,
   }) {
+    double displayRating = location.rating;
+    if (displayRating <= 0.0) {
+      final statsAsync = ref.watch(dashboardStatsProvider(location.id));
+      if (statsAsync.value != null && statsAsync.value!.averageRating > 0.0) {
+        displayRating = statsAsync.value!.averageRating;
+      } else {
+        final reviewsAsync = ref.watch(dashboardReviewsProvider(location.id));
+        if (reviewsAsync.value != null && reviewsAsync.value!.isNotEmpty) {
+          final validReviews = reviewsAsync.value!.where((r) => r.starRating > 0).toList();
+          if (validReviews.isNotEmpty) {
+            final double sum = validReviews.fold<double>(0.0, (acc, r) => acc + r.starRating);
+            displayRating = sum / validReviews.length;
+          }
+        }
+      }
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
@@ -240,7 +257,7 @@ class _LocationSwitcherSheetState
                               color: const Color(0xFF64748B),
                             ),
                           ),
-                          if (location.rating > 0.0) ...[
+                          if (displayRating > 0.0) ...[
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
@@ -253,7 +270,7 @@ class _LocationSwitcherSheetState
                                   const Icon(Icons.star_rounded, size: 12, color: Color(0xFFD97706)),
                                   const SizedBox(width: 2),
                                   Text(
-                                    location.rating.toStringAsFixed(1),
+                                    displayRating.toStringAsFixed(1),
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
