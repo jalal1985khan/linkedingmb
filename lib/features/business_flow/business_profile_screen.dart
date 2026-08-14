@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../data/models/business_profile.dart';
@@ -124,9 +125,24 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     final business = activeLocState.activeLocation ?? selectedBusiness;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+    final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     if (activeLocState.isLoading && business == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Business Profile')),
+        backgroundColor: bgColor,
+        appBar: AppBar(
+          backgroundColor: cardBgColor,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          title: Text(
+            'Business Profile',
+            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18, color: textPrimary),
+          ),
+        ),
         body: const Center(
           child: CircularProgressIndicator(color: AppColors.primary),
         ),
@@ -135,30 +151,41 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
 
     if (business == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Business Profile')),
+        backgroundColor: bgColor,
+        appBar: AppBar(
+          backgroundColor: cardBgColor,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          title: Text(
+            'Business Profile',
+            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18, color: textPrimary),
+          ),
+        ),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.storefront_outlined, size: 64, color: AppColors.textSecondary),
+              Icon(Icons.storefront_outlined, size: 64, color: textSecondary),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'No Business Location Selected',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Please select or connect a location to manage its profile.',
-                style: TextStyle(color: AppColors.textSecondary),
+                style: GoogleFonts.inter(color: textSecondary, fontSize: 14),
               ),
               const SizedBox(height: 20),
               ElevatedButton.icon(
                 onPressed: () => ref.read(activeLocationProvider.notifier).refresh(),
-                icon: const Icon(Icons.refresh),
-                label: const Text('Refresh Locations'),
+                icon: const Icon(Icons.refresh, size: 18),
+                label: Text('Refresh Locations', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 ),
               ),
             ],
@@ -176,10 +203,15 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     return DefaultTabController(
       length: 4,
       child: Scaffold(
-        backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFAFAFAF).withValues(alpha: 0.05),
+        backgroundColor: bgColor,
         appBar: AppBar(
-          title: const Text('Business Profile', style: TextStyle(fontWeight: FontWeight.bold)),
+          backgroundColor: cardBgColor,
           elevation: 0,
+          scrolledUnderElevation: 0,
+          title: Text(
+            'Business Profile',
+            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18, color: textPrimary),
+          ),
           actions: [
             Padding(
               padding: const EdgeInsets.only(right: 16),
@@ -192,10 +224,11 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
                     : const Icon(Icons.check, size: 16),
-                label: Text(_saving ? 'Saving...' : 'Save'),
+                label: Text(_saving ? 'Saving...' : 'Save', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
+                  elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 ),
@@ -206,18 +239,22 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
         body: Column(
           children: [
             // Business Identity Card & Profile Strength Header
-            _buildHeaderCard(context, business, profileScore, isDark),
+            _buildHeaderCard(context, business, profileScore, isDark, cardBgColor, borderColor, textPrimary, textSecondary),
 
             // Navigation Tabs
             Container(
-              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              decoration: BoxDecoration(
+                color: cardBgColor,
+                border: Border(bottom: BorderSide(color: borderColor, width: 1)),
+              ),
               child: TabBar(
                 isScrollable: true,
                 labelColor: AppColors.primary,
-                unselectedLabelColor: isDark ? Colors.white70 : AppColors.textSecondary,
+                unselectedLabelColor: textSecondary,
                 indicatorColor: AppColors.primary,
                 indicatorWeight: 3,
-                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
+                unselectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 13),
                 tabs: const [
                   Tab(icon: Icon(Icons.info_outline, size: 18), text: 'Basic Info'),
                   Tab(icon: Icon(Icons.location_on_outlined, size: 18), text: 'Contact & Location'),
@@ -231,10 +268,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
             Expanded(
               child: TabBarView(
                 children: [
-                  _buildBasicInfoTab(isDark),
-                  _buildContactLocationTab(isDark),
-                  _buildHoursTab(isDark),
-                  _buildBrandPersonaTab(isDark),
+                  _buildBasicInfoTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                  _buildContactLocationTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                  _buildHoursTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                  _buildBrandPersonaTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
                 ],
               ),
             ),
@@ -244,17 +281,24 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     );
   }
 
-  Widget _buildHeaderCard(BuildContext context, BusinessProfile business, int profileScore, bool isDark) {
+  Widget _buildHeaderCard(
+    BuildContext context,
+    BusinessProfile business,
+    int profileScore,
+    bool isDark,
+    Color cardBgColor,
+    Color borderColor,
+    Color textPrimary,
+    Color textSecondary,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: cardBgColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? const Color(0xFF334155) : AppColors.border,
-        ),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
@@ -272,17 +316,13 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  gradient: AppColors.blueGradient,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
                   child: Text(
                     business.name.isNotEmpty ? business.name[0].toUpperCase() : 'B',
-                    style: const TextStyle(
+                    style: GoogleFonts.inter(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -297,10 +337,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                   children: [
                     Text(
                       business.name,
-                      style: TextStyle(
+                      style: GoogleFonts.inter(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: isDark ? Colors.white : AppColors.textPrimary,
+                        color: textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -313,20 +353,20 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                           decoration: BoxDecoration(
                             color: business.isManualLocation
                                 ? Colors.amber.withValues(alpha: 0.15)
-                                : const Color(0xFF16A34A).withValues(alpha: 0.15),
+                                : AppColors.success.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                             border: Border.all(
                               color: business.isManualLocation
                                   ? Colors.amber.withValues(alpha: 0.3)
-                                  : const Color(0xFF16A34A).withValues(alpha: 0.3),
+                                  : AppColors.success.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Text(
                             business.isManualLocation ? 'Manual Location' : 'Google Verified',
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: business.isManualLocation ? Colors.amber[700] : const Color(0xFF16A34A),
+                              color: business.isManualLocation ? Colors.amber[700] : AppColors.success,
                             ),
                           ),
                         ),
@@ -334,9 +374,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                           const SizedBox(width: 8),
                           Text(
                             business.storeCodeText,
-                            style: TextStyle(
+                            style: GoogleFonts.inter(
                               fontSize: 11,
-                              color: isDark ? Colors.white70 : AppColors.textSecondary,
+                              color: textSecondary,
                             ),
                           ),
                         ],
@@ -355,22 +395,22 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
             children: [
               Text(
                 'Profile Strength',
-                style: TextStyle(
+                style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white70 : AppColors.textSecondary,
+                  color: textSecondary,
                 ),
               ),
               Text(
                 '$profileScore%',
-                style: TextStyle(
+                style: GoogleFonts.inter(
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                   color: profileScore >= 80
-                      ? const Color(0xFF16A34A)
+                      ? AppColors.success
                       : profileScore >= 50
                           ? Colors.amber[700]
-                          : Colors.red[600],
+                          : AppColors.error,
                 ),
               ),
             ],
@@ -384,10 +424,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
               valueColor: AlwaysStoppedAnimation<Color>(
                 profileScore >= 80
-                    ? const Color(0xFF16A34A)
+                    ? AppColors.success
                     : profileScore >= 50
                         ? Colors.amber[500]!
-                        : Colors.red[500]!,
+                        : AppColors.error,
               ),
             ),
           ),
@@ -397,12 +437,16 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   }
 
   // TAB 1: BASIC INFO
-  Widget _buildBasicInfoTab(bool isDark) {
+  Widget _buildBasicInfoTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         _buildSectionCard(
           isDark: isDark,
+          cardBgColor: cardBgColor,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
           title: 'Basic Identity',
           subtitle: 'Core business title, primary category, and description.',
           children: [
@@ -412,6 +456,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               hint: 'e.g. Acme Coffee Roasters',
               icon: Icons.storefront_outlined,
               isDark: isDark,
+              borderColor: borderColor,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
             ),
             const SizedBox(height: 14),
             _buildTextField(
@@ -420,6 +467,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               hint: 'e.g. Coffee Shop',
               icon: Icons.category_outlined,
               isDark: isDark,
+              borderColor: borderColor,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
             ),
             const SizedBox(height: 14),
             Row(
@@ -427,10 +477,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               children: [
                 Text(
                   'Business Description',
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
+                    color: textPrimary,
                   ),
                 ),
                 TextButton.icon(
@@ -444,7 +494,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                       : const Icon(Icons.auto_awesome, size: 14, color: AppColors.primary),
                   label: Text(
                     _enhancing ? 'Generating...' : 'Enhance with AI',
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
                   ),
                 ),
               ],
@@ -454,14 +504,14 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               controller: _descriptionController,
               maxLines: 4,
               maxLength: 750,
-              style: TextStyle(fontSize: 14, color: isDark ? Colors.white : AppColors.textPrimary),
+              style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
               decoration: InputDecoration(
                 hintText: 'A cozy neighborhood coffee shop serving artisanal coffee...',
-                hintStyle: TextStyle(color: isDark ? Colors.white70 : AppColors.textSecondary, fontSize: 13),
+                hintStyle: GoogleFonts.inter(color: textSecondary, fontSize: 13),
                 filled: true,
-                fillColor: isDark ? const Color(0xFF0F172A) : Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : AppColors.border)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : AppColors.border)),
+                fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
                 focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
               ),
             ),
@@ -472,12 +522,16 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   }
 
   // TAB 2: CONTACT & LOCATION
-  Widget _buildContactLocationTab(bool isDark) {
+  Widget _buildContactLocationTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         _buildSectionCard(
           isDark: isDark,
+          cardBgColor: cardBgColor,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
           title: 'Storefront Address',
           subtitle: 'Physical address visible to Google Search & Maps users.',
           children: [
@@ -487,6 +541,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               hint: '123 Main Street',
               icon: Icons.map_outlined,
               isDark: isDark,
+              borderColor: borderColor,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
             ),
             const SizedBox(height: 14),
             Row(
@@ -498,6 +555,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                     hint: 'New York',
                     icon: Icons.location_city_outlined,
                     isDark: isDark,
+                    borderColor: borderColor,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -508,6 +568,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                     hint: '10001',
                     icon: Icons.markunread_outlined,
                     isDark: isDark,
+                    borderColor: borderColor,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
                   ),
                 ),
               ],
@@ -522,6 +585,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                     hint: 'NY',
                     icon: Icons.explore_outlined,
                     isDark: isDark,
+                    borderColor: borderColor,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -532,6 +598,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                     hint: 'US',
                     icon: Icons.flag_outlined,
                     isDark: isDark,
+                    borderColor: borderColor,
+                    textPrimary: textPrimary,
+                    textSecondary: textSecondary,
                   ),
                 ),
               ],
@@ -541,6 +610,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
         const SizedBox(height: 16),
         _buildSectionCard(
           isDark: isDark,
+          cardBgColor: cardBgColor,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
           title: 'Direct Contact Details',
           subtitle: 'Primary phone number and official website URI.',
           children: [
@@ -550,6 +623,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               hint: '+1 (555) 000-0000',
               icon: Icons.phone_outlined,
               isDark: isDark,
+              borderColor: borderColor,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
             ),
             const SizedBox(height: 14),
             _buildTextField(
@@ -558,6 +634,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               hint: 'https://example.com',
               icon: Icons.language_outlined,
               isDark: isDark,
+              borderColor: borderColor,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
             ),
           ],
         ),
@@ -566,12 +645,16 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   }
 
   // TAB 3: OPERATING HOURS
-  Widget _buildHoursTab(bool isDark) {
+  Widget _buildHoursTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         _buildSectionCard(
           isDark: isDark,
+          cardBgColor: cardBgColor,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
           title: 'Operating Hours Summary',
           subtitle: 'Set open hours summary displayed on profile cards and search results.',
           children: [
@@ -581,15 +664,18 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               hint: 'Mon - Fri: 9:00 AM - 5:00 PM, Sat: 10:00 AM - 2:00 PM',
               icon: Icons.schedule_outlined,
               isDark: isDark,
+              borderColor: borderColor,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
             ),
             const SizedBox(height: 16),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                _buildHoursChip('Mon-Fri 9-5', isDark),
-                _buildHoursChip('Mon-Sat 8-6', isDark),
-                _buildHoursChip('Open 24/7', isDark),
+                _buildHoursChip('Mon-Fri 9-5', isDark, borderColor),
+                _buildHoursChip('Mon-Sat 8-6', isDark, borderColor),
+                _buildHoursChip('Open 24/7', isDark, borderColor),
               ],
             ),
           ],
@@ -598,11 +684,11 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     );
   }
 
-  Widget _buildHoursChip(String presetText, bool isDark) {
+  Widget _buildHoursChip(String presetText, bool isDark, Color borderColor) {
     return ActionChip(
-      label: Text(presetText, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.grey[100],
-      side: BorderSide(color: isDark ? const Color(0xFF334155) : AppColors.border),
+      label: Text(presetText, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500)),
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+      side: BorderSide(color: borderColor),
       onPressed: () {
         setState(() {
           _hoursController.text = presetText;
@@ -612,12 +698,16 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   }
 
   // TAB 4: BRAND & AI PERSONA
-  Widget _buildBrandPersonaTab(bool isDark) {
+  Widget _buildBrandPersonaTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         _buildSectionCard(
           isDark: isDark,
+          cardBgColor: cardBgColor,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
           title: 'AI Persona & Content Style',
           subtitle: 'Configure target audience, tone of voice, and weekly posting frequency.',
           children: [
@@ -627,6 +717,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               hint: 'e.g. Local professionals, coffee lovers, remote workers',
               icon: Icons.people_outline,
               isDark: isDark,
+              borderColor: borderColor,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
             ),
             const SizedBox(height: 14),
             _buildTextField(
@@ -635,6 +728,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               hint: 'e.g. Friendly, Professional, Energetic, Casual',
               icon: Icons.record_voice_over_outlined,
               isDark: isDark,
+              borderColor: borderColor,
+              textPrimary: textPrimary,
+              textSecondary: textSecondary,
             ),
             const SizedBox(height: 20),
             Row(
@@ -642,10 +738,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               children: [
                 Text(
                   'Target Auto-Posting Frequency',
-                  style: TextStyle(
+                  style: GoogleFonts.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.white : AppColors.textPrimary,
+                    color: textPrimary,
                   ),
                 ),
                 Container(
@@ -656,7 +752,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                   ),
                   child: Text(
                     '${_postingFrequency.round()} posts / week',
-                    style: const TextStyle(
+                    style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: AppColors.primary,
@@ -689,6 +785,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
 
   Widget _buildSectionCard({
     required bool isDark,
+    required Color cardBgColor,
+    required Color borderColor,
+    required Color textPrimary,
+    required Color textSecondary,
     required String title,
     required String subtitle,
     required List<Widget> children,
@@ -696,9 +796,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: cardBgColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? const Color(0xFF334155) : AppColors.border),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
@@ -712,18 +812,18 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
         children: [
           Text(
             title,
-            style: TextStyle(
+            style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : AppColors.textPrimary,
+              color: textPrimary,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             subtitle,
-            style: TextStyle(
+            style: GoogleFonts.inter(
               fontSize: 12,
-              color: isDark ? Colors.white70 : AppColors.textSecondary,
+              color: textSecondary,
             ),
           ),
           const SizedBox(height: 16),
@@ -739,35 +839,38 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     required String hint,
     required IconData icon,
     required bool isDark,
+    required Color borderColor,
+    required Color textPrimary,
+    required Color textSecondary,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: GoogleFonts.inter(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: isDark ? Colors.white : AppColors.textPrimary,
+            color: textPrimary,
           ),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
-          style: TextStyle(fontSize: 14, color: isDark ? Colors.white : AppColors.textPrimary),
+          style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: isDark ? Colors.white70 : AppColors.textSecondary, fontSize: 13),
-            prefixIcon: Icon(icon, size: 18, color: isDark ? Colors.white70 : AppColors.textSecondary),
+            hintStyle: GoogleFonts.inter(color: textSecondary, fontSize: 13),
+            prefixIcon: Icon(icon, size: 18, color: textSecondary),
             filled: true,
-            fillColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+            fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : AppColors.border),
+              borderSide: BorderSide(color: borderColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: isDark ? const Color(0xFF334155) : AppColors.border),
+              borderSide: BorderSide(color: borderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -817,7 +920,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to enhance description: ${e.toString()}'),
-            backgroundColor: Colors.red[600],
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -857,7 +960,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Business profile updated successfully!'),
-          backgroundColor: Color(0xFF16A34A),
+          backgroundColor: AppColors.success,
         ),
       );
     } catch (e) {
@@ -865,7 +968,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to update profile: ${e.toString()}'),
-            backgroundColor: Colors.red[600],
+            backgroundColor: AppColors.error,
           ),
         );
       }
