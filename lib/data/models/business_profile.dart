@@ -19,6 +19,12 @@ class BusinessProfile {
     this.countryCode = 'US',
     this.storeCode = '',
     this.isManual = false,
+    this.additionalCategories = const [],
+    this.bookingUrl = '',
+    this.logoUrl = '',
+    this.coverPhotoUrl = '',
+    this.additionalPhotos = const [],
+    this.services = const [],
   });
 
   final String id;
@@ -40,6 +46,12 @@ class BusinessProfile {
   final String? countryCode;
   final String? storeCode;
   final bool? isManual;
+  final List<String>? additionalCategories;
+  final String? bookingUrl;
+  final String? logoUrl;
+  final String? coverPhotoUrl;
+  final List<String>? additionalPhotos;
+  final List<String>? services;
 
   bool get isManualLocation => isManual == true;
   String get descriptionText => description ?? '';
@@ -48,6 +60,12 @@ class BusinessProfile {
   String get stateText => state ?? '';
   String get countryCodeText => countryCode ?? 'US';
   String get storeCodeText => storeCode ?? '';
+  List<String> get additionalCategoriesList => additionalCategories ?? const <String>[];
+  String get bookingUrlText => bookingUrl ?? '';
+  String get logoUrlText => logoUrl ?? '';
+  String get coverPhotoUrlText => coverPhotoUrl ?? '';
+  List<String> get additionalPhotosList => additionalPhotos ?? const <String>[];
+  List<String> get servicesList => services ?? const <String>[];
 
   BusinessProfile copyWith({
     String? id,
@@ -69,6 +87,12 @@ class BusinessProfile {
     String? countryCode,
     String? storeCode,
     bool? isManual,
+    List<String>? additionalCategories,
+    String? bookingUrl,
+    String? logoUrl,
+    String? coverPhotoUrl,
+    List<String>? additionalPhotos,
+    List<String>? services,
   }) {
     return BusinessProfile(
       id: id ?? this.id,
@@ -90,6 +114,12 @@ class BusinessProfile {
       countryCode: countryCode ?? countryCodeText,
       storeCode: storeCode ?? storeCodeText,
       isManual: isManual ?? isManualLocation,
+      additionalCategories: additionalCategories ?? additionalCategoriesList,
+      bookingUrl: bookingUrl ?? bookingUrlText,
+      logoUrl: logoUrl ?? logoUrlText,
+      coverPhotoUrl: coverPhotoUrl ?? coverPhotoUrlText,
+      additionalPhotos: additionalPhotos ?? additionalPhotosList,
+      services: services ?? servicesList,
     );
   }
 }

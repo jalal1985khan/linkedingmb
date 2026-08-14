@@ -229,6 +229,69 @@ class BackendBusinessRepository implements BusinessRepository {
       countryStr = _string(storefront['regionCode']).isNotEmpty ? _string(storefront['regionCode']) : 'US';
     }
 
+    final bookingUrl = _string(location['bookingUri']).isNotEmpty
+        ? _string(location['bookingUri'])
+        : _string(location['booking_url']);
+
+    List<String> addCats = [];
+    final catsObj = location['categories'];
+    if (catsObj is Map<String, dynamic> && catsObj['additionalCategories'] is List) {
+      for (final item in catsObj['additionalCategories']) {
+        if (item is Map<String, dynamic>) {
+          final display = _string(item['displayName']).isNotEmpty ? _string(item['displayName']) : _string(item['name']);
+          if (display.isNotEmpty) addCats.add(display);
+        } else if (item is String && item.isNotEmpty) {
+          addCats.add(item);
+        }
+      }
+    }
+
+    String logoStr = '';
+    String coverStr = '';
+    List<String> photosList = [];
+    final mediaList = location['media'];
+    if (mediaList is List) {
+      for (final item in mediaList) {
+        if (item is Map<String, dynamic>) {
+          final url = _string(item['googleUrl']).isNotEmpty ? _string(item['googleUrl']) : _string(item['sourceUrl']);
+          final cat = _string(item['mediaFormat']).isNotEmpty ? _string(item['mediaFormat']) : _string(item['category']);
+          if (cat.toUpperCase() == 'LOGO') {
+            logoStr = url;
+          } else if (cat.toUpperCase() == 'COVER') {
+            coverStr = url;
+          } else if (url.isNotEmpty) {
+            photosList.add(url);
+          }
+        }
+      }
+    }
+
+    List<String> servicesList = [];
+    final serviceItemsRaw = location['serviceItems'] ?? location['service_items'] ?? location['services'];
+    if (serviceItemsRaw is List) {
+      for (final item in serviceItemsRaw) {
+        if (item is Map<String, dynamic>) {
+          final freeForm = item['freeFormServiceItem'];
+          if (freeForm is Map<String, dynamic>) {
+            final label = freeForm['label'];
+            if (label is Map<String, dynamic>) {
+              final name = _string(label['displayName']);
+              if (name.isNotEmpty) servicesList.add(name);
+            }
+          }
+          final struct = item['structuredServiceItem'];
+          if (struct is Map<String, dynamic>) {
+            final name = _string(struct['displayName']);
+            if (name.isNotEmpty) servicesList.add(name);
+          }
+          final directName = _string(item['displayName']).isNotEmpty ? _string(item['displayName']) : _string(item['name']);
+          if (directName.isNotEmpty && !servicesList.contains(directName)) servicesList.add(directName);
+        } else if (item is String && item.isNotEmpty) {
+          servicesList.add(item);
+        }
+      }
+    }
+
     return BusinessProfile(
       id: id.isNotEmpty ? id : 'unknown_${DateTime.now().millisecondsSinceEpoch}',
       name: title.isNotEmpty ? title : 'Untitled Business',
@@ -249,6 +312,12 @@ class BackendBusinessRepository implements BusinessRepository {
       countryCode: countryStr,
       storeCode: storeCode,
       isManual: isManual,
+      additionalCategories: addCats,
+      bookingUrl: bookingUrl,
+      logoUrl: logoStr,
+      coverPhotoUrl: coverStr,
+      additionalPhotos: photosList,
+      services: servicesList,
     );
   }
 
