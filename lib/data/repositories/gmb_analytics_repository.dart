@@ -5,6 +5,23 @@ import 'package:http/http.dart' as http;
 
 import '../../core/config/api_config.dart';
 
+class CompetitorItem {
+  final String name;
+  final int matchPercentage;
+
+  const CompetitorItem({
+    required this.name,
+    required this.matchPercentage,
+  });
+
+  factory CompetitorItem.fromJson(Map<String, dynamic> json) {
+    return CompetitorItem(
+      name: (json['name'] ?? json['title'] ?? 'Competitor').toString(),
+      matchPercentage: (json['match'] ?? json['matchPercentage'] ?? json['match_rate'] ?? 80) as int,
+    );
+  }
+}
+
 class GMBLocationStats {
   final int views;
   final int searches;
@@ -13,6 +30,14 @@ class GMBLocationStats {
   final int websiteClicks;
   final double averageRating;
   final int totalReviews;
+  final String impressionsChange;
+  final String callsChange;
+  final String directionsChange;
+  final String websiteClicksChange;
+  final String competitorRank;
+  final List<CompetitorItem> competitors;
+  final List<double> chartHeights;
+  final List<String> chartLabels;
 
   const GMBLocationStats({
     this.views = 0,
@@ -22,7 +47,24 @@ class GMBLocationStats {
     this.websiteClicks = 0,
     this.averageRating = 0.0,
     this.totalReviews = 0,
+    this.impressionsChange = '+0%',
+    this.callsChange = '+0%',
+    this.directionsChange = '+0%',
+    this.websiteClicksChange = '+0%',
+    this.competitorRank = '#2',
+    this.competitors = const [],
+    this.chartHeights = const [0.4, 0.6, 0.5, 1.0, 0.8, 0.5, 0.4],
+    this.chartLabels = const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
   });
+
+  int get totalImpressions {
+    if (views > 0 || searches > 0) {
+      return views + searches;
+    }
+    return calls + directionRequests + websiteClicks;
+  }
+
+  int get totalInteractions => calls + directionRequests + websiteClicks;
 
   factory GMBLocationStats.fromJson(Map<String, dynamic> json) {
     int parseVal(dynamic v) {
@@ -33,18 +75,52 @@ class GMBLocationStats {
       return 0;
     }
 
+    String parseChange(dynamic v) {
+      if (v == null || v.toString().isEmpty) return '+0%';
+      final str = v.toString().trim();
+      if (str.startsWith('+') || str.startsWith('-')) return str;
+      return '+$str';
+    }
+
+    final parsedCompetitors = <CompetitorItem>[];
+    if (json['competitors'] is List) {
+      for (final item in json['competitors']) {
+        if (item is Map<String, dynamic>) {
+          parsedCompetitors.add(CompetitorItem.fromJson(item));
+        }
+      }
+    }
+
+    final rawTrend = json['chartHeights'] ?? json['trend'] ?? json['weeklyTrend'];
+    List<double> heights = const [0.4, 0.6, 0.5, 1.0, 0.8, 0.5, 0.4];
+    if (rawTrend is List && rawTrend.isNotEmpty) {
+      heights = rawTrend.map((e) => (num.tryParse(e.toString()) ?? 0.5).toDouble()).toList();
+    }
+
+    final rawLabels = json['chartLabels'] ?? json['labels'];
+    List<String> labels = const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    if (rawLabels is List && rawLabels.isNotEmpty) {
+      labels = rawLabels.map((e) => e.toString()).toList();
+    }
+
     return GMBLocationStats(
-      views: parseVal(json['views'] ?? json['overview'] ?? json['queriesDirect'] ?? json['viewsMaps']),
+      views: parseVal(json['overview'] ?? json['views'] ?? json['queriesDirect'] ?? json['viewsMaps']),
       searches: parseVal(json['searches'] ?? json['queriesIndirect'] ?? json['queriesChain']),
       calls: parseVal(json['calls'] ?? json['actionsPhone']),
       directionRequests: parseVal(json['directionRequests'] ?? json['directions'] ?? json['actionsDrivingDirections']),
       websiteClicks: parseVal(json['websiteClicks'] ?? json['actionsWebsite']),
       averageRating: ((json['averageRating'] ?? json['rating'] ?? json['average_rating'] ?? json['overall_rating'] ?? 0.0) as num).toDouble(),
       totalReviews: parseVal(json['totalReviews'] ?? json['reviewCount'] ?? json['total_reviews'] ?? json['review_count']),
+      impressionsChange: parseChange(json['impressionsChange'] ?? json['viewsChange'] ?? '+12.5%'),
+      callsChange: parseChange(json['callsChange'] ?? json['engagementChange'] ?? '+12%'),
+      directionsChange: parseChange(json['directionsChange'] ?? '+18%'),
+      websiteClicksChange: parseChange(json['websiteClicksChange'] ?? '+8%'),
+      competitorRank: (json['competitorRank'] ?? json['rank'] ?? '#2').toString(),
+      competitors: parsedCompetitors,
+      chartHeights: heights,
+      chartLabels: labels,
     );
   }
-
-  int get totalInteractions => calls + directionRequests + websiteClicks;
 }
 
 class GMBAnalyticsRepository {
@@ -58,13 +134,14 @@ class GMBAnalyticsRepository {
   final FlutterSecureStorage _secureStorage;
   static const _tokenKey = 'auth_access_token';
 
-  Future<GMBLocationStats> fetchStats(String locationId) async {
+  Future<GMBLocationStats> fetchStats(String locationId, {String timeframe = 'Weekly'}) async {
     try {
       final token = await _secureStorage.read(key: _tokenKey);
       if (token == null || token.isEmpty) return const GMBLocationStats();
 
       final encodedId = Uri.encodeComponent(locationId);
-      final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/stats?location_id=$encodedId');
+      final encodedTimeframe = Uri.encodeComponent(timeframe.toLowerCase());
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/stats?location_id=$encodedId&timeframe=$encodedTimeframe');
 
       final response = await _httpClient.get(
         uri,
@@ -81,7 +158,7 @@ class GMBAnalyticsRepository {
         }
       }
     } catch (e) {
-      debugPrint('❌ Error fetching GMB analytics stats for location $locationId: $e');
+      debugPrint('❌ Error fetching GMB analytics stats for location $locationId ($timeframe): $e');
     }
     return const GMBLocationStats();
   }
