@@ -74,6 +74,52 @@ class BackendBusinessRepository implements BusinessRepository {
   Future<BusinessProfile> updateBusinessProfile(BusinessProfile profile) async {
     _localProfiles.removeWhere((item) => item.id == profile.id);
     _localProfiles.add(profile);
+
+    try {
+      final token = await _secureStorage.read(key: _tokenStorageKey);
+      if (token != null && token.isNotEmpty) {
+        final headers = {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        };
+
+        if (profile.isManual) {
+          final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/manual-locations/update');
+          await _httpClient.post(
+            uri,
+            headers: headers,
+            body: jsonEncode({
+              'location_name': profile.id,
+              'title': profile.name,
+              'address': profile.address,
+              'description': profile.description,
+              'website': profile.website,
+              'phone': profile.phone,
+            }),
+          );
+        } else {
+          final locIdParam = Uri.encodeComponent(profile.id);
+          final uri = Uri.parse(
+              '${ApiConfig.baseUrl}/api/gmb/profile?location_id=$locIdParam&update_mask=title,description,websiteUri,phoneNumbers');
+          final updatePayload = {
+            'title': profile.name,
+            'description': profile.description,
+            'websiteUri': profile.website,
+            'phoneNumbers': {
+              'primaryPhone': profile.phone,
+            },
+          };
+          await _httpClient.patch(
+            uri,
+            headers: headers,
+            body: jsonEncode(updatePayload),
+          );
+        }
+      }
+    } catch (e) {
+      // Local profile updated successfully as fallback
+    }
+
     return profile;
   }
 
@@ -103,6 +149,23 @@ class BackendBusinessRepository implements BusinessRepository {
       }
     }
 
+    final description = _string(location['description']);
+    final storeCode = _string(location['storeCode']);
+    final isManual = location['is_manual'] == true || location['isManual'] == true;
+
+    String cityStr = '';
+    String postalStr = '';
+    String stateStr = '';
+    String countryStr = 'US';
+
+    final storefront = location['storefrontAddress'];
+    if (storefront is Map<String, dynamic>) {
+      cityStr = _string(storefront['locality']);
+      postalStr = _string(storefront['postalCode']);
+      stateStr = _string(storefront['administrativeArea']);
+      countryStr = _string(storefront['regionCode']).isNotEmpty ? _string(storefront['regionCode']) : 'US';
+    }
+
     return BusinessProfile(
       id: id.isNotEmpty ? id : 'unknown_${DateTime.now().millisecondsSinceEpoch}',
       name: title.isNotEmpty ? title : 'Untitled Business',
@@ -116,6 +179,13 @@ class BackendBusinessRepository implements BusinessRepository {
       brandTone: 'Professional',
       postingFrequency: 4,
       rating: ratingVal,
+      description: description,
+      city: cityStr,
+      postal: postalStr,
+      state: stateStr,
+      countryCode: countryStr,
+      storeCode: storeCode,
+      isManual: isManual,
     );
   }
 
@@ -188,6 +258,40 @@ class BackendBusinessRepository implements BusinessRepository {
       }
     }
     return '';
+  }
+
+  @override
+  Future<String> enhanceDescription({
+    required String businessName,
+    required String category,
+    required String currentDescription,
+  }) async {
+    final token = await _secureStorage.read(key: _tokenStorageKey);
+    if (token == null || token.isEmpty) {
+      throw Exception('Authentication token missing.');
+    }
+
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/profile/enhance');
+    final response = await _httpClient.post(
+      uri,
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'business_name': businessName,
+        'category': category,
+        'current_description': currentDescription,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final decoded = jsonDecode(response.body);
+      if (decoded['success'] == true && decoded['enhanced_description'] != null) {
+        return decoded['enhanced_description'].toString();
+      }
+    }
+    throw Exception('Failed to generate AI description.');
   }
 
   String _string(dynamic value) => (value ?? '').toString().trim();
