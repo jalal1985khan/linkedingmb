@@ -42,6 +42,35 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   void initState() {
     super.initState();
     _initControllers();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadExtendedProfile();
+    });
+  }
+
+  Future<void> _loadExtendedProfile() async {
+    final activeLocation = ref.read(activeLocationProvider).activeLocation ?? ref.read(selectedBusinessProvider);
+    if (activeLocation == null) return;
+
+    final locationId = activeLocation.id;
+    final detailed = await ref.read(businessRepositoryProvider).fetchLocationProfile(locationId);
+    if (detailed != null && mounted) {
+      ref.read(activeLocationProvider.notifier).selectLocation(detailed);
+      ref.read(selectedBusinessProvider.notifier).setBusiness(detailed);
+
+      setState(() {
+        if (detailed.descriptionText.isNotEmpty) {
+          _descriptionController.text = detailed.descriptionText;
+        }
+        if (detailed.address.isNotEmpty) _addressController.text = detailed.address;
+        if (detailed.cityText.isNotEmpty) _cityController.text = detailed.cityText;
+        if (detailed.postalText.isNotEmpty) _postalController.text = detailed.postalText;
+        if (detailed.stateText.isNotEmpty) _stateController.text = detailed.stateText;
+        if (detailed.countryCodeText.isNotEmpty) _countryController.text = detailed.countryCodeText;
+        if (detailed.phone.isNotEmpty) _phoneController.text = detailed.phone;
+        if (detailed.website.isNotEmpty) _websiteController.text = detailed.website;
+        if (detailed.hoursSummary.isNotEmpty) _hoursController.text = detailed.hoursSummary;
+      });
+    }
   }
 
   void _initControllers() {

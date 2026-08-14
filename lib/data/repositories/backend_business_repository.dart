@@ -92,7 +92,7 @@ class BackendBusinessRepository implements BusinessRepository {
               'location_name': profile.id,
               'title': profile.name,
               'address': profile.address,
-              'description': profile.description,
+              'description': profile.descriptionText,
               'website': profile.website,
               'phone': profile.phone,
             }),
@@ -103,7 +103,7 @@ class BackendBusinessRepository implements BusinessRepository {
               '${ApiConfig.baseUrl}/api/gmb/profile?location_id=$locIdParam&update_mask=title,description,websiteUri,phoneNumbers');
           final updatePayload = {
             'title': profile.name,
-            'description': profile.description,
+            'description': profile.descriptionText,
             'websiteUri': profile.website,
             'phoneNumbers': {
               'primaryPhone': profile.phone,
@@ -116,13 +116,76 @@ class BackendBusinessRepository implements BusinessRepository {
           );
         }
       }
-    } catch (e) {
-      // Local profile updated successfully as fallback
-    }
+    } catch (_) {}
 
     return profile;
   }
 
+  @override
+  Future<BusinessProfile?> fetchLocationProfile(String locationId) async {
+    try {
+      final token = await _secureStorage.read(key: _tokenStorageKey);
+      if (token == null || token.isEmpty) return null;
+
+      final locIdParam = Uri.encodeComponent(locationId);
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/profile?location_id=$locIdParam');
+
+      final response = await _httpClient.get(
+        uri,
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+        final profileData = decoded['profile'] ?? decoded['location'] ?? decoded['data'] ?? decoded;
+        if (profileData is Map<String, dynamic>) {
+          return _mapLocationToProfile(profileData);
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  @override
+  Future<String> enhanceDescription({
+    required String businessName,
+    required String category,
+    required String currentDescription,
+  }) async {
+    try {
+      final token = await _secureStorage.read(key: _tokenStorageKey);
+      if (token == null || token.isEmpty) {
+        throw Exception('Authentication token missing.');
+      }
+
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/profile/enhance');
+      final response = await _httpClient.post(
+        uri,
+        headers: <String, String>{
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'business_name': businessName,
+          'category': category,
+          'current_description': currentDescription,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+        return _string(decoded['enhanced_description'] ?? decoded['description'] ?? decoded['data']);
+      } else {
+        final decoded = jsonDecode(response.body) as Map<String, dynamic>?;
+        throw Exception(decoded?['detail'] ?? 'Failed to enhance description');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
 
   BusinessProfile _mapLocationToProfile(Map<String, dynamic> location) {
     final id = _string(location['name']).isNotEmpty
@@ -149,7 +212,7 @@ class BackendBusinessRepository implements BusinessRepository {
       }
     }
 
-    final description = _string(location['description']);
+    final description = _extractDescription(location);
     final storeCode = _string(location['storeCode']);
     final isManual = location['is_manual'] == true || location['isManual'] == true;
 
@@ -196,8 +259,12 @@ class BackendBusinessRepository implements BusinessRepository {
       if (primary is Map<String, dynamic>) {
         final display = _string(primary['displayName']);
         if (display.isNotEmpty) return display;
+        final name = _string(primary['name']);
+        if (name.isNotEmpty) return name;
       }
     }
+    final rawCat = _string(location['category']);
+    if (rawCat.isNotEmpty) return rawCat;
     return '';
   }
 
@@ -206,15 +273,17 @@ class BackendBusinessRepository implements BusinessRepository {
     if (storefront is Map<String, dynamic>) {
       final locality = _string(storefront['locality']);
       final adminArea = _string(storefront['administrativeArea']);
-      final region = [locality, adminArea].where((item) => item.isNotEmpty).join(', ');
-      if (region.isNotEmpty) return region;
+      if (locality.isNotEmpty && adminArea.isNotEmpty) {
+        return '$locality, $adminArea';
+      }
+      if (locality.isNotEmpty) return locality;
     }
-    return _string(location['location_name']);
+    return '';
   }
 
   String _addressSummary(Map<String, dynamic> location) {
-    final directAddress = _string(location['address']);
-    if (directAddress.isNotEmpty) return directAddress;
+    final direct = _string(location['address']);
+    if (direct.isNotEmpty) return direct;
 
     final storefront = location['storefrontAddress'];
     if (storefront is! Map<String, dynamic>) return '';
@@ -235,6 +304,20 @@ class BackendBusinessRepository implements BusinessRepository {
       if (country.isNotEmpty) country,
     ];
     return parts.join(', ');
+  }
+
+  String _extractDescription(Map<String, dynamic> location) {
+    if (location['description'] != null && _string(location['description']).isNotEmpty) {
+      return _string(location['description']);
+    }
+    final profile = location['profile'];
+    if (profile is Map<String, dynamic> && profile['description'] != null) {
+      return _string(profile['description']);
+    }
+    if (location['profile_description'] != null) {
+      return _string(location['profile_description']);
+    }
+    return '';
   }
 
   String _primaryPhone(Map<String, dynamic> location) {
@@ -260,39 +343,8 @@ class BackendBusinessRepository implements BusinessRepository {
     return '';
   }
 
-  @override
-  Future<String> enhanceDescription({
-    required String businessName,
-    required String category,
-    required String currentDescription,
-  }) async {
-    final token = await _secureStorage.read(key: _tokenStorageKey);
-    if (token == null || token.isEmpty) {
-      throw Exception('Authentication token missing.');
-    }
-
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/profile/enhance');
-    final response = await _httpClient.post(
-      uri,
-      headers: <String, String>{
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'business_name': businessName,
-        'category': category,
-        'current_description': currentDescription,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      final decoded = jsonDecode(response.body);
-      if (decoded['success'] == true && decoded['enhanced_description'] != null) {
-        return decoded['enhanced_description'].toString();
-      }
-    }
-    throw Exception('Failed to generate AI description.');
+  String _string(dynamic value) {
+    if (value == null) return '';
+    return value.toString().trim();
   }
-
-  String _string(dynamic value) => (value ?? '').toString().trim();
 }
