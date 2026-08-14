@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../data/models/business_profile.dart';
+import '../../shared/widgets/app_media_picker.dart';
 import '../dashboard/providers/dashboard_providers.dart';
 import 'business_flow_controller.dart';
 import 'providers/active_location_provider.dart';
@@ -756,122 +757,37 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
         const SizedBox(height: 16),
 
         // Photo Cards Grid
-        _buildPhotoCard(
-          title: 'Logo',
+        AppMediaPicker(
+          initialUrl: _logoUrlController.text,
+          label: 'Business Logo',
           subtitle: 'Help customers recognize your business on Google.',
-          buttonLabel: '+ Add logo',
-          icon: Icons.add_photo_alternate_outlined,
-          controller: _logoUrlController,
-          isDark: isDark,
-          cardBgColor: cardBgColor,
-          borderColor: borderColor,
-          textPrimary: textPrimary,
-          textSecondary: textSecondary,
+          onMediaSelected: (pathOrUrl) {
+            _logoUrlController.text = pathOrUrl;
+          },
         ),
         const SizedBox(height: 16),
-        _buildPhotoCard(
-          title: 'Cover Photo',
-          subtitle: 'Showcase the personality of your business. This is the main photo customers will see.',
-          buttonLabel: '+ Change cover photo',
-          icon: Icons.panorama_outlined,
-          controller: _coverUrlController,
-          isDark: isDark,
-          cardBgColor: cardBgColor,
-          borderColor: borderColor,
-          textPrimary: textPrimary,
-          textSecondary: textSecondary,
+        AppMediaPicker(
+          initialUrl: _coverUrlController.text,
+          label: 'Cover Photo',
+          subtitle: 'Showcase the personality of your business. Main photo customers see.',
+          onMediaSelected: (pathOrUrl) {
+            _coverUrlController.text = pathOrUrl;
+          },
         ),
         const SizedBox(height: 16),
-        _buildPhotoCard(
-          title: 'Additional Photos',
-          subtitle: 'Add more photos of your business interior, exterior, or team.',
-          buttonLabel: '+ Change photos',
-          icon: Icons.collections_outlined,
-          controller: _photoUrlControllers.isNotEmpty ? _photoUrlControllers.first : TextEditingController(),
-          isDark: isDark,
-          cardBgColor: cardBgColor,
-          borderColor: borderColor,
-          textPrimary: textPrimary,
-          textSecondary: textSecondary,
+        AppMediaPicker(
+          initialUrl: _photoUrlControllers.isNotEmpty ? _photoUrlControllers.first.text : '',
+          label: 'Additional Photos',
+          subtitle: 'Add interior, exterior, product, or team photos.',
+          onMediaSelected: (pathOrUrl) {
+            if (_photoUrlControllers.isEmpty) {
+              _photoUrlControllers.add(TextEditingController(text: pathOrUrl));
+            } else {
+              _photoUrlControllers.first.text = pathOrUrl;
+            }
+          },
         ),
       ],
-    );
-  }
-
-  Widget _buildPhotoCard({
-    required String title,
-    required String subtitle,
-    required String buttonLabel,
-    required IconData icon,
-    required TextEditingController controller,
-    required bool isDark,
-    required Color cardBgColor,
-    required Color borderColor,
-    required Color textPrimary,
-    required Color textSecondary,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cardBgColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary)),
-          const SizedBox(height: 4),
-          Text(subtitle, style: GoogleFonts.inter(fontSize: 12, color: textSecondary)),
-          const SizedBox(height: 14),
-          Container(
-            height: 120,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: borderColor),
-            ),
-            child: controller.text.isNotEmpty
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      controller.text,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Center(child: Icon(icon, size: 36, color: textSecondary)),
-                    ),
-                  )
-                : Center(child: Icon(icon, size: 36, color: textSecondary)),
-          ),
-          const SizedBox(height: 12),
-          _buildTextField(
-            controller: controller,
-            label: 'Image URL',
-            hint: 'https://example.com/photo.jpg',
-            icon: Icons.link_outlined,
-            isDark: isDark,
-            borderColor: borderColor,
-            textPrimary: textPrimary,
-            textSecondary: textSecondary,
-          ),
-          const SizedBox(height: 12),
-          ElevatedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Image upload dialog triggered. You can also paste an Image URL above.')),
-              );
-            },
-            icon: const Icon(Icons.add_a_photo_outlined, size: 16),
-            label: Text(buttonLabel, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.bold)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE0E7FF),
-              foregroundColor: const Color(0xFF4338CA),
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-          ),
-        ],
-      ),
     );
   }
 

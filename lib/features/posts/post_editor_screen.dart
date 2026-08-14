@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../shared/widgets/app_media_picker.dart';
 import '../dashboard/dashboard_controller.dart';
 import '../scheduler/scheduler_screen.dart';
 
@@ -286,37 +287,14 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
             decoration: _inputDecoration('Write detailed update or promotional text...', isDark, borderColor, textSecondary),
           ),
           const SizedBox(height: 16),
-          Text(
-            'Media Image URL',
-            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary),
+          AppMediaPicker(
+            initialUrl: _mediaUrlController.text,
+            label: 'Post Media / Image',
+            subtitle: 'Select an image from gallery, take a photo, or provide a URL.',
+            onMediaSelected: (pathOrUrl) {
+              _mediaUrlController.text = pathOrUrl;
+            },
           ),
-          const SizedBox(height: 6),
-          TextField(
-            controller: _mediaUrlController,
-            style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
-            onChanged: (_) => setState(() {}),
-            decoration: _inputDecoration('https://example.com/photo.jpg', isDark, borderColor, textSecondary),
-          ),
-          if (_mediaUrlController.text.trim().isNotEmpty) ...[
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                height: 160,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  border: Border.all(color: borderColor),
-                ),
-                child: Image.network(
-                  _mediaUrlController.text.trim(),
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Center(
-                    child: Icon(Icons.broken_image_outlined, size: 36, color: textSecondary),
-                  ),
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );

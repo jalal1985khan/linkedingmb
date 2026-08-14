@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../data/repositories/gmb_posts_repository.dart';
+import '../../shared/widgets/app_media_picker.dart';
 import '../business_flow/providers/active_location_provider.dart';
 
 class CreatePostFlowScreen extends ConsumerStatefulWidget {
@@ -526,6 +527,17 @@ class _CreatePostFlowScreenState extends ConsumerState<CreatePostFlowScreen> {
                   onChanged: (val) => setState(() {}),
                 ),
               ],
+            ),
+            const SizedBox(height: 16),
+
+            // Media Picker
+            AppMediaPicker(
+              initialUrl: _mediaUrlController.text,
+              label: 'Post Media / Photo (Optional)',
+              subtitle: 'Select an image from gallery or take a photo with camera.',
+              onMediaSelected: (pathOrUrl) {
+                _mediaUrlController.text = pathOrUrl;
+              },
             ),
             const SizedBox(height: 16),
 
