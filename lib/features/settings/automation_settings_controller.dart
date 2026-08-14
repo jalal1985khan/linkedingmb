@@ -181,13 +181,16 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
       bool withComments = state.onlyWithComments;
 
       http.Response? replyRes;
+      final safeTargetLoc = (locationId != null && locationId.isNotEmpty) ? locationId : 'default';
+      final safeLocQuery = '?location_id=${Uri.encodeComponent(safeTargetLoc)}';
+
       try {
         replyRes = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/gmb/settings/auto-reply$locParam'), headers: headers).timeout(const Duration(seconds: 8));
       } catch (_) {}
 
-      if (replyRes == null || replyRes.statusCode == 404) {
+      if (replyRes == null || replyRes.statusCode == 404 || replyRes.statusCode == 422) {
         try {
-          replyRes = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/gmb/reviews/auto-reply-settings$locParam'), headers: headers).timeout(const Duration(seconds: 8));
+          replyRes = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/gmb/reviews/auto-reply-settings$safeLocQuery'), headers: headers).timeout(const Duration(seconds: 8));
         } catch (_) {}
       }
 
@@ -351,10 +354,11 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
         ).timeout(const Duration(seconds: 10));
       } catch (_) {}
 
-      if (replyRes == null || replyRes.statusCode == 404) {
+      if (replyRes == null || replyRes.statusCode == 404 || replyRes.statusCode == 422) {
         try {
+          final targetLoc = (locationId != null && locationId.isNotEmpty) ? locationId : 'default';
           replyRes = await http.put(
-            Uri.parse('${ApiConfig.baseUrl}/api/gmb/reviews/auto-reply-settings?location_id=${Uri.encodeComponent(locationId ?? '')}'),
+            Uri.parse('${ApiConfig.baseUrl}/api/gmb/reviews/auto-reply-settings?location_id=${Uri.encodeComponent(targetLoc)}'),
             headers: headers,
             body: jsonEncode(replyPayload),
           ).timeout(const Duration(seconds: 10));
