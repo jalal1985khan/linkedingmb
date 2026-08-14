@@ -45,12 +45,7 @@ class _AppMediaPickerState extends State<AppMediaPicker> {
 
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final XFile? photo = await _picker.pickImage(
-        source: source,
-        maxWidth: 1920,
-        maxHeight: 1080,
-        imageQuality: 85,
-      );
+      final XFile? photo = await _picker.pickImage(source: source);
       if (photo != null) {
         setState(() {
           _pickedFile = photo;
@@ -59,18 +54,29 @@ class _AppMediaPickerState extends State<AppMediaPicker> {
         widget.onMediaSelected(photo.path);
       }
     } catch (e) {
+      debugPrint('❌ ImagePicker Exception: $e');
       if (source == ImageSource.camera) {
-        // Fallback to gallery if camera is unavailable (e.g. simulator)
+        // Fallback to gallery if camera is unavailable (e.g. simulator/desktop)
         _pickImage(ImageSource.gallery);
         return;
       }
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please select an image or enter an Image URL.'),
-            backgroundColor: AppColors.primary,
-          ),
-        );
+        final errStr = e.toString().toLowerCase();
+        if (errStr.contains('access') || errStr.contains('permission')) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Photo library access permission required in Settings.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Media selection error: ${e.toString()}'),
+              backgroundColor: AppColors.primary,
+            ),
+          );
+        }
       }
     }
   }
