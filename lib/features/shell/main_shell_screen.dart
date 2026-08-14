@@ -319,7 +319,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 20,
               offset: const Offset(0, -4),
             ),
@@ -431,7 +431,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: (isZero ? Colors.red : isLow ? Colors.orange : Colors.indigo).withOpacity(0.25),
+            color: (isZero ? Colors.red : isLow ? Colors.orange : Colors.indigo).withValues(alpha: 0.25),
             blurRadius: 8,
             offset: const Offset(0, 3),
           )
@@ -442,7 +442,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.18),
+              color: Colors.white.withValues(alpha: 0.18),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -472,7 +472,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                           ? 'Low Credit Balance'
                           : 'Available Balance',
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white.withOpacity(0.85),
+                    color: Colors.white.withValues(alpha: 0.85),
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
                   ),
@@ -521,7 +521,7 @@ class _DrawerNavItem extends StatelessWidget {
             : Colors.grey.shade700;
             
     final bgColor = selected 
-        ? AppColors.primaryContainer.withOpacity(0.1) 
+        ? AppColors.primaryContainer.withValues(alpha: 0.1) 
         : Colors.transparent;
 
     return Container(
