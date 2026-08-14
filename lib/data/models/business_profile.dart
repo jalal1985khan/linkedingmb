@@ -33,13 +33,21 @@ class BusinessProfile {
   final String brandTone;
   final int postingFrequency;
   final double rating;
-  final String description;
-  final String city;
-  final String postal;
-  final String state;
-  final String countryCode;
-  final String storeCode;
-  final bool isManual;
+  final String? description;
+  final String? city;
+  final String? postal;
+  final String? state;
+  final String? countryCode;
+  final String? storeCode;
+  final bool? isManual;
+
+  bool get isManualLocation => isManual == true;
+  String get descriptionText => description ?? '';
+  String get cityText => city ?? '';
+  String get postalText => postal ?? '';
+  String get stateText => state ?? '';
+  String get countryCodeText => countryCode ?? 'US';
+  String get storeCodeText => storeCode ?? '';
 
   BusinessProfile copyWith({
     String? id,
@@ -75,15 +83,13 @@ class BusinessProfile {
       brandTone: brandTone ?? this.brandTone,
       postingFrequency: postingFrequency ?? this.postingFrequency,
       rating: rating ?? this.rating,
-      description: description ?? this.description,
-      city: city ?? this.city,
-      postal: postal ?? this.postal,
-      state: state ?? this.state,
-      countryCode: countryCode ?? this.countryCode,
-      storeCode: storeCode ?? this.storeCode,
-      isManual: isManual ?? this.isManual,
+      description: description ?? descriptionText,
+      city: city ?? cityText,
+      postal: postal ?? postalText,
+      state: state ?? stateText,
+      countryCode: countryCode ?? countryCodeText,
+      storeCode: storeCode ?? storeCodeText,
+      isManual: isManual ?? isManualLocation,
     );
   }
-
-  bool get isManualLocation => isManual == true;
 }

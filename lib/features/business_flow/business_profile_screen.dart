@@ -47,13 +47,13 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     final business = ref.read(activeLocationProvider).activeLocation ?? ref.read(selectedBusinessProvider);
     _nameController = TextEditingController(text: business?.name ?? '');
     _categoryController = TextEditingController(text: business?.category ?? '');
-    _descriptionController = TextEditingController(text: business?.description ?? '');
+    _descriptionController = TextEditingController(text: business?.descriptionText ?? '');
 
     _addressController = TextEditingController(text: business?.address ?? '');
-    _cityController = TextEditingController(text: business?.city ?? '');
-    _postalController = TextEditingController(text: business?.postal ?? '');
-    _stateController = TextEditingController(text: business?.state ?? '');
-    _countryController = TextEditingController(text: business?.countryCode ?? 'US');
+    _cityController = TextEditingController(text: business?.cityText ?? '');
+    _postalController = TextEditingController(text: business?.postalText ?? '');
+    _stateController = TextEditingController(text: business?.stateText ?? '');
+    _countryController = TextEditingController(text: business?.countryCodeText ?? 'US');
     _phoneController = TextEditingController(text: business?.phone ?? '');
     _websiteController = TextEditingController(text: business?.website ?? '');
 
@@ -72,20 +72,20 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     if (_categoryController.text.isEmpty && business.category.isNotEmpty) {
       _categoryController.text = business.category;
     }
-    if (_descriptionController.text.isEmpty && business.description.isNotEmpty) {
-      _descriptionController.text = business.description;
+    if (_descriptionController.text.isEmpty && business.descriptionText.isNotEmpty) {
+      _descriptionController.text = business.descriptionText;
     }
     if (_addressController.text.isEmpty && business.address.isNotEmpty) {
       _addressController.text = business.address;
     }
-    if (_cityController.text.isEmpty && business.city.isNotEmpty) {
-      _cityController.text = business.city;
+    if (_cityController.text.isEmpty && business.cityText.isNotEmpty) {
+      _cityController.text = business.cityText;
     }
-    if (_postalController.text.isEmpty && business.postal.isNotEmpty) {
-      _postalController.text = business.postal;
+    if (_postalController.text.isEmpty && business.postalText.isNotEmpty) {
+      _postalController.text = business.postalText;
     }
-    if (_stateController.text.isEmpty && business.state.isNotEmpty) {
-      _stateController.text = business.state;
+    if (_stateController.text.isEmpty && business.stateText.isNotEmpty) {
+      _stateController.text = business.stateText;
     }
     if (_phoneController.text.isEmpty && business.phone.isNotEmpty) {
       _phoneController.text = business.phone;
@@ -330,10 +330,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                             ),
                           ),
                         ),
-                        if (business.storeCode.isNotEmpty) ...[
+                        if (business.storeCodeText.isNotEmpty) ...[
                           const SizedBox(width: 8),
                           Text(
-                            business.storeCode,
+                            business.storeCodeText,
                             style: TextStyle(
                               fontSize: 11,
                               color: isDark ? Colors.white70 : AppColors.textSecondary,
