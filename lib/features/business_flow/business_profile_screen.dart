@@ -5,6 +5,7 @@ import '../../core/theme/app_colors.dart';
 import '../../data/models/business_profile.dart';
 import '../dashboard/providers/dashboard_providers.dart';
 import 'business_flow_controller.dart';
+import 'providers/active_location_provider.dart';
 
 class BusinessProfileScreen extends ConsumerStatefulWidget {
   const BusinessProfileScreen({super.key});
@@ -34,11 +35,16 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
 
   bool _saving = false;
   bool _enhancing = false;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    final business = ref.read(selectedBusinessProvider);
+    _initControllers();
+  }
+
+  void _initControllers() {
+    final business = ref.read(activeLocationProvider).activeLocation ?? ref.read(selectedBusinessProvider);
     _nameController = TextEditingController(text: business?.name ?? '');
     _categoryController = TextEditingController(text: business?.category ?? '');
     _descriptionController = TextEditingController(text: business?.description ?? '');
@@ -56,6 +62,40 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     _audienceController = TextEditingController(text: business?.targetAudience ?? '');
     _toneController = TextEditingController(text: business?.brandTone ?? '');
     _postingFrequency = (business?.postingFrequency ?? 4).toDouble();
+    _isInitialized = true;
+  }
+
+  void _updateControllersIfUnchanged(BusinessProfile business) {
+    if (_nameController.text.isEmpty && business.name.isNotEmpty) {
+      _nameController.text = business.name;
+    }
+    if (_categoryController.text.isEmpty && business.category.isNotEmpty) {
+      _categoryController.text = business.category;
+    }
+    if (_descriptionController.text.isEmpty && business.description.isNotEmpty) {
+      _descriptionController.text = business.description;
+    }
+    if (_addressController.text.isEmpty && business.address.isNotEmpty) {
+      _addressController.text = business.address;
+    }
+    if (_cityController.text.isEmpty && business.city.isNotEmpty) {
+      _cityController.text = business.city;
+    }
+    if (_postalController.text.isEmpty && business.postal.isNotEmpty) {
+      _postalController.text = business.postal;
+    }
+    if (_stateController.text.isEmpty && business.state.isNotEmpty) {
+      _stateController.text = business.state;
+    }
+    if (_phoneController.text.isEmpty && business.phone.isNotEmpty) {
+      _phoneController.text = business.phone;
+    }
+    if (_websiteController.text.isEmpty && business.website.isNotEmpty) {
+      _websiteController.text = business.website;
+    }
+    if (_hoursController.text.isEmpty && business.hoursSummary.isNotEmpty) {
+      _hoursController.text = business.hoursSummary;
+    }
   }
 
   @override
@@ -78,14 +118,57 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final business = ref.watch(selectedBusinessProvider);
+    final activeLocState = ref.watch(activeLocationProvider);
+    final selectedBusiness = ref.watch(selectedBusinessProvider);
+
+    final business = activeLocState.activeLocation ?? selectedBusiness;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    if (activeLocState.isLoading && business == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Business Profile')),
+        body: const Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
 
     if (business == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Business Profile')),
-        body: const Center(child: Text('No business location selected.')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.storefront_outlined, size: 64, color: AppColors.textSecondary),
+              const SizedBox(height: 16),
+              const Text(
+                'No Business Location Selected',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Please select or connect a location to manage its profile.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: () => ref.read(activeLocationProvider.notifier).refresh(),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Refresh Locations'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
+    }
+
+    if (_isInitialized) {
+      _updateControllersIfUnchanged(business);
     }
 
     final profileScore = ref.watch(profileCompletenessProvider(business));
@@ -766,6 +849,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
       );
 
       final saved = await ref.read(businessRepositoryProvider).updateBusinessProfile(updated);
+      ref.read(activeLocationProvider.notifier).selectLocation(saved);
       ref.read(selectedBusinessProvider.notifier).setBusiness(saved);
 
       if (!mounted) return;
