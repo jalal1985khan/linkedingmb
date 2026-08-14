@@ -18,6 +18,7 @@ class AutomationSettingsState {
   final List<String> allowedFormats;
   final bool autoReviewReply;
   final int minStars;
+  final int maxStars;
   final bool onlyWithComments;
   final List<Map<String, String>> personas;
   final List<Map<String, String>> knowledgeGroups;
@@ -39,7 +40,8 @@ class AutomationSettingsState {
       'quick_tips',
     ],
     this.autoReviewReply = true,
-    this.minStars = 4,
+    this.minStars = 3,
+    this.maxStars = 5,
     this.onlyWithComments = false,
     this.personas = const [],
     this.knowledgeGroups = const [],
@@ -59,6 +61,7 @@ class AutomationSettingsState {
     List<String>? allowedFormats,
     bool? autoReviewReply,
     int? minStars,
+    int? maxStars,
     bool? onlyWithComments,
     List<Map<String, String>>? personas,
     List<Map<String, String>>? knowledgeGroups,
@@ -77,6 +80,7 @@ class AutomationSettingsState {
       allowedFormats: allowedFormats ?? this.allowedFormats,
       autoReviewReply: autoReviewReply ?? this.autoReviewReply,
       minStars: minStars ?? this.minStars,
+      maxStars: maxStars ?? this.maxStars,
       onlyWithComments: onlyWithComments ?? this.onlyWithComments,
       personas: personas ?? this.personas,
       knowledgeGroups: knowledgeGroups ?? this.knowledgeGroups,
@@ -115,7 +119,6 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
       final fetchedPersonas = results[0];
       final fetchedGroups = results[1];
 
-      // Add default "socialhive" persona & "SocialHive Official Group" if empty
       if (fetchedPersonas.every((p) => p['id'] != 'socialhive')) {
         fetchedPersonas.insert(0, {'id': 'socialhive', 'name': 'socialhive'});
       }
@@ -161,7 +164,8 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
 
       // 3. Fetch Review Auto-Reply Config
       bool autoReply = state.autoReviewReply;
-      int stars = state.minStars;
+      int minS = state.minStars;
+      int maxS = state.maxStars;
       bool withComments = state.onlyWithComments;
 
       if (locationId != null && locationId.isNotEmpty) {
@@ -175,7 +179,8 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
           if (replyData is Map<String, dynamic> && replyData['success'] == true) {
             final st = replyData['settings'] as Map<String, dynamic>? ?? {};
             autoReply = st['enabled'] ?? true;
-            stars = (st['min_stars'] as num?)?.toInt() ?? 4;
+            minS = (st['min_stars'] as num?)?.toInt() ?? 3;
+            maxS = (st['max_stars'] as num?)?.toInt() ?? 5;
             withComments = st['only_with_comments'] ?? false;
           }
         }
@@ -191,7 +196,8 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
         knowledgeGroupId: kgId,
         allowedFormats: formats,
         autoReviewReply: autoReply,
-        minStars: stars,
+        minStars: minS,
+        maxStars: maxS,
         onlyWithComments: withComments,
         personas: fetchedPersonas,
         knowledgeGroups: fetchedGroups,
@@ -260,6 +266,8 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
   void setKnowledgeGroupId(String? val) => state = state.copyWith(knowledgeGroupId: val);
   void setAutoReviewReply(bool val) => state = state.copyWith(autoReviewReply: val);
   void setMinStars(int val) => state = state.copyWith(minStars: val);
+  void setMaxStars(int val) => state = state.copyWith(maxStars: val);
+  void setOnlyWithComments(bool val) => state = state.copyWith(onlyWithComments: val);
 
   Future<bool> saveSettings({String? locationId}) async {
     state = state.copyWith(isSaving: true, errorMessage: null, successMessage: null);
@@ -294,22 +302,6 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
         throw Exception('Failed to save GMB Auto-Pilot config (${configRes.statusCode})');
       }
 
-      // Also trigger blueprint generation & auto-scheduling on backend
-      try {
-        await http.post(
-          Uri.parse('${ApiConfig.baseUrl}/api/gmb/automation/generate-blueprint'),
-          headers: headers,
-          body: jsonEncode({
-            "location_id": locationId ?? "",
-            "posts_per_week": state.postsPerWeek,
-            "allowed_formats": state.allowedFormats,
-            "auto_schedule": true
-          }),
-        ).timeout(const Duration(seconds: 10));
-      } catch (e) {
-        debugPrint('⚠️ Blueprint trigger notification: $e');
-      }
-
       // 2. Save Review Auto-Reply Config
       if (locationId != null && locationId.isNotEmpty) {
         final replyUri = Uri.parse(
@@ -318,7 +310,7 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
         final replyBody = jsonEncode({
           "enabled": state.autoReviewReply,
           "min_stars": state.minStars,
-          "max_stars": 5,
+          "max_stars": state.maxStars,
           "only_with_comments": state.onlyWithComments,
         });
 
@@ -327,7 +319,7 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
 
       state = state.copyWith(
         isSaving: false,
-        successMessage: 'GMB Auto-Pilot configuration saved & synced with backend!',
+        successMessage: 'GMB Auto-Pilot & Auto-Reply settings saved and synced!',
       );
       return true;
     } catch (e) {
