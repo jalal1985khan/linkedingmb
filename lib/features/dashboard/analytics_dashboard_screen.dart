@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../data/repositories/gmb_analytics_repository.dart';
 import '../business_flow/providers/active_location_provider.dart';
+import 'competitor_analysis_screen.dart';
 
 final selectedTimeframeProvider = StateProvider.autoDispose<String>((ref) => 'Weekly');
 
@@ -150,6 +151,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
 
                     // Competitor Rank Card
                     _buildCompetitorRankCard(
+                      context: context,
                       stats: stats,
                       isDark: isDark,
                       borderColor: borderColor,
@@ -449,6 +451,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildCompetitorRankCard({
+    required BuildContext context,
     required GMBLocationStats stats,
     required bool isDark,
     required Color borderColor,
@@ -598,7 +601,14 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CompetitorAnalysisScreen(),
+                  ),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
