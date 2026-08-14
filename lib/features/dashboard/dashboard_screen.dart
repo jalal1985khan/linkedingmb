@@ -765,7 +765,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final stats = statsAsync.value ?? const GMBLocationStats();
     final reviews = reviewsAsync.value ?? const <GMBReviewItem>[];
 
-    final double rating = stats.averageRating;
+    double rating = stats.averageRating;
+    if (reviews.isNotEmpty) {
+      final validReviews = reviews.where((r) => r.starRating > 0).toList();
+      if (validReviews.isNotEmpty) {
+        final double sum = validReviews.fold<double>(0.0, (acc, r) => acc + r.starRating);
+        final double computedRating = sum / validReviews.length;
+        if (rating <= 0.0 || computedRating > 0.0) {
+          rating = computedRating;
+        }
+      }
+    }
 
     final int count5 = reviews.where((r) => r.starRating == 5).length;
     final int count4 = reviews.where((r) => r.starRating == 4).length;

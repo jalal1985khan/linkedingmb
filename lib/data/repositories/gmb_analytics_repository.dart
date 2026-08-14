@@ -39,8 +39,8 @@ class GMBLocationStats {
       calls: parseVal(json['calls'] ?? json['actionsPhone']),
       directionRequests: parseVal(json['directionRequests'] ?? json['directions'] ?? json['actionsDrivingDirections']),
       websiteClicks: parseVal(json['websiteClicks'] ?? json['actionsWebsite']),
-      averageRating: ((json['averageRating'] ?? json['rating'] ?? 0.0) as num).toDouble(),
-      totalReviews: parseVal(json['totalReviews'] ?? json['reviewCount']),
+      averageRating: ((json['averageRating'] ?? json['rating'] ?? json['average_rating'] ?? json['overall_rating'] ?? 0.0) as num).toDouble(),
+      totalReviews: parseVal(json['totalReviews'] ?? json['reviewCount'] ?? json['total_reviews'] ?? json['review_count']),
     );
   }
 

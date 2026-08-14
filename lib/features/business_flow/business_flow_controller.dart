@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/mock/mock_ai_repository.dart';
+import '../../data/repositories/backend_ai_repository.dart';
 import '../../data/models/ai_recommendation.dart';
 import '../../data/models/business_profile.dart';
 import '../../data/repositories/backend_business_repository.dart';
@@ -13,7 +13,7 @@ final businessRepositoryProvider = Provider<BusinessRepository>((ref) {
 });
 
 final aiRepositoryProvider = Provider<AiRepository>((ref) {
-  return MockAiRepository();
+  return BackendAiRepository();
 });
 
 class SelectedBusinessController extends StateNotifier<BusinessProfile?> {

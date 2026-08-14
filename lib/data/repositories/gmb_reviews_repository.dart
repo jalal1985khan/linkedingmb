@@ -29,27 +29,24 @@ class GMBReviewItem {
   });
 
   factory GMBReviewItem.fromJson(Map<String, dynamic> json) {
-    int rating = 5;
-    if (json['starRating'] != null) {
-      if (json['starRating'] is int) {
-        rating = json['starRating'];
-      } else if (json['starRating'] is String) {
-        final s = json['starRating'].toString().toUpperCase();
-        if (s.contains('FIVE')) {
-          rating = 5;
-        } else if (s.contains('FOUR')) {
-          rating = 4;
-        } else if (s.contains('THREE')) {
-          rating = 3;
-        } else if (s.contains('TWO')) {
-          rating = 2;
-        } else if (s.contains('ONE')) {
-          rating = 1;
+    int rating = 0;
+    final rawRating = json['starRating'] ?? json['star_rating'] ?? json['rating'] ?? json['stars'];
+    if (rawRating != null) {
+      if (rawRating is int) {
+        rating = rawRating;
+      } else if (rawRating is double) {
+        rating = rawRating.round();
+      } else if (rawRating is String) {
+        final s = rawRating.trim().toUpperCase();
+        const ratingMap = {'ONE': 1, 'TWO': 2, 'THREE': 3, 'FOUR': 4, 'FIVE': 5};
+        if (ratingMap.containsKey(s)) {
+          rating = ratingMap[s]!;
         } else {
-          rating = int.tryParse(s) ?? 5;
+          rating = (double.tryParse(s) ?? 0.0).round();
         }
       }
     }
+    if (rating <= 0) rating = 5;
 
     final reviewer = json['reviewer'] as Map<String, dynamic>? ?? {};
     final replyObj = json['reviewReply'] as Map<String, dynamic>?;

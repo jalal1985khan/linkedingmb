@@ -10,24 +10,17 @@ final locationReviewsProvider =
     });
 
 int parseReviewRating(Map r) {
-  int starRating = 0;
-  if (r['rating'] != null) {
-    if (r['rating'] is int) {
-      starRating = r['rating'] as int;
-    } else if (r['rating'] is String) {
-      starRating = int.tryParse(r['rating']) ?? 0;
-    }
-  } else if (r['star_rating'] != null) {
-    if (r['star_rating'] is int) {
-      starRating = r['star_rating'] as int;
-    } else if (r['star_rating'] is String) {
-      starRating = int.tryParse(r['star_rating']) ?? 0;
-    }
-  } else if (r['starRating'] != null) {
-    final ratingMap = {'ONE': 1, 'TWO': 2, 'THREE': 3, 'FOUR': 4, 'FIVE': 5};
-    starRating = ratingMap[r['starRating']] ?? 0;
+  final val = r['starRating'] ?? r['star_rating'] ?? r['rating'] ?? r['stars'];
+  if (val == null) return 0;
+  if (val is int) return val;
+  if (val is double) return val.round();
+  if (val is String) {
+    final s = val.trim().toUpperCase();
+    const ratingMap = {'ONE': 1, 'TWO': 2, 'THREE': 3, 'FOUR': 4, 'FIVE': 5};
+    if (ratingMap.containsKey(s)) return ratingMap[s]!;
+    return (double.tryParse(s) ?? 0.0).round();
   }
-  return starRating;
+  return 0;
 }
 
 class ReviewsScreen extends ConsumerStatefulWidget {
