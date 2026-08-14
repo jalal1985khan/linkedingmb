@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../data/repositories/gmbapi_repository.dart';
+import '../business_flow/providers/active_location_provider.dart';
+import '../settings/automation_settings_controller.dart';
 
 final locationReviewsProvider =
     FutureProvider.autoDispose<Map<String, dynamic>>((ref) {
@@ -185,6 +188,8 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                           ),
                           const SizedBox(height: 24),
                           _buildAIAssistantCard(pendingReviews.length),
+                          const SizedBox(height: 24),
+                          _buildAutoReplySettingsCard(),
                           const SizedBox(height: 24),
                           _buildFilters(allReviews.length, pendingReviews.length),
                         ],
@@ -384,6 +389,221 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildAutoReplySettingsCard() {
+    final settings = ref.watch(automationSettingsProvider);
+    final controller = ref.read(automationSettingsProvider.notifier);
+    final activeLocation = ref.watch(activeLocationProvider).activeLocation;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryContainer.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.forum_rounded, color: AppColors.primaryContainer, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'AI Review Auto-Reply',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                              color: const Color(0xFF0F172A),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: settings.autoReviewReply ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: settings.autoReviewReply ? const Color(0xFF86EFAC) : const Color(0xFFCBD5E1),
+                            ),
+                          ),
+                          child: Text(
+                            settings.autoReviewReply ? 'Active' : 'Off',
+                            style: GoogleFonts.plusJakartaSans(
+                              color: settings.autoReviewReply ? const Color(0xFF15803D) : const Color(0xFF64748B),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Automatically respond to incoming customer reviews.',
+                      style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: settings.autoReviewReply,
+                onChanged: controller.setAutoReviewReply,
+                activeThumbColor: AppColors.primaryContainer,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Minimum Rating', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFF475569))),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<int>(
+                      initialValue: settings.minStars,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                      ),
+                      items: [1, 2, 3, 4, 5].map((s) {
+                        return DropdownMenuItem<int>(
+                          value: s,
+                          child: Text('$s ★', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700)),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) controller.setMinStars(val);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Maximum Rating', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 12, color: const Color(0xFF475569))),
+                    const SizedBox(height: 6),
+                    DropdownButtonFormField<int>(
+                      initialValue: settings.maxStars,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: const Color(0xFFF8FAFC),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                      ),
+                      items: [1, 2, 3, 4, 5].map((s) {
+                        return DropdownMenuItem<int>(
+                          value: s,
+                          child: Text('$s ★', style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700)),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) controller.setMaxStars(val);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Only reviews within this star rating range will receive auto-replies.',
+            style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF94A3B8)),
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1, color: Color(0xFFE2E8F0)),
+          const SizedBox(height: 14),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Only Reply to Written Comments', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13)),
+                    const SizedBox(height: 2),
+                    Text('Ignore reviews that only leave a star rating without text.', style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B))),
+                  ],
+                ),
+              ),
+              Switch(
+                value: settings.onlyWithComments,
+                onChanged: controller.setOnlyWithComments,
+                activeThumbColor: AppColors.primaryContainer,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0F172A),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              onPressed: settings.isSaving
+                  ? null
+                  : () async {
+                      final success = await controller.saveSettings(
+                        locationId: activeLocation?.name,
+                      );
+                      if (success && mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('✨ Auto-Reply Settings saved & synced!'),
+                            backgroundColor: Color(0xFF16A34A),
+                          ),
+                        );
+                      }
+                    },
+              icon: settings.isSaving
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.save_rounded, size: 18),
+              label: Text(
+                settings.isSaving ? 'Saving Auto-Reply...' : 'Save Auto-Reply Rules',
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 13),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
