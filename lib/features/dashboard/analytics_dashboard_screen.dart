@@ -319,19 +319,30 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
           // Dynamic Bar Chart
           SizedBox(
             height: 140,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(
-                stats.chartHeights.length,
-                (index) {
-                  final heightFactor = stats.chartHeights[index].clamp(0.15, 1.0);
-                  final label = index < stats.chartLabels.length ? stats.chartLabels[index] : '';
-                  final isActive = index == (stats.chartHeights.length / 2).floor();
-                  return _buildChartBar(heightFactor, isActive, label, isDark, textSecondary);
-                },
-              ),
-            ),
+            child: stats.chartHeights.isEmpty
+                ? Center(
+                    child: Text(
+                      'Google has not returned performance data for this listing yet.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.inter(
+                        color: textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: List.generate(
+                      stats.chartHeights.length,
+                      (index) {
+                        final heightFactor = stats.chartHeights[index].clamp(0.15, 1.0);
+                        final label = index < stats.chartLabels.length ? stats.chartLabels[index] : '';
+                        final isActive = index == (stats.chartHeights.length / 2).floor();
+                        return _buildChartBar(heightFactor, isActive, label, isDark, textSecondary);
+                      },
+                    ),
+                  ),
           ),
         ],
       ),
@@ -503,7 +514,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  stats.competitorRank,
+                  stats.competitorRank ?? 'Unranked',
                   style: GoogleFonts.inter(
                     color: Colors.white,
                     fontSize: 16,
@@ -524,7 +535,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Search visibility benchmarking is actively tracking local competitors.',
+                      'No local pack results available for this category and city yet.',
                       style: GoogleFonts.inter(
                         color: const Color(0xFF94A3B8),
                         fontSize: 13,
@@ -536,16 +547,22 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
             )
           else
             ...competitorsList.map((comp) {
-              final percentage = comp.matchPercentage / 100.0;
+              final details = <String>[
+                if (comp.position != null) 'Position ${comp.position}',
+                if (comp.rating != null) '${comp.rating} ★',
+                if (comp.reviewCount != null) '${comp.reviewCount} reviews',
+              ].join('  ·  ');
+
               return Padding(
                 padding: const EdgeInsets.only(bottom: 16.0),
-                child: Column(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                             comp.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -555,41 +572,18 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${comp.matchPercentage}% Match',
-                          style: GoogleFonts.inter(
-                            color: const Color(0xFF38BDF8),
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Stack(
-                      children: [
-                        Container(
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(3),
-                          ),
-                        ),
-                        FractionallySizedBox(
-                          widthFactor: percentage.clamp(0.05, 1.0),
-                          child: Container(
-                            height: 6,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(3),
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF38BDF8), AppColors.primary],
+                          if (details.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              details,
+                              style: GoogleFonts.inter(
+                                color: const Color(0xFF94A3B8),
+                                fontSize: 11,
                               ),
                             ),
-                          ),
-                        ),
-                      ],
+                          ],
+                        ],
+                      ),
                     ),
                   ],
                 ),

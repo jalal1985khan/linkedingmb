@@ -7,17 +7,26 @@ import '../../core/config/api_config.dart';
 
 class CompetitorItem {
   final String name;
-  final int matchPercentage;
+  final double? rating;
+  final int? reviewCount;
+  final int? position;
 
   const CompetitorItem({
     required this.name,
-    required this.matchPercentage,
+    this.rating,
+    this.reviewCount,
+    this.position,
   });
 
   factory CompetitorItem.fromJson(Map<String, dynamic> json) {
+    double? parseRating(dynamic v) => v is num ? v.toDouble() : null;
+    int? parseInt(dynamic v) => v is num ? v.toInt() : null;
+
     return CompetitorItem(
       name: (json['name'] ?? json['title'] ?? 'Competitor').toString(),
-      matchPercentage: (json['match'] ?? json['matchPercentage'] ?? json['match_rate'] ?? 80) as int,
+      rating: parseRating(json['rating']),
+      reviewCount: parseInt(json['reviewCount'] ?? json['review_count']),
+      position: parseInt(json['position']),
     );
   }
 }
@@ -53,8 +62,8 @@ class GMBLocationStats {
     String? websiteClicksChange,
     String? competitorRank,
     List<CompetitorItem> competitors = const [],
-    this.chartHeights = const [0.4, 0.6, 0.5, 1.0, 0.8, 0.5, 0.4],
-    this.chartLabels = const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    this.chartHeights = const [],
+    this.chartLabels = const [],
   })  : _impressionsChange = impressionsChange,
         _callsChange = callsChange,
         _directionsChange = directionsChange,
@@ -66,7 +75,10 @@ class GMBLocationStats {
   String get callsChange => (_callsChange != null && _callsChange.isNotEmpty) ? _callsChange : '+0%';
   String get directionsChange => (_directionsChange != null && _directionsChange.isNotEmpty) ? _directionsChange : '+0%';
   String get websiteClicksChange => (_websiteClicksChange != null && _websiteClicksChange.isNotEmpty) ? _websiteClicksChange : '+0%';
-  String get competitorRank => (_competitorRank != null && _competitorRank.isNotEmpty) ? _competitorRank : '#1';
+  /// Null when this listing did not appear in the local pack, which means
+  /// unranked for that query rather than top placement.
+  String? get competitorRank =>
+      (_competitorRank != null && _competitorRank.isNotEmpty) ? _competitorRank : null;
   List<CompetitorItem> get competitors => _competitors;
 
   int get totalImpressions {
@@ -104,13 +116,13 @@ class GMBLocationStats {
     }
 
     final rawTrend = json['chartHeights'] ?? json['trend'] ?? json['weeklyTrend'];
-    List<double> heights = const [0.4, 0.6, 0.5, 1.0, 0.8, 0.5, 0.4];
+    List<double> heights = const [];
     if (rawTrend is List && rawTrend.isNotEmpty) {
-      heights = rawTrend.map((e) => (num.tryParse(e.toString()) ?? 0.5).toDouble()).toList();
+      heights = rawTrend.map((e) => (num.tryParse(e.toString()) ?? 0.0).toDouble()).toList();
     }
 
     final rawLabels = json['chartLabels'] ?? json['labels'];
-    List<String> labels = const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    List<String> labels = const [];
     if (rawLabels is List && rawLabels.isNotEmpty) {
       labels = rawLabels.map((e) => e.toString()).toList();
     }
@@ -123,11 +135,11 @@ class GMBLocationStats {
       websiteClicks: parseVal(json['websiteClicks'] ?? json['actionsWebsite']),
       averageRating: ((json['averageRating'] ?? json['rating'] ?? json['average_rating'] ?? json['overall_rating'] ?? 0.0) as num).toDouble(),
       totalReviews: parseVal(json['totalReviews'] ?? json['reviewCount'] ?? json['total_reviews'] ?? json['review_count']),
-      impressionsChange: parseChange(json['impressionsChange'] ?? json['viewsChange'] ?? '+12.5%'),
-      callsChange: parseChange(json['callsChange'] ?? json['engagementChange'] ?? '+12%'),
-      directionsChange: parseChange(json['directionsChange'] ?? '+18%'),
-      websiteClicksChange: parseChange(json['websiteClicksChange'] ?? '+8%'),
-      competitorRank: (json['competitorRank'] ?? json['rank'] ?? '#2').toString(),
+      impressionsChange: parseChange(json['impressionsChange'] ?? json['viewsChange']),
+      callsChange: parseChange(json['callsChange'] ?? json['engagementChange']),
+      directionsChange: parseChange(json['directionsChange']),
+      websiteClicksChange: parseChange(json['websiteClicksChange']),
+      competitorRank: (json['competitorRank'] ?? json['rank'])?.toString(),
       competitors: parsedCompetitors,
       chartHeights: heights,
       chartLabels: labels,
