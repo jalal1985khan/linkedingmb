@@ -16,6 +16,7 @@ import '../posts/post_editor_screen.dart';
 import '../posts/published_posts_screen.dart';
 import '../scheduler/queue_screen.dart';
 import '../scheduler/scheduler_screen.dart';
+import 'widgets/gmb_health_scorecard_widget.dart';
 import 'dashboard_controller.dart';
 import 'providers/dashboard_providers.dart';
 
@@ -81,6 +82,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             children: [
               // Google Business Profile Header Card + Profile Strength + Quick Actions
               _buildBusinessProfileCard(context, activeLocation, profileScore),
+
+              const SizedBox(height: 12),
+
+              // GMB Local SEO Health & Policy Scorecard (0-100%) + 1-Click AI Auto Fix
+              GMBHealthScorecardWidget(locationId: locationId),
 
               const SizedBox(height: 16),
 
