@@ -96,128 +96,173 @@ class ReviewsOverviewCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
 
-          // Rating + Star Bars + Mini Stats
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Big Score & Stars
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    rating.toStringAsFixed(1),
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w900,
-                      color: const Color(0xFF131B2E),
-                      letterSpacing: -1,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: List.generate(
-                      5,
-                      (index) => const Icon(
-                        Icons.star_rounded,
-                        size: 13,
-                        color: Color(0xFFF59E0B),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      Text(
-                        'Excellent',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF16A34A),
-                        ),
-                      ),
-                      const SizedBox(width: 3),
-                      Container(
-                        width: 4,
-                        height: 4,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF16A34A),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Based on $totalCount reviews',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xFF64748B),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 12),
+          // Responsive Content Layout
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 360;
 
-              // Star Breakdown Bars (5 to 1)
-              Expanded(
-                child: Column(
+              if (isNarrow) {
+                // Stacked 2-Row Layout for narrow devices
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildStarBar(5, c5, totalCount),
-                    _buildStarBar(4, c4, totalCount),
-                    _buildStarBar(3, c3, totalCount),
-                    _buildStarBar(2, c2, totalCount),
-                    _buildStarBar(1, c1, totalCount),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        _buildScoreColumn(rating, totalCount),
+                        _buildMiniBadgesGrid(totalCount, repliedCount),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(color: Color(0xFFF1F5F9), height: 1),
+                    const SizedBox(height: 10),
+                    Column(
+                      children: [
+                        _buildStarBar(5, c5, totalCount),
+                        _buildStarBar(4, c4, totalCount),
+                        _buildStarBar(3, c3, totalCount),
+                        _buildStarBar(2, c2, totalCount),
+                        _buildStarBar(1, c1, totalCount),
+                      ],
+                    ),
                   ],
-                ),
-              ),
-              const SizedBox(width: 10),
+                );
+              }
 
-              // 2x2 Mini KPI Pills
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              // Side-by-side 2-Column Layout for standard mobile screens
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Row(
-                    children: [
-                      _buildMiniReviewBadge(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        iconColor: const Color(0xFF7C3AED),
-                        value: '$totalCount',
-                        label: 'Total',
-                      ),
-                      const SizedBox(width: 6),
-                      _buildMiniReviewBadge(
-                        icon: Icons.thumb_up_alt_rounded,
-                        iconColor: const Color(0xFF16A34A),
-                        value: '100%',
-                        label: 'Positive',
-                      ),
-                    ],
+                  _buildScoreColumn(rating, totalCount),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      children: [
+                        _buildStarBar(5, c5, totalCount),
+                        _buildStarBar(4, c4, totalCount),
+                        _buildStarBar(3, c3, totalCount),
+                        _buildStarBar(2, c2, totalCount),
+                        _buildStarBar(1, c1, totalCount),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      _buildMiniReviewBadge(
-                        icon: Icons.reply_rounded,
-                        iconColor: const Color(0xFF0284C7),
-                        value: '$repliedCount',
-                        label: 'Replied',
-                      ),
-                      const SizedBox(width: 6),
-                      _buildMiniReviewBadge(
-                        icon: Icons.access_time_rounded,
-                        iconColor: const Color(0xFFEA580C),
-                        value: '4h',
-                        label: 'Avg. Resp',
-                      ),
-                    ],
-                  ),
+                  const SizedBox(width: 10),
+                  _buildMiniBadgesGrid(totalCount, repliedCount),
                 ],
-              ),
-            ],
+              );
+            },
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildScoreColumn(double rating, int totalCount) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          rating.toStringAsFixed(1),
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+            color: const Color(0xFF131B2E),
+            letterSpacing: -1,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(
+            5,
+            (index) => const Icon(
+              Icons.star_rounded,
+              size: 13,
+              color: Color(0xFFF59E0B),
+            ),
+          ),
+        ),
+        const SizedBox(height: 3),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Excellent',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF16A34A),
+              ),
+            ),
+            const SizedBox(width: 3),
+            Container(
+              width: 4,
+              height: 4,
+              decoration: const BoxDecoration(
+                color: Color(0xFF16A34A),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Based on $totalCount reviews',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 9.5,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF64748B),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMiniBadgesGrid(int totalCount, int repliedCount) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildMiniReviewBadge(
+              icon: Icons.chat_bubble_outline_rounded,
+              iconColor: const Color(0xFF7C3AED),
+              value: '$totalCount',
+              label: 'Total',
+            ),
+            const SizedBox(width: 6),
+            _buildMiniReviewBadge(
+              icon: Icons.thumb_up_alt_rounded,
+              iconColor: const Color(0xFF16A34A),
+              value: '100%',
+              label: 'Positive',
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildMiniReviewBadge(
+              icon: Icons.reply_rounded,
+              iconColor: const Color(0xFF0284C7),
+              value: '$repliedCount',
+              label: 'Replied',
+            ),
+            const SizedBox(width: 6),
+            _buildMiniReviewBadge(
+              icon: Icons.access_time_rounded,
+              iconColor: const Color(0xFFEA580C),
+              value: '4h',
+              label: 'Avg. Resp',
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -283,7 +328,7 @@ class ReviewsOverviewCard extends StatelessWidget {
     required String label,
   }) {
     return Container(
-      width: 66,
+      width: 62,
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
@@ -295,12 +340,12 @@ class ReviewsOverviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 11, color: iconColor),
+              Icon(icon, size: 10, color: iconColor),
               const SizedBox(width: 3),
               Text(
                 value,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11,
+                  fontSize: 10.5,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF131B2E),
                 ),
@@ -311,7 +356,7 @@ class ReviewsOverviewCard extends StatelessWidget {
           Text(
             label,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 8.5,
+              fontSize: 8,
               fontWeight: FontWeight.w500,
               color: const Color(0xFF64748B),
             ),
