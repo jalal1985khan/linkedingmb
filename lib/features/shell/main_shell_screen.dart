@@ -265,67 +265,6 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                 child: Divider(height: 16, color: AppColors.surfaceContainer),
               ),
               _buildCreditCard(context, ref.watch(userCreditsProvider)),
-              const SizedBox(height: 8),
-              // Workspace / Business Switcher Footer
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: InkWell(
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (_) => const LocationSwitcherSheet(),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 14,
-                          backgroundColor: const Color(0xFFE2E8F0),
-                          child: Text(
-                            (activeLocation?.name.isNotEmpty == true)
-                                ? activeLocation!.name[0].toUpperCase()
-                                : 'S',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF1E293B),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            activeLocation?.name ?? 'Select Business',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: const Color(0xFF1E293B),
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const Icon(
-                          Icons.unfold_more_rounded,
-                          size: 16,
-                          color: Color(0xFF64748B),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
               const SizedBox(height: 16),
             ],
           ),
