@@ -4,8 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/autonomy/presentation/ai_control_screen.dart';
+import '../../features/blueprint/presentation/blueprint_planner_screen.dart';
 import '../../features/business_flow/presentation/business_selection_screen.dart';
 import '../../features/business_flow/presentation/onboarding_screen.dart';
+import '../../features/qa/presentation/qa_engine_screen.dart';
 import '../../features/shell/main_shell_screen.dart';
 import '../../features/auth/providers/auth_provider.dart';
 
@@ -74,6 +77,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/home',
         builder: (context, state) => const MainShellScreen(),
+      ),
+      GoRoute(
+        path: '/blueprint',
+        builder: (context, state) => const BlueprintPlannerScreen(),
+      ),
+      GoRoute(
+        path: '/qa',
+        builder: (context, state) => const QAEngineScreen(),
+      ),
+      GoRoute(
+        path: '/control',
+        builder: (context, state) => const AIControlScreen(),
       ),
     ],
   );

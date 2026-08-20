@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../data/models/business_profile.dart';
+import '../../data/repositories/backend_business_repository.dart';
 import '../../shared/widgets/app_media_picker.dart';
 import '../dashboard/providers/dashboard_providers.dart';
 import 'business_flow_controller.dart';
@@ -45,6 +46,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   late List<String> _servicesList;
   late final TextEditingController _newServiceController;
 
+  // Products tab
+  List<Map<String, dynamic>> _productsList = [];
+  bool _loadingProducts = false;
+
   // Hours & AI Persona
   late final TextEditingController _hoursController;
   late final TextEditingController _audienceController;
@@ -60,7 +65,27 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     _initControllers();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadExtendedProfile();
+      _loadProducts();
     });
+  }
+
+  Future<void> _loadProducts() async {
+    final activeLocation = ref.read(activeLocationProvider).activeLocation ?? ref.read(selectedBusinessProvider);
+    if (activeLocation == null) return;
+
+    setState(() => _loadingProducts = true);
+    try {
+      final repo = BackendBusinessRepository();
+      final products = await repo.getProducts(activeLocation.id);
+      if (mounted) {
+        setState(() {
+          _productsList = products;
+          _loadingProducts = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _loadingProducts = false);
+    }
   }
 
   Future<void> _loadExtendedProfile() async {
@@ -258,7 +283,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     final profileScore = ref.watch(profileCompletenessProvider(business));
 
     return DefaultTabController(
-      length: 6,
+      length: 7,
       child: Scaffold(
         backgroundColor: bgColor,
         appBar: AppBar(
@@ -295,6 +320,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                   Tab(icon: Icon(Icons.photo_library_outlined, size: 18), text: 'Photos & Logos'),
                   Tab(icon: Icon(Icons.calendar_month_outlined, size: 18), text: 'Bookings'),
                   Tab(icon: Icon(Icons.design_services_outlined, size: 18), text: 'Services'),
+                  Tab(icon: Icon(Icons.inventory_2_outlined, size: 18), text: 'Products'),
                   Tab(icon: Icon(Icons.location_on_outlined, size: 18), text: 'Address & Hours'),
                 ],
               ),
@@ -309,6 +335,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                   _buildPhotosLogosTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
                   _buildBookingsTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
                   _buildServicesTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
+                  _buildProductsTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
                   _buildAddressHoursTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
                 ],
               ),
@@ -960,7 +987,277 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     );
   }
 
-  // TAB 6: ADDRESS & HOURS
+  // TAB 6: PRODUCTS CATALOGUE
+  Widget _buildProductsTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary, BusinessProfile business) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildSectionCard(
+          isDark: isDark,
+          cardBgColor: cardBgColor,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+          title: 'Products Catalogue',
+          subtitle: 'Featured products showcased on your Google Search & Maps panel.',
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _scanWebsiteForProducts,
+                    icon: const Icon(Icons.auto_awesome_rounded, size: 16, color: Color(0xFF6366F1)),
+                    label: Text('Scan Website for Products', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF6366F1)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: _showAddProductDialog,
+                  icon: const Icon(Icons.add, size: 16),
+                  label: Text('Add Product', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (_loadingProducts)
+              const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.primary)))
+            else if (_productsList.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: isDark ? Colors.white10 : const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Center(
+                  child: Column(
+                    children: [
+                      const Icon(Icons.inventory_2_outlined, size: 36, color: Colors.grey),
+                      const SizedBox(height: 8),
+                      Text('No products listed yet', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: textPrimary)),
+                      const SizedBox(height: 4),
+                      Text('Add products manually or use AI to scan your website.', style: GoogleFonts.inter(fontSize: 12, color: textSecondary)),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ..._productsList.map((product) => _buildProductItemCard(product, isDark, cardBgColor, borderColor, textPrimary, textSecondary)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildProductItemCard(Map<String, dynamic> product, bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary) {
+    final name = product['product_name'] ?? product['name'] ?? 'Product';
+    final price = product['price'] ?? product['price_range'] ?? '';
+    final desc = product['description'] ?? '';
+    final id = product['id'] ?? product['_id'] ?? '';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white10 : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEEF2FF),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.inventory_2_rounded, color: Color(0xFF6366F1), size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        name.toString(),
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14, color: textPrimary),
+                      ),
+                    ),
+                    if (price.toString().isNotEmpty)
+                      Text(
+                        price.toString(),
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 13, color: const Color(0xFF16A34A)),
+                      ),
+                  ],
+                ),
+                if (desc.toString().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    desc.toString(),
+                    style: GoogleFonts.inter(fontSize: 12, color: textSecondary),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
+            onPressed: () => _deleteProduct(id.toString()),
+            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.only(left: 8),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showAddProductDialog() async {
+    final activeLocation = ref.read(activeLocationProvider).activeLocation ?? ref.read(selectedBusinessProvider);
+    if (activeLocation == null) return;
+
+    final nameController = TextEditingController();
+    final priceController = TextEditingController();
+    final descController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Add New Product', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: InputDecoration(
+                labelText: 'Product Name',
+                hintText: 'e.g. Premium Oil Filter',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: priceController,
+              decoration: InputDecoration(
+                labelText: 'Price (e.g. \$29.99)',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descController,
+              decoration: InputDecoration(
+                labelText: 'Description',
+                hintText: 'Brief summary of the product...',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('Save Product'),
+            onPressed: () async {
+              final name = nameController.text.trim();
+              if (name.isNotEmpty) {
+                Navigator.pop(ctx);
+                final repo = BackendBusinessRepository();
+                final ok = await repo.addProduct(activeLocation.id, {
+                  'product_name': name,
+                  'price': priceController.text.trim(),
+                  'description': descController.text.trim(),
+                });
+                if (ok && mounted) {
+                  _loadProducts();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Product added successfully!'), backgroundColor: Colors.green),
+                  );
+                }
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _scanWebsiteForProducts() async {
+    final activeLocation = ref.read(activeLocationProvider).activeLocation ?? ref.read(selectedBusinessProvider);
+    if (activeLocation == null) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('AI is scanning your website for product catalogue...')),
+    );
+
+    try {
+      final repo = BackendBusinessRepository();
+      final suggested = await repo.analyzeWebsiteProducts(activeLocation.id);
+      if (suggested.isNotEmpty && mounted) {
+        // Add suggested products
+        for (final p in suggested) {
+          await repo.addProduct(activeLocation.id, p);
+        }
+        _loadProducts();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Discovered & added ${suggested.length} products!'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not scan website: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _deleteProduct(String productId) async {
+    final activeLocation = ref.read(activeLocationProvider).activeLocation ?? ref.read(selectedBusinessProvider);
+    if (activeLocation == null || productId.isEmpty) return;
+
+    try {
+      final repo = BackendBusinessRepository();
+      final ok = await repo.deleteProduct(activeLocation.id, productId);
+      if (ok && mounted) {
+        _loadProducts();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Product deleted'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  // TAB 7: ADDRESS & HOURS
   Widget _buildAddressHoursTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary) {
     return ListView(
       padding: const EdgeInsets.all(16),

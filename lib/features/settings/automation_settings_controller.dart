@@ -394,6 +394,7 @@ class AutomationSettingsController extends StateNotifier<AutomationSettingsState
   void setMinStars(int val) => state = state.copyWith(minStars: val);
   void setMaxStars(int val) => state = state.copyWith(maxStars: val);
   void setOnlyWithComments(bool val) => state = state.copyWith(onlyWithComments: val);
+  void setAutoApplyRecommendations(bool val) => state = state.copyWith(enabled: val);
 
   Future<bool> saveSettings({String? locationId}) async {
     state = state.copyWith(isSaving: true, errorMessage: null, successMessage: null);

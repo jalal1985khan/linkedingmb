@@ -5,6 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 
 import '../auth/providers/user_credits_provider.dart';
+import '../autonomy/presentation/ai_control_screen.dart';
+import '../blueprint/presentation/blueprint_planner_screen.dart';
 import '../business_flow/business_profile_screen.dart';
 import '../business_flow/presentation/location_switcher_sheet.dart';
 import '../business_flow/providers/active_location_provider.dart';
@@ -16,6 +18,7 @@ import '../notifications/notification_end_drawer.dart';
 import '../notifications/providers/user_notifications_provider.dart';
 import '../posts/create_post_flow_screen.dart';
 import '../posts/published_posts_screen.dart';
+import '../qa/presentation/qa_engine_screen.dart';
 import '../scheduler/queue_screen.dart';
 import '../settings/app_settings_screen.dart';
 import '../settings/automation_settings_screen.dart';
@@ -168,6 +171,22 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                       onTap: () => _selectTabFromDrawer(1),
                     ),
                     _DrawerNavItem(
+                      icon: Icons.auto_awesome_motion_rounded,
+                      label: 'Strategy Blueprint',
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const BlueprintPlannerScreen()));
+                      },
+                    ),
+                    _DrawerNavItem(
+                      icon: Icons.help_outline_rounded,
+                      label: 'Google Q&A Engine',
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const QAEngineScreen()));
+                      },
+                    ),
+                    _DrawerNavItem(
                       icon: Icons.auto_awesome_rounded,
                       label: 'Create Post',
                       selected: _index == 3,
@@ -198,6 +217,14 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                       onTap: () {
                         Navigator.of(context).pop();
                         Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PublishedPostsScreen()));
+                      },
+                    ),
+                    _DrawerNavItem(
+                      icon: Icons.shield_outlined,
+                      label: 'AI Control & Approvals',
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AIControlScreen()));
                       },
                     ),
                     _DrawerNavItem(

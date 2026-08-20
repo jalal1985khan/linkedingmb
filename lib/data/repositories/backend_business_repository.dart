@@ -416,4 +416,86 @@ class BackendBusinessRepository implements BusinessRepository {
     if (value == null) return '';
     return value.toString().trim();
   }
+
+  // ── Product Management Methods ───────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getProducts(String locationId) async {
+    final token = await _secureStorage.read(key: _tokenStorageKey);
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/gmb/products?location_id=${Uri.encodeComponent(locationId)}',
+    );
+    final response = await _httpClient.get(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to load products (${response.statusCode})');
+    }
+
+    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    final list = (decoded['products'] ?? []) as List<dynamic>;
+    return list.whereType<Map<String, dynamic>>().toList();
+  }
+
+  Future<bool> addProduct(String locationId, Map<String, dynamic> productData) async {
+    final token = await _secureStorage.read(key: _tokenStorageKey);
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/gmb/products?location_id=${Uri.encodeComponent(locationId)}',
+    );
+    final response = await _httpClient.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(productData),
+    );
+
+    return response.statusCode == 200;
+  }
+
+  Future<bool> deleteProduct(String locationId, String productId) async {
+    final token = await _secureStorage.read(key: _tokenStorageKey);
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/gmb/products/$productId?location_id=${Uri.encodeComponent(locationId)}',
+    );
+    final response = await _httpClient.delete(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    return response.statusCode == 200;
+  }
+
+  Future<List<Map<String, dynamic>>> analyzeWebsiteProducts(String locationId, {String? websiteUrl}) async {
+    final token = await _secureStorage.read(key: _tokenStorageKey);
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/gmb/products/analyze-website?location_id=${Uri.encodeComponent(locationId)}',
+    );
+    final response = await _httpClient.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        if (websiteUrl != null && websiteUrl.isNotEmpty) 'website_url': websiteUrl,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to analyze website for products');
+    }
+
+    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    final list = (decoded['suggested_products'] ?? []) as List<dynamic>;
+    return list.whereType<Map<String, dynamic>>().toList();
+  }
 }
