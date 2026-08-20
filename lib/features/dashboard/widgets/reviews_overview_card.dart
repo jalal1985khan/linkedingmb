@@ -1,0 +1,325 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import '../../../data/repositories/gmb_analytics_repository.dart';
+import '../../../data/repositories/gmb_reviews_repository.dart';
+import '../reviews_screen.dart';
+
+class ReviewsOverviewCard extends StatelessWidget {
+  final GMBLocationStats? stats;
+  final List<GMBReviewItem>? reviews;
+  final VoidCallback? onSeeAll;
+
+  const ReviewsOverviewCard({
+    super.key,
+    this.stats,
+    this.reviews,
+    this.onSeeAll,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final reviewList = reviews ?? [];
+    final totalCount = reviewList.isNotEmpty ? reviewList.length : (stats?.totalReviews ?? 3);
+    final rating = stats?.averageRating != null && stats!.averageRating > 0
+        ? stats!.averageRating
+        : 5.0;
+
+    int c5 = 0, c4 = 0, c3 = 0, c2 = 0, c1 = 0;
+    int repliedCount = 0;
+    if (reviewList.isNotEmpty) {
+      for (final r in reviewList) {
+        if (r.starRating == 5) c5++;
+        if (r.starRating == 4) c4++;
+        if (r.starRating == 3) c3++;
+        if (r.starRating == 2) c2++;
+        if (r.starRating == 1) c1++;
+        if (r.reviewReply != null && r.reviewReply!.isNotEmpty) repliedCount++;
+      }
+    } else {
+      c5 = totalCount;
+      repliedCount = totalCount;
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF64748B).withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Reviews Overview',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF131B2E),
+                ),
+              ),
+              InkWell(
+                onTap: onSeeAll ??
+                    () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const ReviewsScreen()),
+                      );
+                    },
+                child: Row(
+                  children: [
+                    Text(
+                      'See all',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF4A07E8),
+                      ),
+                    ),
+                    const SizedBox(width: 2),
+                    const Icon(Icons.chevron_right_rounded, size: 14, color: Color(0xFF4A07E8)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Rating + Star Bars + Mini Stats
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Big Score & Stars
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    rating.toStringAsFixed(1),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      color: const Color(0xFF131B2E),
+                      letterSpacing: -1,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: List.generate(
+                      5,
+                      (index) => const Icon(
+                        Icons.star_rounded,
+                        size: 14,
+                        color: Color(0xFFF59E0B),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Text(
+                        'Excellent',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF16A34A),
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      Container(
+                        width: 4,
+                        height: 4,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF16A34A),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Based on $totalCount reviews',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 14),
+
+              // Star Breakdown Bars (5 to 1)
+              Expanded(
+                child: Column(
+                  children: [
+                    _buildStarBar(5, c5, totalCount),
+                    _buildStarBar(4, c4, totalCount),
+                    _buildStarBar(3, c3, totalCount),
+                    _buildStarBar(2, c2, totalCount),
+                    _buildStarBar(1, c1, totalCount),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+
+              // 2x2 Mini KPI Pills
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _buildMiniReviewBadge(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        iconColor: const Color(0xFF7C3AED),
+                        value: '$totalCount',
+                        label: 'Total Reviews',
+                      ),
+                      const SizedBox(width: 8),
+                      _buildMiniReviewBadge(
+                        icon: Icons.thumb_up_alt_rounded,
+                        iconColor: const Color(0xFF16A34A),
+                        value: '100%',
+                        label: 'Positive',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      _buildMiniReviewBadge(
+                        icon: Icons.reply_rounded,
+                        iconColor: const Color(0xFF0284C7),
+                        value: '$repliedCount',
+                        label: 'Replied',
+                      ),
+                      const SizedBox(width: 8),
+                      _buildMiniReviewBadge(
+                        icon: Icons.access_time_rounded,
+                        iconColor: const Color(0xFFEA580C),
+                        value: '4h',
+                        label: 'Avg. Response',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStarBar(int star, int count, int total) {
+    final factor = total > 0 ? (count / total).clamp(0.0, 1.0) : 0.0;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: Row(
+        children: [
+          Text(
+            '$star',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF131B2E),
+            ),
+          ),
+          const SizedBox(width: 2),
+          const Icon(Icons.star_rounded, size: 10, color: Color(0xFFF59E0B)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: Stack(
+                children: [
+                  Container(height: 4, color: const Color(0xFFF1F5F9)),
+                  FractionallySizedBox(
+                    widthFactor: factor,
+                    child: Container(
+                      height: 4,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF4A07E8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+          SizedBox(
+            width: 12,
+            child: Text(
+              '$count',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF64748B),
+              ),
+              textAlign: TextAlign.end,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniReviewBadge({
+    required IconData icon,
+    required Color iconColor,
+    required String value,
+    required String label,
+  }) {
+    return Container(
+      width: 76,
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 12, color: iconColor),
+              const SizedBox(width: 4),
+              Text(
+                value,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF131B2E),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 9,
+              fontWeight: FontWeight.w500,
+              color: const Color(0xFF64748B),
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}

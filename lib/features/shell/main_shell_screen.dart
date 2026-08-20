@@ -344,6 +344,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: Colors.white,
+          border: const Border(top: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -361,8 +362,38 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
               children: [
                 _buildNavItem(0, 'Home', Icons.home_rounded, Icons.home_outlined),
                 _buildNavItem(2, 'Services', Icons.business_center_rounded, Icons.business_center_outlined),
+                // Center Floating Create Button
+                GestureDetector(
+                  onTap: () {
+                    setState(() => _index = 3);
+                  },
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF633BFF), Color(0xFF4A07E8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF633BFF).withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.add_rounded,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                ),
                 _buildNavItem(1, 'Reviews', Icons.chat_bubble_rounded, Icons.chat_bubble_outline_rounded),
-                _buildNavItem(4, 'Stats', Icons.stacked_line_chart_rounded, Icons.stacked_line_chart_rounded),
+                _buildNavItem(4, 'Insights', Icons.bar_chart_rounded, Icons.bar_chart_outlined),
               ],
             ),
           ),
