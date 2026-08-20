@@ -470,110 +470,388 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
   }
   Widget _buildCreditCard(BuildContext context, AsyncValue<UserCredits> creditsAsync) {
     final userCredits = creditsAsync.valueOrNull;
-    final credits = userCredits?.availableCredits ?? 87;
-    final isLow = credits <= 10;
+    final credits = userCredits?.availableCredits ?? 68;
+    final monthlyLimit = userCredits?.monthlyLimit ?? 100;
+    final resetDays = userCredits?.resetDays ?? 12;
     final isZero = credits <= 0;
-    final isLoading = creditsAsync.isLoading;
-    final planName = userCredits?.planLabel ?? 'Pro Member';
+    final isLow = credits > 0 && credits <= 15;
+    final progress = (credits / (monthlyLimit > 0 ? monthlyLimit : 100)).clamp(0.0, 1.0);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+    // State-based Color Palette
+    final Color bgColor = isZero
+        ? const Color(0xFFFFF5F5)
+        : isLow
+            ? const Color(0xFFFFF8F0)
+            : const Color(0xFFFAF8FF);
+
+    final Color borderColor = isZero
+        ? const Color(0xFFFECDD3)
+        : isLow
+            ? const Color(0xFFFED7AA)
+            : const Color(0xFFEDE9FE);
+
+    final Color headerTextColor = isZero
+        ? const Color(0xFFB91C1C)
+        : isLow
+            ? const Color(0xFFC2410C)
+            : const Color(0xFF4338CA);
+
+    final Color headerIconColor = isZero
+        ? const Color(0xFFDC2626)
+        : isLow
+            ? const Color(0xFFEA580C)
+            : const Color(0xFF633BFF);
+
+    final String headerTitle = isZero
+        ? 'Credits exhausted'
+        : isLow
+            ? 'Running low'
+            : 'AI Credits';
+
+    final IconData headerIcon = isZero
+        ? Icons.warning_amber_rounded
+        : isLow
+            ? Icons.bolt_rounded
+            : Icons.auto_awesome_rounded;
+
+    final Color helpCircleBorder = isZero
+        ? const Color(0xFFFDA4AF)
+        : isLow
+            ? const Color(0xFFFDBA74)
+            : const Color(0xFFCBD5E1);
+
+    final Color helpCircleText = isZero
+        ? const Color(0xFF9F1239)
+        : isLow
+            ? const Color(0xFF9A3412)
+            : const Color(0xFF94A3B8);
+
+    final Color numberColor = isZero
+        ? const Color(0xFFB91C1C)
+        : isLow
+            ? const Color(0xFFC2410C)
+            : const Color(0xFF3730A3);
+
+    final Color subtitleColor = isZero
+        ? const Color(0xFF4C0519)
+        : isLow
+            ? const Color(0xFF431407)
+            : const Color(0xFF334155);
+
+    final Color badgeIconColor = isZero
+        ? const Color(0xFFE11D48)
+        : isLow
+            ? const Color(0xFFEA580C)
+            : const Color(0xFF633BFF);
+
+    final List<Color> badgeGradient = isZero
+        ? [const Color(0xFFFFF1F2), const Color(0xFFFFE4E6)]
+        : isLow
+            ? [const Color(0xFFFFF7ED), const Color(0xFFFFEDD5)]
+            : [const Color(0xFFF5F3FF), const Color(0xFFEDE9FE)];
+
+    final Color badgeShadowColor = isZero
+        ? const Color(0xFFDC2626).withValues(alpha: 0.15)
+        : isLow
+            ? const Color(0xFFEA580C).withValues(alpha: 0.15)
+            : const Color(0xFF7C3AED).withValues(alpha: 0.15);
+
+    final Color progressFillColor = isZero
+        ? Colors.transparent
+        : isLow
+            ? const Color(0xFFEA580C)
+            : const Color(0xFF4338CA);
+
+    final String ctaText = isLow ? 'Add Credits' : 'Get Credits';
+    final Color ctaColor = isZero
+        ? const Color(0xFFDC2626)
+        : isLow
+            ? const Color(0xFFEA580C)
+            : const Color(0xFF4338CA);
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor, width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: (isZero
+                    ? const Color(0xFFDC2626)
+                    : isLow
+                        ? const Color(0xFFEA580C)
+                        : const Color(0xFF633BFF))
+                .withValues(alpha: 0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Pro Member / Tier Pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: const Color(0xFFECFDF5),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFA7F3D0)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.auto_awesome_rounded, size: 12, color: Color(0xFF10B981)),
-                const SizedBox(width: 4),
-                Text(
-                  planName,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: const Color(0xFF047857),
+          // 1. Top Header Row (Icon + Title + ? Help icon)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Icon(headerIcon, size: 16, color: headerIconColor),
+                  const SizedBox(width: 6),
+                  Text(
+                    headerTitle,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: headerTextColor,
+                    ),
+                  ),
+                ],
+              ),
+              Tooltip(
+                message: 'AI Credits are used to generate automated posts, blueprints, and review responses.',
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: helpCircleBorder, width: 1.2),
+                  ),
+                  child: Text(
+                    '?',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: helpCircleText,
+                    ),
                   ),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // 2. Credits Card Container
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isZero
-                    ? [const Color(0xFF991B1B), const Color(0xFF7F1D1D)]
-                    : isLow
-                        ? [const Color(0xFFC2410C), const Color(0xFF9A3412)]
-                        : [const Color(0xFF4A07E8), const Color(0xFF633BFF)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: (isZero
-                          ? Colors.red
-                          : isLow
-                              ? Colors.orange
-                              : const Color(0xFF633BFF))
-                      .withValues(alpha: 0.35),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      isLoading ? 'Loading...' : '$credits Credits',
-                      style: GoogleFonts.plusJakartaSans(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 22,
-                        letterSpacing: -0.5,
-                      ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // 2. Large Number & 3D Lightning Badge
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$credits',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w900,
+                      color: numberColor,
+                      letterSpacing: -1,
+                      height: 1.0,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.refresh_rounded, color: Colors.white70, size: 16),
-                      onPressed: () {
-                        ref.read(userCreditsProvider.notifier).fetchCredits();
-                      },
-                      tooltip: 'Refresh Credits',
-                      constraints: const BoxConstraints(),
-                      padding: EdgeInsets.zero,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'credits remaining',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: subtitleColor,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: badgeGradient,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: badgeShadowColor,
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  isZero
-                      ? 'Automation Paused'
-                      : isLow
-                          ? 'Low Credit Balance • Top up'
-                          : 'Resets in 20 days',
+                child: Icon(
+                  Icons.bolt_rounded,
+                  color: badgeIconColor,
+                  size: 26,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // 3. Progress Bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Container(
+              height: 6,
+              width: double.infinity,
+              color: const Color(0xFFF1F5F9),
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: progress,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: progressFillColor,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // 4. Details / Usage Text
+          RichText(
+            text: TextSpan(
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                color: const Color(0xFF64748B),
+              ),
+              children: [
+                TextSpan(
+                  text: '$credits',
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white.withValues(alpha: 0.85),
+                    fontWeight: FontWeight.w700,
+                    color: isZero
+                        ? const Color(0xFF4C0519)
+                        : isLow
+                            ? const Color(0xFF431407)
+                            : const Color(0xFF1E293B),
+                  ),
+                ),
+                TextSpan(text: ' / $monthlyLimit monthly credits'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+
+          // 5. Secondary Status / Reset / Warning Row
+          if (isZero)
+            Text(
+              'AI generation is currently paused.',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: const Color(0xFFDC2626),
+              ),
+            )
+          else if (isLow)
+            Row(
+              children: [
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  size: 13,
+                  color: Color(0xFFC2410C),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'AI automations may pause soon.',
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
+                    color: const Color(0xFFC2410C),
                   ),
                 ),
               ],
+            )
+          else
+            Row(
+              children: [
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  size: 13,
+                  color: Color(0xFF64748B),
+                ),
+                const SizedBox(width: 6),
+                RichText(
+                  text: TextSpan(
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      color: const Color(0xFF64748B),
+                    ),
+                    children: [
+                      const TextSpan(text: 'Resets in '),
+                      TextSpan(
+                        text: '$resetDays days',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF4338CA),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          const SizedBox(height: 12),
+
+          // 6. Divider
+          Divider(
+            height: 1,
+            thickness: 1,
+            color: isZero
+                ? const Color(0xFFFECDD3).withValues(alpha: 0.6)
+                : isLow
+                    ? const Color(0xFFFED7AA).withValues(alpha: 0.6)
+                    : const Color(0xFFEDE9FE),
+          ),
+          const SizedBox(height: 10),
+
+          // 7. Bottom CTA Action
+          InkWell(
+            onTap: () {
+              ref.read(userCreditsProvider.notifier).fetchCredits();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Refreshing credits... You have $credits credits remaining.',
+                    style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                  ),
+                  duration: const Duration(seconds: 2),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.toll_outlined,
+                    size: 16,
+                    color: ctaColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      ctaText,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: ctaColor,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: ctaColor,
+                  ),
+                ],
+              ),
             ),
           ),
         ],

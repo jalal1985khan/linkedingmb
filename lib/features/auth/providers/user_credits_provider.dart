@@ -10,17 +10,21 @@ class UserCredits {
   final int availableCredits;
   final int totalEarned;
   final int totalSpent;
+  final int monthlyLimit;
+  final int resetDays;
   final String subscriptionType;
 
   const UserCredits({
-    this.availableCredits = 0,
-    this.totalEarned = 0,
-    this.totalSpent = 0,
-    this.subscriptionType = 'trial',
+    this.availableCredits = 68,
+    this.totalEarned = 100,
+    this.totalSpent = 32,
+    this.monthlyLimit = 100,
+    this.resetDays = 12,
+    this.subscriptionType = 'pro',
   });
 
   bool get isZeroCredits => availableCredits <= 0;
-  bool get isLowCredits => availableCredits <= 10;
+  bool get isLowCredits => availableCredits > 0 && availableCredits <= 15;
 
   String get planLabel {
     final s = subscriptionType.toLowerCase();
@@ -44,39 +48,59 @@ class UserCredits {
       creditsObj = json['credits'] as Map<String, dynamic>;
     }
 
-    int parseVal(dynamic v) {
+    int parseVal(dynamic v, [int fallback = 0]) {
       if (v is int) return v;
       if (v is double) return v.toInt();
-      if (v is String) return int.tryParse(v) ?? 0;
-      return 0;
+      if (v is String) return int.tryParse(v) ?? fallback;
+      return fallback;
     }
 
     final available = parseVal(
       creditsObj['available_credits'] ??
       target['available_credits'] ??
       json['available_credits'],
+      68,
     );
 
     final earned = parseVal(
       creditsObj['total_earned'] ??
       target['total_earned'] ??
       json['total_earned'],
+      100,
     );
 
     final spent = parseVal(
       creditsObj['total_spent'] ??
       target['total_spent'] ??
       json['total_spent'],
+      0,
+    );
+
+    final limit = parseVal(
+      creditsObj['monthly_limit'] ??
+      target['monthly_limit'] ??
+      json['monthly_limit'] ??
+      (earned > 0 ? earned : 100),
+      100,
+    );
+
+    final days = parseVal(
+      creditsObj['reset_days'] ??
+      target['reset_days'] ??
+      json['reset_days'],
+      12,
     );
 
     final subType = (target['subscription_type'] ??
       json['subscription_type'] ??
-      'trial').toString();
+      'pro').toString();
 
     return UserCredits(
       availableCredits: available,
       totalEarned: earned,
       totalSpent: spent,
+      monthlyLimit: limit,
+      resetDays: days,
       subscriptionType: subType,
     );
   }
