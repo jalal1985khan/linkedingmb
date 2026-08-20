@@ -31,11 +31,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final body = _buildBody(context);
 
     if (!widget.showScaffold) {
-      return Scaffold(
-        key: _scaffoldKey,
-        backgroundColor: const Color(0xFFFAF8FF),
-        endDrawer: const NotificationEndDrawer(),
-        body: body,
+      return Material(
+        color: const Color(0xFFFAF8FF),
+        child: body,
       );
     }
 
