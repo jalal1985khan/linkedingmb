@@ -173,70 +173,65 @@ class ApiPostRepository implements PostRepository {
         final response = await _httpClient.get(gmbUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
-          if (decoded is Map<String, dynamic>) {
-            addPostsFromList(decoded['posts'] ?? decoded['data']);
-          } else if (decoded is List) {
-            addPostsFromList(decoded);
-          }
+          final list = decoded is Map<String, dynamic> ? (decoded['posts'] ?? decoded['data']) : decoded;
+          final prevCount = posts.length;
+          addPostsFromList(list);
+          debugPrint('📥 /api/gmb/posts returned ${posts.length - prevCount} active posts');
         }
       } catch (e) {
         debugPrint('⚠️ Error fetching /api/gmb/posts: $e');
       }
 
-      // 2. Fetch GMB scheduler queue (/api/scheduler/posts?platform=gmb)
+      // 2. Fetch scheduler queue (/api/scheduler/posts with platform=all)
       try {
-        final schedulerUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=gmb&limit=50$accParam');
+        final schedulerUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=all&limit=50$accParam');
         final response = await _httpClient.get(schedulerUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
-          if (decoded is Map<String, dynamic>) {
-            addPostsFromList(decoded['scheduled_posts'] ?? decoded['posts'] ?? decoded['data']);
-          } else if (decoded is List) {
-            addPostsFromList(decoded);
-          }
+          final list = decoded is Map<String, dynamic> ? (decoded['scheduled_posts'] ?? decoded['posts'] ?? decoded['data']) : decoded;
+          final prevCount = posts.length;
+          addPostsFromList(list);
+          debugPrint('📥 /api/scheduler/posts?platform=all returned ${posts.length - prevCount} active posts');
         }
 
-        // Fallback: If 0 posts found with strict location filter, query without account restriction
+        // Fallback: If 0 posts found with strict location filter, query without account restriction (matching web)
         if (posts.isEmpty && accParam.isNotEmpty) {
-          final fallbackUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=gmb&limit=50');
+          final fallbackUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=all&limit=50');
           final fbRes = await _httpClient.get(fallbackUri, headers: headers);
           if (fbRes.statusCode == 200) {
             final decoded = jsonDecode(fbRes.body);
-            if (decoded is Map<String, dynamic>) {
-              addPostsFromList(decoded['scheduled_posts'] ?? decoded['posts'] ?? decoded['data']);
-            } else if (decoded is List) {
-              addPostsFromList(decoded);
-            }
+            final list = decoded is Map<String, dynamic> ? (decoded['scheduled_posts'] ?? decoded['posts'] ?? decoded['data']) : decoded;
+            final prevCount = posts.length;
+            addPostsFromList(list);
+            debugPrint('📥 /api/scheduler/posts fallback returned ${posts.length - prevCount} active posts');
           }
         }
       } catch (e) {
         debugPrint('⚠️ Error fetching /api/scheduler/posts: $e');
       }
 
-      // 3. Fetch GMB AI-generated posts (/api/scheduler/posts/generated?platform=gmb)
+      // 3. Fetch AI-generated draft posts (/api/scheduler/posts/generated with platform=all)
       try {
-        final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=gmb&limit=50$accParam');
+        final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=all&limit=50$accParam');
         final response = await _httpClient.get(genUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
-          if (decoded is Map<String, dynamic>) {
-            addPostsFromList(decoded['posts'] ?? decoded['data']);
-          } else if (decoded is List) {
-            addPostsFromList(decoded);
-          }
+          final list = decoded is Map<String, dynamic> ? (decoded['posts'] ?? decoded['data']) : decoded;
+          final prevCount = posts.length;
+          addPostsFromList(list);
+          debugPrint('📥 /api/scheduler/posts/generated returned ${posts.length - prevCount} drafts');
         }
 
         // Fallback for generated drafts
         if (posts.isEmpty && accParam.isNotEmpty) {
-          final fallbackGenUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=gmb&limit=50');
+          final fallbackGenUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=all&limit=50');
           final fbGenRes = await _httpClient.get(fallbackGenUri, headers: headers);
           if (fbGenRes.statusCode == 200) {
             final decoded = jsonDecode(fbGenRes.body);
-            if (decoded is Map<String, dynamic>) {
-              addPostsFromList(decoded['posts'] ?? decoded['data']);
-            } else if (decoded is List) {
-              addPostsFromList(decoded);
-            }
+            final list = decoded is Map<String, dynamic> ? (decoded['posts'] ?? decoded['data']) : decoded;
+            final prevCount = posts.length;
+            addPostsFromList(list);
+            debugPrint('📥 /api/scheduler/posts/generated fallback returned ${posts.length - prevCount} drafts');
           }
         }
       } catch (e) {
