@@ -152,13 +152,14 @@ class ApiPostRepository implements PostRepository {
       void addPostsFromList(dynamic rawList, {bool filterOutPublished = true}) {
         if (rawList is! List) return;
         for (final item in rawList) {
-          if (item is Map<String, dynamic>) {
-            final rawStatus = (item['status'] ?? '').toString().toLowerCase();
+          if (item is Map) {
+            final map = Map<String, dynamic>.from(item);
+            final rawStatus = (map['status'] ?? '').toString().toLowerCase();
             if (filterOutPublished && (rawStatus == 'posted' || rawStatus == 'published' || rawStatus == 'executed')) {
               continue;
             }
 
-            final mapped = _mapToScheduledPost(item);
+            final mapped = _mapToScheduledPost(map);
             if (mapped != null && mapped.id.isNotEmpty && !seenIds.contains(mapped.id)) {
               seenIds.add(mapped.id);
               posts.add(mapped);
@@ -167,13 +168,28 @@ class ApiPostRepository implements PostRepository {
         }
       }
 
-      // 1. Fetch from GMB Posts API (/api/gmb/posts)
+      // 1. Fetch Primary Scheduler Queue (Matching exact Web call: /api/scheduler/posts?status=pending)
+      try {
+        final schedulerUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?status=pending&limit=50');
+        final response = await _httpClient.get(schedulerUri, headers: headers);
+        if (response.statusCode == 200) {
+          final decoded = jsonDecode(response.body);
+          final list = decoded is Map ? (decoded['scheduled_posts'] ?? decoded['posts'] ?? decoded['data']) : decoded;
+          final prevCount = posts.length;
+          addPostsFromList(list);
+          debugPrint('📥 /api/scheduler/posts?status=pending returned ${posts.length - prevCount} active scheduled posts');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error fetching /api/scheduler/posts: $e');
+      }
+
+      // 2. Fetch from GMB Posts API (/api/gmb/posts)
       try {
         final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts$gmbLocParam');
         final response = await _httpClient.get(gmbUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
-          final list = decoded is Map<String, dynamic> ? (decoded['posts'] ?? decoded['data']) : decoded;
+          final list = decoded is Map ? (decoded['posts'] ?? decoded['data']) : decoded;
           final prevCount = posts.length;
           addPostsFromList(list);
           debugPrint('📥 /api/gmb/posts returned ${posts.length - prevCount} active posts');
@@ -182,57 +198,16 @@ class ApiPostRepository implements PostRepository {
         debugPrint('⚠️ Error fetching /api/gmb/posts: $e');
       }
 
-      // 2. Fetch scheduler queue (/api/scheduler/posts with platform=all)
+      // 3. Fetch AI-generated draft posts (/api/scheduler/posts/generated)
       try {
-        final schedulerUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=all&limit=50$accParam');
-        final response = await _httpClient.get(schedulerUri, headers: headers);
-        if (response.statusCode == 200) {
-          final decoded = jsonDecode(response.body);
-          final list = decoded is Map<String, dynamic> ? (decoded['scheduled_posts'] ?? decoded['posts'] ?? decoded['data']) : decoded;
-          final prevCount = posts.length;
-          addPostsFromList(list);
-          debugPrint('📥 /api/scheduler/posts?platform=all returned ${posts.length - prevCount} active posts');
-        }
-
-        // Fallback: If 0 posts found with strict location filter, query without account restriction (matching web)
-        if (posts.isEmpty && accParam.isNotEmpty) {
-          final fallbackUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=all&limit=50');
-          final fbRes = await _httpClient.get(fallbackUri, headers: headers);
-          if (fbRes.statusCode == 200) {
-            final decoded = jsonDecode(fbRes.body);
-            final list = decoded is Map<String, dynamic> ? (decoded['scheduled_posts'] ?? decoded['posts'] ?? decoded['data']) : decoded;
-            final prevCount = posts.length;
-            addPostsFromList(list);
-            debugPrint('📥 /api/scheduler/posts fallback returned ${posts.length - prevCount} active posts');
-          }
-        }
-      } catch (e) {
-        debugPrint('⚠️ Error fetching /api/scheduler/posts: $e');
-      }
-
-      // 3. Fetch AI-generated draft posts (/api/scheduler/posts/generated with platform=all)
-      try {
-        final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=all&limit=50$accParam');
+        final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?limit=50$accParam');
         final response = await _httpClient.get(genUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
-          final list = decoded is Map<String, dynamic> ? (decoded['posts'] ?? decoded['data']) : decoded;
+          final list = decoded is Map ? (decoded['posts'] ?? decoded['data']) : decoded;
           final prevCount = posts.length;
           addPostsFromList(list);
           debugPrint('📥 /api/scheduler/posts/generated returned ${posts.length - prevCount} drafts');
-        }
-
-        // Fallback for generated drafts
-        if (posts.isEmpty && accParam.isNotEmpty) {
-          final fallbackGenUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=all&limit=50');
-          final fbGenRes = await _httpClient.get(fallbackGenUri, headers: headers);
-          if (fbGenRes.statusCode == 200) {
-            final decoded = jsonDecode(fbGenRes.body);
-            final list = decoded is Map<String, dynamic> ? (decoded['posts'] ?? decoded['data']) : decoded;
-            final prevCount = posts.length;
-            addPostsFromList(list);
-            debugPrint('📥 /api/scheduler/posts/generated fallback returned ${posts.length - prevCount} drafts');
-          }
         }
       } catch (e) {
         debugPrint('⚠️ Error fetching /api/scheduler/posts/generated: $e');
