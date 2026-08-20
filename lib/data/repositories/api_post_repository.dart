@@ -35,9 +35,6 @@ class ApiPostRepository implements PostRepository {
   }
 
   ScheduledPost? _mapToScheduledPost(Map<String, dynamic> json) {
-    final rawPlat = (json['platform'] ?? '').toString().toUpperCase();
-    if (rawPlat == 'LINKEDIN') return null;
-
     final rawId = json['_id'] ??
         json['id'] ??
         json['postId'] ??
@@ -156,9 +153,6 @@ class ApiPostRepository implements PostRepository {
         if (rawList is! List) return;
         for (final item in rawList) {
           if (item is Map<String, dynamic>) {
-            final rawPlat = (item['platform'] ?? item['target_platform'] ?? '').toString().toUpperCase();
-            if (rawPlat == 'LINKEDIN') continue;
-
             final rawStatus = (item['status'] ?? '').toString().toLowerCase();
             if (filterOutPublished && (rawStatus == 'posted' || rawStatus == 'published' || rawStatus == 'executed')) {
               continue;
