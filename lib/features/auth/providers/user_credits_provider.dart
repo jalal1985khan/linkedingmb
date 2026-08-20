@@ -22,6 +22,15 @@ class UserCredits {
   bool get isZeroCredits => availableCredits <= 0;
   bool get isLowCredits => availableCredits <= 10;
 
+  String get planLabel {
+    final s = subscriptionType.toLowerCase();
+    if (s == 'pro' || s == 'premium') return 'Pro Member';
+    if (s == 'starter') return 'Starter Member';
+    if (s == 'unlimited') return 'Unlimited Member';
+    if (s == 'trial') return 'Pro Member';
+    return '${subscriptionType[0].toUpperCase()}${subscriptionType.substring(1)} Member';
+  }
+
   factory UserCredits.fromJson(Map<String, dynamic> json) {
     Map<String, dynamic> target = json;
     if (json['subscription'] is Map<String, dynamic>) {

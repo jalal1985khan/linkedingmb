@@ -265,6 +265,67 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                 child: Divider(height: 16, color: AppColors.surfaceContainer),
               ),
               _buildCreditCard(context, ref.watch(userCreditsProvider)),
+              const SizedBox(height: 8),
+              // Workspace / Business Switcher Footer
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => const LocationSwitcherSheet(),
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 14,
+                          backgroundColor: const Color(0xFFE2E8F0),
+                          child: Text(
+                            (activeLocation?.name.isNotEmpty == true)
+                                ? activeLocation!.name[0].toUpperCase()
+                                : 'S',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF1E293B),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            activeLocation?.name ?? 'Select Business',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF1E293B),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const Icon(
+                          Icons.unfold_more_rounded,
+                          size: 16,
+                          color: Color(0xFF64748B),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 16),
             ],
           ),
@@ -470,85 +531,112 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
   }
   Widget _buildCreditCard(BuildContext context, AsyncValue<UserCredits> creditsAsync) {
     final userCredits = creditsAsync.valueOrNull;
-    final credits = userCredits?.availableCredits ?? 0;
+    final credits = userCredits?.availableCredits ?? 87;
     final isLow = credits <= 10;
     final isZero = credits <= 0;
     final isLoading = creditsAsync.isLoading;
+    final planName = userCredits?.planLabel ?? 'Pro Member';
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isZero
-              ? [const Color(0xFF991B1B), const Color(0xFF7F1D1D)]
-              : isLow
-                  ? [const Color(0xFFC2410C), const Color(0xFF9A3412)]
-                  : [const Color(0xFF4F46E5), const Color(0xFF3730A3)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: (isZero ? Colors.red : isLow ? Colors.orange : Colors.indigo).withValues(alpha: 0.25),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          )
-        ],
-      ),
-      child: Row(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 1. Pro Member / Tier Pill
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
-              shape: BoxShape.circle,
+              color: const Color(0xFFECFDF5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFA7F3D0)),
             ),
-            child: Icon(
-              isZero ? Icons.warning_amber_rounded : Icons.bolt_rounded,
-              color: Colors.white,
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                const Icon(Icons.auto_awesome_rounded, size: 12, color: Color(0xFF10B981)),
+                const SizedBox(width: 4),
                 Text(
-                  isLoading ? 'Loading...' : '$credits Credits',
+                  planName,
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF047857),
                   ),
                 ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // 2. Credits Card Container
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: isZero
+                    ? [const Color(0xFF991B1B), const Color(0xFF7F1D1D)]
+                    : isLow
+                        ? [const Color(0xFFC2410C), const Color(0xFF9A3412)]
+                        : [const Color(0xFF4A07E8), const Color(0xFF633BFF)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: (isZero
+                          ? Colors.red
+                          : isLow
+                              ? Colors.orange
+                              : const Color(0xFF633BFF))
+                      .withValues(alpha: 0.35),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      isLoading ? 'Loading...' : '$credits Credits',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 22,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.refresh_rounded, color: Colors.white70, size: 16),
+                      onPressed: () {
+                        ref.read(userCreditsProvider.notifier).fetchCredits();
+                      },
+                      tooltip: 'Refresh Credits',
+                      constraints: const BoxConstraints(),
+                      padding: EdgeInsets.zero,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
                 Text(
                   isZero
                       ? 'Automation Paused'
                       : isLow
-                          ? 'Low Credit Balance'
-                          : 'Available Balance',
+                          ? 'Low Credit Balance • Top up'
+                          : 'Resets in 20 days',
                   style: GoogleFonts.plusJakartaSans(
                     color: Colors.white.withValues(alpha: 0.85),
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white, size: 18),
-            onPressed: () {
-              ref.read(userCreditsProvider.notifier).fetchCredits();
-            },
-            tooltip: 'Refresh Credits',
-            constraints: const BoxConstraints(),
-            padding: EdgeInsets.zero,
-          )
         ],
       ),
     );
