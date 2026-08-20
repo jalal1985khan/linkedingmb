@@ -139,14 +139,17 @@ class ApiPostRepository implements PostRepository {
         'Authorization': 'Bearer $token',
       };
 
+      String cleanId = '';
       String accParam = '';
+      String gmbLocParam = '';
       if (locationId != null &&
           locationId.isNotEmpty &&
           locationId != 'all' &&
           locationId != 'personal_default' &&
           locationId != 'social_hive_default') {
-        final cleanId = locationId.replaceFirst('locations/', '');
+        cleanId = locationId.replaceFirst('locations/', '');
         accParam = '&author_urn=${Uri.encodeComponent(locationId)}&account_id=${Uri.encodeComponent(cleanId)}';
+        gmbLocParam = '?location_id=${Uri.encodeComponent(cleanId)}';
       }
 
       void addPostsFromList(dynamic rawList, {bool filterOutPublished = true}) {
@@ -170,9 +173,25 @@ class ApiPostRepository implements PostRepository {
         }
       }
 
-      // 1. Fetch GMB scheduler queue (matching web schedulerApi.getScheduledPosts with status=pending)
+      // 1. Fetch from GMB Posts API (/api/gmb/posts)
       try {
-        final schedulerUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=gmb&status=pending&limit=50$accParam');
+        final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts$gmbLocParam');
+        final response = await _httpClient.get(gmbUri, headers: headers);
+        if (response.statusCode == 200) {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map<String, dynamic>) {
+            addPostsFromList(decoded['posts'] ?? decoded['data']);
+          } else if (decoded is List) {
+            addPostsFromList(decoded);
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error fetching /api/gmb/posts: $e');
+      }
+
+      // 2. Fetch GMB scheduler queue (/api/scheduler/posts?platform=gmb)
+      try {
+        final schedulerUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=gmb&limit=50$accParam');
         final response = await _httpClient.get(schedulerUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
@@ -183,9 +202,9 @@ class ApiPostRepository implements PostRepository {
           }
         }
 
-        // Fallback: If 0 posts found with strict location filter, query without account restriction (exact web profileId="default" behavior)
+        // Fallback: If 0 posts found with strict location filter, query without account restriction
         if (posts.isEmpty && accParam.isNotEmpty) {
-          final fallbackUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=gmb&status=pending&limit=50');
+          final fallbackUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=gmb&limit=50');
           final fbRes = await _httpClient.get(fallbackUri, headers: headers);
           if (fbRes.statusCode == 200) {
             final decoded = jsonDecode(fbRes.body);
@@ -200,7 +219,7 @@ class ApiPostRepository implements PostRepository {
         debugPrint('⚠️ Error fetching /api/scheduler/posts: $e');
       }
 
-      // 2. Fetch GMB AI-generated posts (matching web schedulerApi.getGeneratedPosts)
+      // 3. Fetch GMB AI-generated posts (/api/scheduler/posts/generated?platform=gmb)
       try {
         final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=gmb&limit=50$accParam');
         final response = await _httpClient.get(genUri, headers: headers);
