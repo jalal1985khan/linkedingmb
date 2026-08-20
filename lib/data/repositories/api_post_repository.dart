@@ -63,14 +63,14 @@ class ApiPostRepository implements PostRepository {
                     ? text
                     : (rawTitle ?? '');
 
-    // Normalise title matching web displayTitle
-    String title = 'Google Business Post';
-    if (rawTitle != null && rawTitle.isNotEmpty && !rawTitle.startsWith('Published Post')) {
+    // Normalise title matching web scheduled-posts-widget.tsx
+    String title = 'Untitled Post';
+    if (previewText.isNotEmpty) {
+      title = previewText.length > 50 ? '${previewText.substring(0, 47)}...' : previewText;
+    } else if (rawTitle != null && rawTitle.isNotEmpty && !rawTitle.startsWith('Published Post')) {
       title = rawTitle;
     } else if (topic != null && topic.isNotEmpty) {
       title = topic;
-    } else if (previewText.isNotEmpty) {
-      title = previewText.length > 50 ? '${previewText.substring(0, 47)}...' : previewText;
     }
 
     final topicType = json['topic_type'] ??
@@ -140,7 +140,6 @@ class ApiPostRepository implements PostRepository {
       };
 
       String accParam = '';
-      String gmbLocQuery = '';
       if (locationId != null &&
           locationId.isNotEmpty &&
           locationId != 'all' &&
@@ -148,13 +147,20 @@ class ApiPostRepository implements PostRepository {
           locationId != 'social_hive_default') {
         final cleanId = locationId.replaceFirst('locations/', '');
         accParam = '&author_urn=${Uri.encodeComponent(locationId)}&account_id=${Uri.encodeComponent(cleanId)}';
-        gmbLocQuery = '?location_id=${Uri.encodeComponent(cleanId)}';
       }
 
-      void addPostsFromList(dynamic rawList) {
+      void addPostsFromList(dynamic rawList, {bool filterOutPublished = true}) {
         if (rawList is! List) return;
         for (final item in rawList) {
           if (item is Map<String, dynamic>) {
+            final rawPlat = (item['platform'] ?? item['target_platform'] ?? '').toString().toUpperCase();
+            if (rawPlat == 'LINKEDIN') continue;
+
+            final rawStatus = (item['status'] ?? '').toString().toLowerCase();
+            if (filterOutPublished && (rawStatus == 'posted' || rawStatus == 'published' || rawStatus == 'executed')) {
+              continue;
+            }
+
             final mapped = _mapToScheduledPost(item);
             if (mapped != null && mapped.id.isNotEmpty && !seenIds.contains(mapped.id)) {
               seenIds.add(mapped.id);
@@ -164,9 +170,9 @@ class ApiPostRepository implements PostRepository {
         }
       }
 
-      // 1. Fetch GMB scheduler queue (matching web gmbKeys.scheduledPosts)
+      // 1. Fetch GMB scheduler queue (matching web schedulerApi.getScheduledPosts with status=pending)
       try {
-        final schedulerUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=gmb&limit=50$accParam');
+        final schedulerUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=gmb&status=pending&limit=50$accParam');
         final response = await _httpClient.get(schedulerUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
@@ -180,7 +186,7 @@ class ApiPostRepository implements PostRepository {
         debugPrint('⚠️ Error fetching /api/scheduler/posts: $e');
       }
 
-      // 2. Fetch GMB AI-generated posts (matching web getGeneratedPosts)
+      // 2. Fetch GMB AI-generated posts (matching web schedulerApi.getGeneratedPosts)
       try {
         final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=gmb&limit=50$accParam');
         final response = await _httpClient.get(genUri, headers: headers);
@@ -195,41 +201,6 @@ class ApiPostRepository implements PostRepository {
       } catch (e) {
         debugPrint('⚠️ Error fetching /api/scheduler/posts/generated: $e');
       }
-
-      // 3. Fetch GMB specific posts (matching web gmbService.getPosts)
-      try {
-        final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts$gmbLocQuery');
-        final response = await _httpClient.get(gmbUri, headers: headers);
-        if (response.statusCode == 200) {
-          final decoded = jsonDecode(response.body);
-          if (decoded is Map<String, dynamic>) {
-            addPostsFromList(decoded['posts'] ?? decoded['data']);
-          } else if (decoded is List) {
-            addPostsFromList(decoded);
-          }
-        }
-      } catch (e) {
-        debugPrint('⚠️ Error fetching /api/gmb/posts: $e');
-      }
-
-      // 4. Fetch GMB posting history (matching web gmbKeys.postsHistory)
-      try {
-        final histUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/history?platform=gmb&limit=50$accParam');
-        final response = await _httpClient.get(histUri, headers: headers);
-        if (response.statusCode == 200) {
-          final decoded = jsonDecode(response.body);
-          if (decoded is Map<String, dynamic>) {
-            addPostsFromList(decoded['posts'] ?? decoded['data']);
-          } else if (decoded is List) {
-            addPostsFromList(decoded);
-          }
-        }
-      } catch (e) {
-        debugPrint('⚠️ Error fetching /api/scheduler/posts/history: $e');
-      }
-
-      // Sort posts chronologically
-      posts.sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
 
       final queued = posts.where((p) => p.status == PostStatus.queued || p.status == PostStatus.scheduled || p.status == PostStatus.draft).length;
       final aiGen = posts.where((p) => p.isAiGenerated).length;
