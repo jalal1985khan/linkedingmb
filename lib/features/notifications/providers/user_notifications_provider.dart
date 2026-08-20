@@ -160,6 +160,37 @@ class UserNotificationsNotifier extends StateNotifier<AsyncValue<List<AppNotific
     }
   }
 
+  Future<void> dismissNotification(String notificationId) async {
+    final currentList = state.valueOrNull ?? [];
+    // Immediately remove from list (optimistic update)
+    state = AsyncValue.data(
+      currentList.where((n) => n.id != notificationId).toList(),
+    );
+
+    try {
+      final token = await _secureStorage.read(key: 'auth_access_token');
+      if (token == null || token.isEmpty) return;
+
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/user-notifications/$notificationId/read');
+      await http.put(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('[UserNotifications] Error dismissing notification: $e');
+      }
+    }
+  }
+
+  Future<void> clearAllNotifications() async {
+    state = const AsyncValue.data([]);
+    await markAllAsRead();
+  }
+
   Future<bool> markAllAsRead() async {
     final currentList = state.valueOrNull ?? [];
     state = AsyncValue.data(

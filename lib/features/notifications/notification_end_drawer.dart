@@ -23,9 +23,9 @@ class NotificationEndDrawer extends ConsumerWidget {
     final unreadCount = ref.watch(unreadNotificationsCountProvider);
 
     return Drawer(
-      width: MediaQuery.of(context).size.width * 0.85 > 380
-          ? 380
-          : MediaQuery.of(context).size.width * 0.85,
+      width: MediaQuery.of(context).size.width * 0.88 > 390
+          ? 390
+          : MediaQuery.of(context).size.width * 0.88,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.horizontal(left: Radius.circular(20)),
@@ -33,17 +33,30 @@ class NotificationEndDrawer extends ConsumerWidget {
       child: SafeArea(
         child: Column(
           children: [
-            // Top Bar
+            // Top Header Bar
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
               child: Row(
                 children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F3FF),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.notifications_active_rounded,
+                      size: 20,
+                      color: Color(0xFF4A07E8),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
                   Text(
                     'Notifications',
                     style: GoogleFonts.plusJakartaSans(
                       fontWeight: FontWeight.w800,
                       fontSize: 18,
-                      color: const Color(0xFF1E1B4B),
+                      color: const Color(0xFF131B2E),
                     ),
                   ),
                   if (unreadCount > 0) ...[
@@ -78,11 +91,19 @@ class NotificationEndDrawer extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    Text(
+                      'Tap an alert to dismiss',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFF94A3B8),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                     TextButton(
                       onPressed: () {
-                        ref.read(userNotificationsProvider.notifier).markAllAsRead();
+                        ref.read(userNotificationsProvider.notifier).clearAllNotifications();
                       },
                       style: TextButton.styleFrom(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -90,9 +111,9 @@ class NotificationEndDrawer extends ConsumerWidget {
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       child: Text(
-                        'Mark all as read',
+                        'Clear all',
                         style: GoogleFonts.plusJakartaSans(
-                          color: AppColors.primaryContainer,
+                          color: const Color(0xFF4A07E8),
                           fontWeight: FontWeight.w700,
                           fontSize: 12,
                         ),
@@ -147,7 +168,7 @@ class NotificationEndDrawer extends ConsumerWidget {
                             ),
                             const SizedBox(height: 14),
                             Text(
-                              'No Notifications Yet',
+                              'No Notifications',
                               style: GoogleFonts.plusJakartaSans(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 16,
@@ -156,7 +177,7 @@ class NotificationEndDrawer extends ConsumerWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              "We'll notify you about post updates & system events.",
+                              "You're all caught up! No active alerts.",
                               textAlign: TextAlign.center,
                               style: GoogleFonts.plusJakartaSans(
                                 color: const Color(0xFF64748B),
@@ -180,77 +201,130 @@ class NotificationEndDrawer extends ConsumerWidget {
                       separatorBuilder: (context, index) => const Divider(height: 1, indent: 64, color: Color(0xFFF1F5F9)),
                       itemBuilder: (context, index) {
                         final item = notifications[index];
-                        return Container(
-                          color: item.isRead ? Colors.white : const Color(0xFFF8FAFC),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: item.isRead
-                                    ? const Color(0xFFF1F5F9)
-                                    : AppColors.primaryContainer.withValues(alpha: 0.12),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                item.isRead ? Icons.notifications_none_rounded : Icons.notifications_active_rounded,
-                                color: item.isRead ? const Color(0xFF64748B) : AppColors.primaryContainer,
-                                size: 18,
-                              ),
-                            ),
-                            title: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    item.title,
-                                    style: GoogleFonts.plusJakartaSans(
-                                      fontWeight: item.isRead ? FontWeight.w600 : FontWeight.w800,
-                                      fontSize: 13,
-                                      color: const Color(0xFF0F172A),
-                                    ),
-                                  ),
-                                ),
-                                Text(
-                                  _formatTime(item.createdAt),
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: const Color(0xFF94A3B8),
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: Text(
-                                item.body,
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: item.isRead ? const Color(0xFF64748B) : const Color(0xFF334155),
-                                  fontSize: 12,
-                                  height: 1.3,
-                                ),
-                              ),
-                            ),
-                            trailing: !item.isRead
-                                ? Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: AppColors.primaryContainer,
+                        return Dismissible(
+                          key: Key(item.id),
+                          direction: DismissDirection.endToStart,
+                          onDismissed: (_) {
+                            ref.read(userNotificationsProvider.notifier).dismissNotification(item.id);
+                          },
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 20),
+                            color: const Color(0xFFEF4444),
+                            child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 22),
+                          ),
+                          child: InkWell(
+                            onTap: () {
+                              // On click or tap, message goes away from the notification sidebar
+                              ref.read(userNotificationsProvider.notifier).dismissNotification(item.id);
+                            },
+                            child: Container(
+                              color: item.isRead ? Colors.white : const Color(0xFFF8FAFC),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: item.isRead
+                                          ? const Color(0xFFF1F5F9)
+                                          : const Color(0xFFF5F3FF),
                                       shape: BoxShape.circle,
                                     ),
-                                  )
-                                : null,
-                            onTap: () {
-                              if (!item.isRead) {
-                                ref.read(userNotificationsProvider.notifier).markAsRead(item.id);
-                              }
-                            },
+                                    child: Icon(
+                                      item.isRead ? Icons.notifications_none_rounded : Icons.notifications_active_rounded,
+                                      color: item.isRead ? const Color(0xFF64748B) : const Color(0xFF4A07E8),
+                                      size: 18,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                item.title,
+                                                style: GoogleFonts.plusJakartaSans(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 13,
+                                                  color: const Color(0xFF0F172A),
+                                                ),
+                                              ),
+                                            ),
+                                            Text(
+                                              _formatTime(item.createdAt),
+                                              style: GoogleFonts.plusJakartaSans(
+                                                color: const Color(0xFF94A3B8),
+                                                fontSize: 10,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          item.body,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            color: const Color(0xFF475569),
+                                            fontSize: 12,
+                                            height: 1.3,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  IconButton(
+                                    icon: const Icon(Icons.close_rounded, size: 16, color: Color(0xFF94A3B8)),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    onPressed: () {
+                                      ref.read(userNotificationsProvider.notifier).dismissNotification(item.id);
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         );
                       },
                     ),
                   );
                 },
+              ),
+            ),
+
+            // Bottom Action Bar with prominent Close Button
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(top: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  label: Text(
+                    'Close',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF1F5F9),
+                    foregroundColor: const Color(0xFF1E293B),
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
               ),
             ),
           ],
