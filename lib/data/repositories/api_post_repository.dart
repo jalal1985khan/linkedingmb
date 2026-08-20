@@ -205,6 +205,13 @@ class ApiPostRepository implements PostRepository {
       final queued = posts.where((p) => p.status == PostStatus.queued || p.status == PostStatus.scheduled || p.status == PostStatus.draft).length;
       final aiGen = posts.where((p) => p.isAiGenerated).length;
 
+      debugPrint('📅 [ScheduledPosts] Fetched ${posts.length} GMB posts for location: ${locationId ?? 'all'} (Queued: $queued, AI-Gen: $aiGen)');
+      for (int i = 0; i < posts.length && i < 4; i++) {
+        final p = posts[i];
+        final overdueStr = p.scheduledAt.isBefore(DateTime.now()) ? ' (OVERDUE)' : '';
+        debugPrint('   ↳ [${p.status.name.toUpperCase()}$overdueStr] "${p.title}" | scheduled: ${p.scheduledAt}');
+      }
+
       return DashboardData(
         queuedCount: queued,
         aiGeneratedCount: aiGen,

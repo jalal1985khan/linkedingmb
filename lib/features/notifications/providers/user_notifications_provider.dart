@@ -99,10 +99,6 @@ class UserNotificationsNotifier extends StateNotifier<AsyncValue<List<AppNotific
         },
       );
 
-      if (kDebugMode) {
-        print('[UserNotifications] Status: ${response.statusCode}, Body: ${response.body}');
-      }
-
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
         List<dynamic> listData = [];
@@ -116,8 +112,16 @@ class UserNotificationsNotifier extends StateNotifier<AsyncValue<List<AppNotific
             .map((item) => AppNotification.fromJson(Map<String, dynamic>.from(item)))
             .toList();
 
+        final unreadCount = notifications.where((n) => !n.isRead).length;
+        if (kDebugMode) {
+          debugPrint('🔔 [UserNotifications] Fetched ${notifications.length} notifications ($unreadCount unread)');
+        }
+
         state = AsyncValue.data(notifications);
       } else {
+        if (kDebugMode) {
+          debugPrint('⚠️ [UserNotifications] HTTP ${response.statusCode}');
+        }
         if (!silent) {
           state = AsyncValue.error('Failed to fetch notifications: ${response.statusCode}', StackTrace.current);
         }
