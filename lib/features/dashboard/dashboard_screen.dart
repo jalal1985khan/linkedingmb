@@ -70,34 +70,39 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final profileScore = ref.watch(profileCompletenessProvider(activeLocation));
 
     return SafeArea(
-      child: RefreshIndicator(
-        color: const Color(0xFF4A07E8),
-        onRefresh: () async {
-          ref.read(activeLocationProvider.notifier).refresh();
-          ref.invalidate(dashboardStatsProvider(locationId));
-          ref.invalidate(postActivityProvider(locationId));
-          ref.invalidate(dashboardReviewsProvider(locationId));
-          ref.invalidate(dashboardDataProvider);
-        },
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. App Header Bar (4-Square App Icon, Title, Bell with Badge)
-              DashboardHeaderBar(
-                onOpenDrawer: () {
-                  Scaffold.of(context).openDrawer();
-                },
-                onOpenNotifications: () {
-                  Scaffold.of(context).openEndDrawer();
-                },
-              ),
+      child: Column(
+        children: [
+          // 1. Fixed App Header Bar (Pinned to top, doesn't scroll)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0),
+            child: DashboardHeaderBar(
+              onOpenDrawer: () {
+                Scaffold.of(context).openDrawer();
+              },
+              onOpenNotifications: () {
+                Scaffold.of(context).openEndDrawer();
+              },
+            ),
+          ),
 
-              const SizedBox(height: 16),
-
-              // 2. Business Identity Card & Profile Strength
+          // 2. Scrollable Dashboard Content
+          Expanded(
+            child: RefreshIndicator(
+              color: const Color(0xFF4A07E8),
+              onRefresh: () async {
+                ref.read(activeLocationProvider.notifier).refresh();
+                ref.invalidate(dashboardStatsProvider(locationId));
+                ref.invalidate(postActivityProvider(locationId));
+                ref.invalidate(dashboardReviewsProvider(locationId));
+                ref.invalidate(dashboardDataProvider);
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 2. Business Identity Card & Profile Strength
               BusinessIdentityCard(
                 business: activeLocation,
                 profileScore: profileScore,
@@ -146,6 +151,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ),
       ),
+    ),
+  ],
+),
     );
   }
 }
