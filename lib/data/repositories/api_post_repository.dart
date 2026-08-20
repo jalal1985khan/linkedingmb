@@ -182,6 +182,20 @@ class ApiPostRepository implements PostRepository {
             addPostsFromList(decoded);
           }
         }
+
+        // Fallback: If 0 posts found with strict location filter, query without account restriction (exact web profileId="default" behavior)
+        if (posts.isEmpty && accParam.isNotEmpty) {
+          final fallbackUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=gmb&status=pending&limit=50');
+          final fbRes = await _httpClient.get(fallbackUri, headers: headers);
+          if (fbRes.statusCode == 200) {
+            final decoded = jsonDecode(fbRes.body);
+            if (decoded is Map<String, dynamic>) {
+              addPostsFromList(decoded['scheduled_posts'] ?? decoded['posts'] ?? decoded['data']);
+            } else if (decoded is List) {
+              addPostsFromList(decoded);
+            }
+          }
+        }
       } catch (e) {
         debugPrint('⚠️ Error fetching /api/scheduler/posts: $e');
       }
@@ -196,6 +210,20 @@ class ApiPostRepository implements PostRepository {
             addPostsFromList(decoded['posts'] ?? decoded['data']);
           } else if (decoded is List) {
             addPostsFromList(decoded);
+          }
+        }
+
+        // Fallback for generated drafts
+        if (posts.isEmpty && accParam.isNotEmpty) {
+          final fallbackGenUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=gmb&limit=50');
+          final fbGenRes = await _httpClient.get(fallbackGenUri, headers: headers);
+          if (fbGenRes.statusCode == 200) {
+            final decoded = jsonDecode(fbGenRes.body);
+            if (decoded is Map<String, dynamic>) {
+              addPostsFromList(decoded['posts'] ?? decoded['data']);
+            } else if (decoded is List) {
+              addPostsFromList(decoded);
+            }
           }
         }
       } catch (e) {
