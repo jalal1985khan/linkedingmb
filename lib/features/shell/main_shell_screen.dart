@@ -469,13 +469,32 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
     setState(() => _index = tabIndex);
   }
   Widget _buildCreditCard(BuildContext context, AsyncValue<UserCredits> creditsAsync) {
+    if (creditsAsync.isLoading && !creditsAsync.hasValue) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFAF8FF),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFEDE9FE), width: 1.2),
+        ),
+        child: const Center(
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF633BFF)),
+          ),
+        ),
+      );
+    }
+
     final userCredits = creditsAsync.valueOrNull;
-    final credits = userCredits?.availableCredits ?? 68;
-    final monthlyLimit = userCredits?.monthlyLimit ?? 100;
-    final resetDays = userCredits?.resetDays ?? 12;
+    final credits = userCredits?.availableCredits ?? 0;
+    final monthlyLimit = userCredits?.monthlyLimit ?? 0;
+    final resetDays = userCredits?.resetDays ?? 0;
     final isZero = credits <= 0;
     final isLow = credits > 0 && credits <= 15;
-    final progress = (credits / (monthlyLimit > 0 ? monthlyLimit : 100)).clamp(0.0, 1.0);
+    final progress = monthlyLimit > 0 ? (credits / monthlyLimit).clamp(0.0, 1.0) : (credits > 0 ? 1.0 : 0.0);
 
     // State-based Color Palette
     final Color bgColor = isZero
@@ -731,7 +750,10 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                             : const Color(0xFF1E293B),
                   ),
                 ),
-                TextSpan(text: ' / $monthlyLimit monthly credits'),
+                if (monthlyLimit > 0)
+                  TextSpan(text: ' / $monthlyLimit monthly credits')
+                else
+                  const TextSpan(text: ' available credits'),
               ],
             ),
           ),
@@ -782,14 +804,18 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                       color: const Color(0xFF64748B),
                     ),
                     children: [
-                      const TextSpan(text: 'Resets in '),
-                      TextSpan(
-                        text: '$resetDays days',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF4338CA),
+                      if (resetDays > 0) ...[
+                        const TextSpan(text: 'Resets in '),
+                        TextSpan(
+                          text: '$resetDays days',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF4338CA),
+                          ),
                         ),
-                      ),
+                      ] else ...[
+                        const TextSpan(text: 'Resets with monthly billing'),
+                      ],
                     ],
                   ),
                 ),
@@ -816,7 +842,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    'Refreshing credits... You have $credits credits remaining.',
+                    'Refreshing credits... Current balance: $credits credits.',
                     style: GoogleFonts.plusJakartaSans(fontSize: 13),
                   ),
                   duration: const Duration(seconds: 2),

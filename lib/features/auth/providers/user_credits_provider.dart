@@ -15,12 +15,12 @@ class UserCredits {
   final String subscriptionType;
 
   const UserCredits({
-    this.availableCredits = 68,
-    this.totalEarned = 100,
-    this.totalSpent = 32,
-    this.monthlyLimit = 100,
-    this.resetDays = 12,
-    this.subscriptionType = 'pro',
+    this.availableCredits = 0,
+    this.totalEarned = 0,
+    this.totalSpent = 0,
+    this.monthlyLimit = 0,
+    this.resetDays = 0,
+    this.subscriptionType = 'trial',
   });
 
   bool get isZeroCredits => availableCredits <= 0;
@@ -31,7 +31,8 @@ class UserCredits {
     if (s == 'pro' || s == 'premium') return 'Pro Member';
     if (s == 'starter') return 'Starter Member';
     if (s == 'unlimited') return 'Unlimited Member';
-    if (s == 'trial') return 'Pro Member';
+    if (s == 'trial') return 'Trial Member';
+    if (s.isEmpty) return 'Member';
     return '${subscriptionType[0].toUpperCase()}${subscriptionType.substring(1)} Member';
   }
 
@@ -59,14 +60,14 @@ class UserCredits {
       creditsObj['available_credits'] ??
       target['available_credits'] ??
       json['available_credits'],
-      68,
+      0,
     );
 
     final earned = parseVal(
       creditsObj['total_earned'] ??
       target['total_earned'] ??
       json['total_earned'],
-      100,
+      0,
     );
 
     final spent = parseVal(
@@ -79,21 +80,24 @@ class UserCredits {
     final limit = parseVal(
       creditsObj['monthly_limit'] ??
       target['monthly_limit'] ??
+      target['limits']?['credits_per_month'] ??
       json['monthly_limit'] ??
-      (earned > 0 ? earned : 100),
-      100,
+      (earned > 0 ? earned : (available + spent > 0 ? available + spent : available)),
+      0,
     );
 
     final days = parseVal(
-      creditsObj['reset_days'] ??
+      creditsObj['days_remaining'] ??
+      target['days_remaining'] ??
       target['reset_days'] ??
+      json['days_remaining'] ??
       json['reset_days'],
-      12,
+      0,
     );
 
     final subType = (target['subscription_type'] ??
       json['subscription_type'] ??
-      'pro').toString();
+      'trial').toString();
 
     return UserCredits(
       availableCredits: available,
