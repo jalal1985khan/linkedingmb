@@ -32,6 +32,7 @@ class MainShellScreen extends ConsumerStatefulWidget {
 
 class _MainShellScreenState extends ConsumerState<MainShellScreen> {
   int _index = 0;
+  bool _isCreditCardExpanded = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -472,7 +473,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
     if (creditsAsync.isLoading && !creditsAsync.hasValue) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
           color: const Color(0xFFFAF8FF),
           borderRadius: BorderRadius.circular(20),
@@ -480,8 +481,8 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
         ),
         child: const Center(
           child: SizedBox(
-            width: 24,
-            height: 24,
+            width: 20,
+            height: 20,
             child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF633BFF)),
           ),
         ),
@@ -588,7 +589,148 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
             ? const Color(0xFFEA580C)
             : const Color(0xFF4338CA);
 
-    return Container(
+    // 1. Minimized View (Compact Pill Bar from design)
+    final minimizedWidget = InkWell(
+      onTap: () => setState(() => _isCreditCardExpanded = true),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: borderColor, width: 1.2),
+          boxShadow: [
+            BoxShadow(
+              color: (isZero
+                      ? const Color(0xFFDC2626)
+                      : isLow
+                          ? const Color(0xFFEA580C)
+                          : const Color(0xFF633BFF))
+                  .withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Circular badge with Sparkle icon
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: badgeGradient,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: badgeShadowColor.withValues(alpha: 0.1),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                headerIcon,
+                size: 20,
+                color: badgeIconColor,
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // AI Credits & 68 /100
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    headerTitle,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF1E293B),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '$credits',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: numberColor,
+                        ),
+                      ),
+                      if (monthlyLimit > 0)
+                        Text(
+                          ' /$monthlyLimit',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Progress bar & days left
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 72,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: FractionallySizedBox(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: progress,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: progressFillColor,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  resetDays > 0 ? '$resetDays days left' : (isZero ? 'Paused' : 'Active'),
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: headerTextColor,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    // 2. Expanded Detailed View
+    final expandedWidget = Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -611,45 +753,59 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Top Header Row (Icon + Title + ? Help icon)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(headerIcon, size: 16, color: headerIconColor),
-                  const SizedBox(width: 6),
-                  Text(
-                    headerTitle,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
+          // 1. Top Header Row (Icon + Title + ? Help icon + Collapse Chevron)
+          InkWell(
+            onTap: () => setState(() => _isCreditCardExpanded = false),
+            borderRadius: BorderRadius.circular(8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(headerIcon, size: 16, color: headerIconColor),
+                    const SizedBox(width: 6),
+                    Text(
+                      headerTitle,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: headerTextColor,
+                      ),
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Tooltip(
+                      message: 'AI Credits are used to generate automated posts, blueprints, and review responses.',
+                      child: Container(
+                        width: 18,
+                        height: 18,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: helpCircleBorder, width: 1.2),
+                        ),
+                        child: Text(
+                          '?',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: helpCircleText,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.keyboard_arrow_up_rounded,
+                      size: 20,
                       color: headerTextColor,
                     ),
-                  ),
-                ],
-              ),
-              Tooltip(
-                message: 'AI Credits are used to generate automated posts, blueprints, and review responses.',
-                child: Container(
-                  width: 18,
-                  height: 18,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: helpCircleBorder, width: 1.2),
-                  ),
-                  child: Text(
-                    '?',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: helpCircleText,
-                    ),
-                  ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 12),
 
@@ -882,6 +1038,13 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
           ),
         ],
       ),
+    );
+
+    return AnimatedCrossFade(
+      firstChild: minimizedWidget,
+      secondChild: expandedWidget,
+      crossFadeState: _isCreditCardExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+      duration: const Duration(milliseconds: 220),
     );
   }
 }
