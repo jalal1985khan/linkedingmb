@@ -136,19 +136,21 @@ class UpcomingPostsCard extends ConsumerWidget {
             ),
             error: (err, _) => _buildEmptyState(context),
             data: (dashboard) {
-              final upcomingPosts = dashboard.posts.where((p) {
+              final activePipeline = dashboard.posts.where((p) {
                 return p.status == PostStatus.scheduled ||
                     p.status == PostStatus.queued ||
                     p.status == PostStatus.draft ||
                     p.scheduledAt.isAfter(DateTime.now().subtract(const Duration(hours: 1)));
               }).toList();
 
-              if (upcomingPosts.isEmpty) {
+              final displayList = activePipeline.isNotEmpty ? activePipeline : dashboard.posts;
+
+              if (displayList.isEmpty) {
                 return _buildEmptyState(context);
               }
 
-              // Show up to 3 upcoming posts
-              final displayPosts = upcomingPosts.take(3).toList();
+              // Show up to 3 posts
+              final displayPosts = displayList.take(3).toList();
 
               return Column(
                 children: [

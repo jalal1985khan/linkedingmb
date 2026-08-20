@@ -71,60 +71,91 @@ class ApiPostRepository implements PostRepository {
       }
 
       List<ScheduledPost> posts = [];
+      final seenIds = <String>{};
       final headers = {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       };
 
-      // 1. Fetch main scheduler posts (same endpoint as Web app)
+      void addPostsFromList(dynamic rawList) {
+        if (rawList is! List) return;
+        for (final item in rawList) {
+          if (item is Map<String, dynamic>) {
+            final mapped = _mapToScheduledPost(item);
+            if (mapped.id.isNotEmpty && !seenIds.contains(mapped.id)) {
+              seenIds.add(mapped.id);
+              posts.add(mapped);
+            }
+          }
+        }
+      }
+
+      // 1. Fetch main scheduler posts with platform=all and status=all
       try {
-        final schedulerUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?limit=50');
+        final schedulerUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?status=all&platform=all&limit=100');
         final response = await _httpClient.get(schedulerUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
-          List rawList = [];
           if (decoded is Map<String, dynamic>) {
-            if (decoded['scheduled_posts'] is List) {
-              rawList = decoded['scheduled_posts'];
-            } else if (decoded['posts'] is List) {
-              rawList = decoded['posts'];
-            } else if (decoded['data'] is List) {
-              rawList = decoded['data'];
-            }
+            addPostsFromList(decoded['scheduled_posts'] ?? decoded['posts'] ?? decoded['data']);
           } else if (decoded is List) {
-            rawList = decoded;
+            addPostsFromList(decoded);
           }
-
-          posts = rawList.whereType<Map<String, dynamic>>().map(_mapToScheduledPost).toList();
         }
       } catch (e) {
         debugPrint('⚠️ Error fetching /api/scheduler/posts: $e');
       }
 
-      // 2. Fetch GMB specific posts as fallback / secondary merge
+      // 2. Fetch AI-generated draft posts with platform=all
+      try {
+        final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=all&limit=50');
+        final response = await _httpClient.get(genUri, headers: headers);
+        if (response.statusCode == 200) {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map<String, dynamic>) {
+            addPostsFromList(decoded['posts'] ?? decoded['data']);
+          } else if (decoded is List) {
+            addPostsFromList(decoded);
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error fetching /api/scheduler/posts/generated: $e');
+      }
+
+      // 3. Fetch GMB specific posts directly from /api/gmb/posts
       try {
         final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts');
         final response = await _httpClient.get(gmbUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
-          List rawList = [];
-          if (decoded is Map<String, dynamic> && decoded['posts'] is List) {
-            rawList = decoded['posts'];
+          if (decoded is Map<String, dynamic>) {
+            addPostsFromList(decoded['posts'] ?? decoded['data']);
           } else if (decoded is List) {
-            rawList = decoded;
-          }
-
-          final gmbPosts = rawList.whereType<Map<String, dynamic>>().map(_mapToScheduledPost).toList();
-          final existingIds = posts.map((p) => p.id).toSet();
-          for (final gp in gmbPosts) {
-            if (!existingIds.contains(gp.id)) {
-              posts.add(gp);
-            }
+            addPostsFromList(decoded);
           }
         }
       } catch (e) {
         debugPrint('⚠️ Error fetching /api/gmb/posts: $e');
       }
+
+      // 4. Fetch scheduler history with platform=all for completed/past posts
+      try {
+        final histUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/history?platform=all&limit=50');
+        final response = await _httpClient.get(histUri, headers: headers);
+        if (response.statusCode == 200) {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map<String, dynamic>) {
+            addPostsFromList(decoded['posts'] ?? decoded['data']);
+          } else if (decoded is List) {
+            addPostsFromList(decoded);
+          }
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error fetching /api/scheduler/posts/history: $e');
+      }
+
+      // Sort posts chronologically
+      posts.sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
 
       final queued = posts.where((p) => p.status == PostStatus.queued || p.status == PostStatus.scheduled || p.status == PostStatus.draft).length;
       final aiGen = posts.where((p) => p.isAiGenerated).length;
