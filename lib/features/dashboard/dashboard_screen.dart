@@ -91,7 +91,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   Scaffold.of(context).openDrawer();
                 },
                 onOpenNotifications: () {
-                  _scaffoldKey.currentState?.openEndDrawer();
+                  Scaffold.of(context).openEndDrawer();
                 },
               ),
 

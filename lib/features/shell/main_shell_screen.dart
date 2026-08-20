@@ -270,17 +270,19 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
           ),
         ),
       ),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFFAF8FF),
-        elevation: 0,
-        centerTitle: false,
-        titleSpacing: 0,
-        leading: Builder(
-          builder: (innerContext) => IconButton(
-            onPressed: () => Scaffold.of(innerContext).openDrawer(),
-            icon: const Icon(Icons.grid_view_rounded, color: AppColors.primaryContainer),
-          ),
-        ),
+      appBar: _index == 0
+          ? null
+          : AppBar(
+              backgroundColor: const Color(0xFFFAF8FF),
+              elevation: 0,
+              centerTitle: false,
+              titleSpacing: 0,
+              leading: Builder(
+                builder: (innerContext) => IconButton(
+                  onPressed: () => Scaffold.of(innerContext).openDrawer(),
+                  icon: const Icon(Icons.grid_view_rounded, color: AppColors.primaryContainer),
+                ),
+              ),
         title: Text(
           titles[_index],
           style: const TextStyle(
