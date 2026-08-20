@@ -2,7 +2,7 @@ import '../models/dashboard_data.dart';
 import '../models/scheduled_post.dart';
 
 abstract class PostRepository {
-  Future<DashboardData> fetchDashboardData();
+  Future<DashboardData> fetchDashboardData({String? locationId});
   Future<ScheduledPost> generatePostDraft({
     required String businessName,
     required String topic,

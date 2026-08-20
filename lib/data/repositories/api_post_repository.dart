@@ -38,33 +38,80 @@ class ApiPostRepository implements PostRepository {
     final rawPlat = (json['platform'] ?? '').toString().toUpperCase();
     if (rawPlat == 'LINKEDIN') return null;
 
-    final rawId = json['_id'] ?? json['id'] ?? json['postId'] ?? json['name'] ?? DateTime.now().millisecondsSinceEpoch.toString();
-    final summary = json['title'] ?? json['summary'] ?? json['caption'] ?? json['content'] ?? json['text'] ?? 'Google Business Post';
-    final previewText = json['content'] ?? json['caption'] ?? json['summary'] ?? summary.toString();
-    final topicType = json['topic_type'] ?? json['topicType'] ?? json['contentType'] ?? 'STANDARD';
+    final rawId = json['_id'] ??
+        json['id'] ??
+        json['postId'] ??
+        json['name'] ??
+        json['gmb_post_id'] ??
+        DateTime.now().millisecondsSinceEpoch.toString();
+
+    // Normalise body/preview matching web displayBody
+    final caption = json['caption']?.toString();
+    final content = json['content']?.toString();
+    final summary = json['summary']?.toString();
+    final text = json['text']?.toString();
+    final rawTitle = json['title']?.toString();
+    final topic = json['topic']?.toString();
+
+    final previewText = (caption != null && caption.isNotEmpty)
+        ? caption
+        : (content != null && content.isNotEmpty)
+            ? content
+            : (summary != null && summary.isNotEmpty)
+                ? summary
+                : (text != null && text.isNotEmpty)
+                    ? text
+                    : (rawTitle ?? '');
+
+    // Normalise title matching web displayTitle
+    String title = 'Google Business Post';
+    if (rawTitle != null && rawTitle.isNotEmpty && !rawTitle.startsWith('Published Post')) {
+      title = rawTitle;
+    } else if (topic != null && topic.isNotEmpty) {
+      title = topic;
+    } else if (previewText.isNotEmpty) {
+      title = previewText.length > 50 ? '${previewText.substring(0, 47)}...' : previewText;
+    }
+
+    final topicType = json['topic_type'] ??
+        json['topicType'] ??
+        json['contentType'] ??
+        json['post_type'] ??
+        'STANDARD';
 
     DateTime schedAt = DateTime.now();
-    final rawDate = json['scheduled_time'] ?? json['scheduled_at'] ?? json['scheduledAt'] ?? json['createTime'] ?? json['created_at'];
+    final rawDate = json['scheduled_at'] ??
+        json['scheduled_time'] ??
+        json['published_at'] ??
+        json['posted_at'] ??
+        json['created_at'] ??
+        json['createTime'] ??
+        json['timestamp'];
     if (rawDate != null) {
       try {
         schedAt = DateTime.parse(rawDate.toString());
       } catch (_) {}
     }
 
+    final isAi = json['is_ai_generated'] == true ||
+        json['isAiGenerated'] == true ||
+        json['ai_generated'] == true ||
+        json['automation_generated'] == true;
+
     return ScheduledPost(
       id: rawId.toString(),
-      title: summary.toString().length > 60 ? '${summary.toString().substring(0, 57)}...' : summary.toString(),
-      preview: previewText.toString(),
+      title: title,
+      preview: previewText,
       platform: 'GOOGLE BUSINESS',
       status: _parseStatus(json['status']?.toString()),
-      isAiGenerated: json['is_ai_generated'] == true || json['isAiGenerated'] == true || json['ai_generated'] == true,
+      isAiGenerated: isAi,
       scheduledAt: schedAt,
       contentType: topicType.toString(),
     );
   }
 
   @override
-  Future<DashboardData> fetchDashboardData() async {
+  Future<DashboardData> fetchDashboardData({String? locationId}) async {
     try {
       final token = await _getToken();
       if (token == null || token.isEmpty) {
@@ -77,6 +124,18 @@ class ApiPostRepository implements PostRepository {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
       };
+
+      String accParam = '';
+      String gmbLocQuery = '';
+      if (locationId != null &&
+          locationId.isNotEmpty &&
+          locationId != 'all' &&
+          locationId != 'personal_default' &&
+          locationId != 'social_hive_default') {
+        final cleanId = locationId.replaceFirst('locations/', '');
+        accParam = '&author_urn=${Uri.encodeComponent(locationId)}&account_id=${Uri.encodeComponent(cleanId)}';
+        gmbLocQuery = '?location_id=${Uri.encodeComponent(cleanId)}';
+      }
 
       void addPostsFromList(dynamic rawList) {
         if (rawList is! List) return;
@@ -91,9 +150,9 @@ class ApiPostRepository implements PostRepository {
         }
       }
 
-      // 1. Fetch GMB scheduler posts with platform=gmb and status=all
+      // 1. Fetch GMB scheduler queue (matching web gmbKeys.scheduledPosts)
       try {
-        final schedulerUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?status=all&platform=gmb&limit=100');
+        final schedulerUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=gmb&limit=50$accParam');
         final response = await _httpClient.get(schedulerUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
@@ -107,9 +166,9 @@ class ApiPostRepository implements PostRepository {
         debugPrint('⚠️ Error fetching /api/scheduler/posts: $e');
       }
 
-      // 2. Fetch GMB AI-generated draft posts with platform=gmb
+      // 2. Fetch GMB AI-generated posts (matching web getGeneratedPosts)
       try {
-        final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=gmb&limit=50');
+        final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=gmb&limit=50$accParam');
         final response = await _httpClient.get(genUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
@@ -123,9 +182,9 @@ class ApiPostRepository implements PostRepository {
         debugPrint('⚠️ Error fetching /api/scheduler/posts/generated: $e');
       }
 
-      // 3. Fetch GMB specific posts directly from /api/gmb/posts
+      // 3. Fetch GMB specific posts (matching web gmbService.getPosts)
       try {
-        final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts');
+        final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts$gmbLocQuery');
         final response = await _httpClient.get(gmbUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
@@ -139,9 +198,9 @@ class ApiPostRepository implements PostRepository {
         debugPrint('⚠️ Error fetching /api/gmb/posts: $e');
       }
 
-      // 4. Fetch GMB scheduler history with platform=gmb
+      // 4. Fetch GMB posting history (matching web gmbKeys.postsHistory)
       try {
-        final histUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/history?platform=gmb&limit=50');
+        final histUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/history?platform=gmb&limit=50$accParam');
         final response = await _httpClient.get(histUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
@@ -154,6 +213,23 @@ class ApiPostRepository implements PostRepository {
       } catch (e) {
         debugPrint('⚠️ Error fetching /api/scheduler/posts/history: $e');
       }
+
+      // Sort posts chronologically
+      posts.sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
+
+      final queued = posts.where((p) => p.status == PostStatus.queued || p.status == PostStatus.scheduled || p.status == PostStatus.draft).length;
+      final aiGen = posts.where((p) => p.isAiGenerated).length;
+
+      return DashboardData(
+        queuedCount: queued,
+        aiGeneratedCount: aiGen,
+        posts: posts,
+      );
+    } catch (e) {
+      debugPrint('❌ Error fetching real dashboard posts: $e');
+      return const DashboardData(queuedCount: 0, aiGeneratedCount: 0, posts: []);
+    }
+  }
 
       // Sort posts chronologically
       posts.sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
