@@ -65,7 +65,7 @@ class ReviewsOverviewCard extends StatelessWidget {
               Text(
                 'Reviews Overview',
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: const Color(0xFF131B2E),
                 ),
@@ -94,7 +94,7 @@ class ReviewsOverviewCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           // Rating + Star Bars + Mini Stats
           Row(
@@ -107,7 +107,7 @@ class ReviewsOverviewCard extends StatelessWidget {
                   Text(
                     rating.toStringAsFixed(1),
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 32,
+                      fontSize: 30,
                       fontWeight: FontWeight.w900,
                       color: const Color(0xFF131B2E),
                       letterSpacing: -1,
@@ -119,12 +119,12 @@ class ReviewsOverviewCard extends StatelessWidget {
                       5,
                       (index) => const Icon(
                         Icons.star_rounded,
-                        size: 14,
+                        size: 13,
                         color: Color(0xFFF59E0B),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Row(
                     children: [
                       Text(
@@ -150,14 +150,14 @@ class ReviewsOverviewCard extends StatelessWidget {
                   Text(
                     'Based on $totalCount reviews',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10,
+                      fontSize: 9.5,
                       fontWeight: FontWeight.w500,
                       color: const Color(0xFF64748B),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
 
               // Star Breakdown Bars (5 to 1)
               Expanded(
@@ -171,7 +171,7 @@ class ReviewsOverviewCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
 
               // 2x2 Mini KPI Pills
               Column(
@@ -183,9 +183,9 @@ class ReviewsOverviewCard extends StatelessWidget {
                         icon: Icons.chat_bubble_outline_rounded,
                         iconColor: const Color(0xFF7C3AED),
                         value: '$totalCount',
-                        label: 'Total Reviews',
+                        label: 'Total',
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       _buildMiniReviewBadge(
                         icon: Icons.thumb_up_alt_rounded,
                         iconColor: const Color(0xFF16A34A),
@@ -194,7 +194,7 @@ class ReviewsOverviewCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       _buildMiniReviewBadge(
@@ -203,12 +203,12 @@ class ReviewsOverviewCard extends StatelessWidget {
                         value: '$repliedCount',
                         label: 'Replied',
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       _buildMiniReviewBadge(
                         icon: Icons.access_time_rounded,
                         iconColor: const Color(0xFFEA580C),
                         value: '4h',
-                        label: 'Avg. Response',
+                        label: 'Avg. Resp',
                       ),
                     ],
                   ),
@@ -225,7 +225,7 @@ class ReviewsOverviewCard extends StatelessWidget {
     final factor = total > 0 ? (count / total).clamp(0.0, 1.0) : 0.0;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      padding: const EdgeInsets.symmetric(vertical: 1.5),
       child: Row(
         children: [
           Text(
@@ -238,7 +238,7 @@ class ReviewsOverviewCard extends StatelessWidget {
           ),
           const SizedBox(width: 2),
           const Icon(Icons.star_rounded, size: 10, color: Color(0xFFF59E0B)),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(4),
@@ -258,13 +258,13 @@ class ReviewsOverviewCard extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
           SizedBox(
-            width: 12,
+            width: 10,
             child: Text(
               '$count',
               style: GoogleFonts.plusJakartaSans(
-                fontSize: 10,
+                fontSize: 9.5,
                 fontWeight: FontWeight.w600,
                 color: const Color(0xFF64748B),
               ),
@@ -283,11 +283,11 @@ class ReviewsOverviewCard extends StatelessWidget {
     required String label,
   }) {
     return Container(
-      width: 76,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      width: 66,
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
       decoration: BoxDecoration(
         color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: const Color(0xFFF1F5F9)),
       ),
       child: Column(
@@ -295,23 +295,23 @@ class ReviewsOverviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 12, color: iconColor),
-              const SizedBox(width: 4),
+              Icon(icon, size: 11, color: iconColor),
+              const SizedBox(width: 3),
               Text(
                 value,
                 style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w800,
                   color: const Color(0xFF131B2E),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 1),
           Text(
             label,
             style: GoogleFonts.plusJakartaSans(
-              fontSize: 9,
+              fontSize: 8.5,
               fontWeight: FontWeight.w500,
               color: const Color(0xFF64748B),
             ),

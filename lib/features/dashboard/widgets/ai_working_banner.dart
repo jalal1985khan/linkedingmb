@@ -10,7 +10,7 @@ class AiWorkingBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
@@ -34,8 +34,8 @@ class AiWorkingBanner extends StatelessWidget {
         children: [
           // Glowing Robot Icon in Glassmorphism Circle
           Container(
-            width: 44,
-            height: 44,
+            width: 40,
+            height: 40,
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.22),
               shape: BoxShape.circle,
@@ -45,45 +45,43 @@ class AiWorkingBanner extends StatelessWidget {
               child: Icon(
                 Icons.smart_toy_rounded,
                 color: Colors.white,
-                size: 26,
+                size: 22,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           // Title & Subtitle
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      'AI is working for you',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Text('✨', style: TextStyle(fontSize: 13)),
-                  ],
+                Text(
+                  'AI is working for you ✨',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Automating posts, replies &\nprofile optimizations.',
+                  'Automating posts, replies & profile optimizations.',
                   style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
+                    fontSize: 10.5,
                     fontWeight: FontWeight.w500,
                     color: Colors.white.withValues(alpha: 0.9),
-                    height: 1.25,
+                    height: 1.2,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           // White Pill Action Button
           InkWell(
             onTap: () {
@@ -93,7 +91,7 @@ class AiWorkingBanner extends StatelessWidget {
             },
             borderRadius: BorderRadius.circular(20),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
@@ -111,15 +109,15 @@ class AiWorkingBanner extends StatelessWidget {
                   Text(
                     'View AI Activity',
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11,
+                      fontSize: 10.5,
                       fontWeight: FontWeight.w800,
                       color: const Color(0xFF6D28D9),
                     ),
                   ),
-                  const SizedBox(width: 3),
+                  const SizedBox(width: 2),
                   const Icon(
                     Icons.chevron_right_rounded,
-                    size: 14,
+                    size: 13,
                     color: Color(0xFF6D28D9),
                   ),
                 ],
