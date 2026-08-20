@@ -231,23 +231,6 @@ class ApiPostRepository implements PostRepository {
     }
   }
 
-      // Sort posts chronologically
-      posts.sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
-
-      final queued = posts.where((p) => p.status == PostStatus.queued || p.status == PostStatus.scheduled || p.status == PostStatus.draft).length;
-      final aiGen = posts.where((p) => p.isAiGenerated).length;
-
-      return DashboardData(
-        queuedCount: queued,
-        aiGeneratedCount: aiGen,
-        posts: posts,
-      );
-    } catch (e) {
-      debugPrint('❌ Error fetching real dashboard posts: $e');
-      return const DashboardData(queuedCount: 0, aiGeneratedCount: 0, posts: []);
-    }
-  }
-
   @override
   Future<ScheduledPost> generatePostDraft({
     required String businessName,
