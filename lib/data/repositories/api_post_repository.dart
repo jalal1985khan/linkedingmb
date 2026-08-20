@@ -34,9 +34,12 @@ class ApiPostRepository implements PostRepository {
     return PostStatus.scheduled;
   }
 
-  ScheduledPost _mapToScheduledPost(Map<String, dynamic> json) {
+  ScheduledPost? _mapToScheduledPost(Map<String, dynamic> json) {
+    final rawPlat = (json['platform'] ?? '').toString().toUpperCase();
+    if (rawPlat == 'LINKEDIN') return null;
+
     final rawId = json['_id'] ?? json['id'] ?? json['postId'] ?? json['name'] ?? DateTime.now().millisecondsSinceEpoch.toString();
-    final summary = json['title'] ?? json['summary'] ?? json['caption'] ?? json['content'] ?? json['text'] ?? 'Scheduled Post';
+    final summary = json['title'] ?? json['summary'] ?? json['caption'] ?? json['content'] ?? json['text'] ?? 'Google Business Post';
     final previewText = json['content'] ?? json['caption'] ?? json['summary'] ?? summary.toString();
     final topicType = json['topic_type'] ?? json['topicType'] ?? json['contentType'] ?? 'STANDARD';
 
@@ -48,13 +51,11 @@ class ApiPostRepository implements PostRepository {
       } catch (_) {}
     }
 
-    final plat = (json['platform'] ?? 'GOOGLE BUSINESS').toString().toUpperCase();
-
     return ScheduledPost(
       id: rawId.toString(),
       title: summary.toString().length > 60 ? '${summary.toString().substring(0, 57)}...' : summary.toString(),
       preview: previewText.toString(),
-      platform: plat.contains('GMB') ? 'GOOGLE BUSINESS' : plat,
+      platform: 'GOOGLE BUSINESS',
       status: _parseStatus(json['status']?.toString()),
       isAiGenerated: json['is_ai_generated'] == true || json['isAiGenerated'] == true || json['ai_generated'] == true,
       scheduledAt: schedAt,
@@ -82,7 +83,7 @@ class ApiPostRepository implements PostRepository {
         for (final item in rawList) {
           if (item is Map<String, dynamic>) {
             final mapped = _mapToScheduledPost(item);
-            if (mapped.id.isNotEmpty && !seenIds.contains(mapped.id)) {
+            if (mapped != null && mapped.id.isNotEmpty && !seenIds.contains(mapped.id)) {
               seenIds.add(mapped.id);
               posts.add(mapped);
             }
@@ -90,9 +91,9 @@ class ApiPostRepository implements PostRepository {
         }
       }
 
-      // 1. Fetch main scheduler posts with platform=all and status=all
+      // 1. Fetch GMB scheduler posts with platform=gmb and status=all
       try {
-        final schedulerUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?status=all&platform=all&limit=100');
+        final schedulerUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?status=all&platform=gmb&limit=100');
         final response = await _httpClient.get(schedulerUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
@@ -106,9 +107,9 @@ class ApiPostRepository implements PostRepository {
         debugPrint('⚠️ Error fetching /api/scheduler/posts: $e');
       }
 
-      // 2. Fetch AI-generated draft posts with platform=all
+      // 2. Fetch GMB AI-generated draft posts with platform=gmb
       try {
-        final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=all&limit=50');
+        final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=gmb&limit=50');
         final response = await _httpClient.get(genUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
@@ -138,9 +139,9 @@ class ApiPostRepository implements PostRepository {
         debugPrint('⚠️ Error fetching /api/gmb/posts: $e');
       }
 
-      // 4. Fetch scheduler history with platform=all for completed/past posts
+      // 4. Fetch GMB scheduler history with platform=gmb
       try {
-        final histUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/history?platform=all&limit=50');
+        final histUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/history?platform=gmb&limit=50');
         final response = await _httpClient.get(histUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);

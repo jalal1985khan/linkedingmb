@@ -270,15 +270,14 @@ class GMBAnalyticsRepository {
             ? '&account_id=${Uri.encodeComponent(locationId)}'
             : '';
 
-        // a) Query /api/scheduler/posts/generated?platform=all (Matching Web lib/api/dashboard.ts line 93)
+        // a) Query /api/scheduler/posts/generated?platform=gmb
         try {
-          final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=all$accParam');
+          final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=gmb$accParam');
           final response = await _httpClient.get(genUri, headers: {'Authorization': 'Bearer $token'});
           if (response.statusCode == 200) {
             final decoded = jsonDecode(response.body);
             final list = decoded is List ? decoded : (decoded['posts'] ?? decoded['data'] ?? []);
             if (list is List) {
-              // Matching Web lib/api/dashboard.ts lines 129 & 136: Draft posts contribute to both AI and Queue count
               aiCount += list.length;
               queuedCount += list.length;
             }
@@ -287,9 +286,9 @@ class GMBAnalyticsRepository {
           debugPrint('⚠️ Error fetching generated posts: $e');
         }
 
-        // b) Query /api/scheduler/posts?status=all&platform=all (Matching Web lib/api/dashboard.ts line 97)
+        // b) Query /api/scheduler/posts?status=all&platform=gmb
         try {
-          final schedUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?status=all&platform=all$accParam');
+          final schedUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?status=all&platform=gmb$accParam');
           final response = await _httpClient.get(schedUri, headers: {'Authorization': 'Bearer $token'});
           if (response.statusCode == 200) {
             final decoded = jsonDecode(response.body);
@@ -311,9 +310,9 @@ class GMBAnalyticsRepository {
           debugPrint('⚠️ Error fetching scheduled posts: $e');
         }
 
-        // c) Query /api/scheduler/posts/history?platform=all (Matching Web lib/api/dashboard.ts line 104)
+        // c) Query /api/scheduler/posts/history?platform=gmb
         try {
-          final histUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/history?platform=all$accParam');
+          final histUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/history?platform=gmb$accParam');
           final response = await _httpClient.get(histUri, headers: {'Authorization': 'Bearer $token'});
           if (response.statusCode == 200) {
             final decoded = jsonDecode(response.body);
