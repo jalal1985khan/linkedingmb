@@ -10,6 +10,7 @@ class ScheduledPost {
     required this.isAiGenerated,
     required this.scheduledAt,
     required this.contentType,
+    this.imageUrl,
   });
 
   final String id;
@@ -20,6 +21,7 @@ class ScheduledPost {
   final bool isAiGenerated;
   final DateTime scheduledAt;
   final String contentType;
+  final String? imageUrl;
 
   ScheduledPost copyWith({
     String? id,
@@ -30,6 +32,7 @@ class ScheduledPost {
     bool? isAiGenerated,
     DateTime? scheduledAt,
     String? contentType,
+    String? imageUrl,
   }) {
     return ScheduledPost(
       id: id ?? this.id,
@@ -40,6 +43,7 @@ class ScheduledPost {
       isAiGenerated: isAiGenerated ?? this.isAiGenerated,
       scheduledAt: scheduledAt ?? this.scheduledAt,
       contentType: contentType ?? this.contentType,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 }

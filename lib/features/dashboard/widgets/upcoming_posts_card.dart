@@ -14,20 +14,23 @@ class UpcomingPostsCard extends ConsumerWidget {
   const UpcomingPostsCard({super.key, this.onSchedulePost});
 
   String _formatDate(DateTime dt) {
-    final now = DateTime.now();
-    final isToday = dt.year == now.year && dt.month == now.month && dt.day == now.day;
-    final isTomorrow = dt.year == now.year && dt.month == now.month && dt.day == now.day + 1;
-    
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     final hour = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
     final period = dt.hour >= 12 ? 'PM' : 'AM';
     final min = dt.minute.toString().padLeft(2, '0');
     final timeStr = '$hour:$min $period';
+    final dayStr = dt.day.toString().padLeft(2, '0');
+    return '$dayStr-${months[dt.month - 1]}-${dt.year} $timeStr';
+  }
 
-    if (isToday) return 'Today, $timeStr';
-    if (isTomorrow) return 'Tomorrow, $timeStr';
-
+  String _formatScheduledDateOnly(DateTime dt) {
     final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return '${dt.day} ${months[dt.month - 1]}, $timeStr';
+    final hour = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    final min = dt.minute.toString().padLeft(2, '0');
+    final timeStr = '$hour:$min $period';
+    final dayStr = dt.day.toString().padLeft(2, '0');
+    return '$dayStr-${months[dt.month - 1]}-${dt.year} • $timeStr';
   }
 
   @override
@@ -35,7 +38,6 @@ class UpcomingPostsCard extends ConsumerWidget {
     final dashboardAsync = ref.watch(dashboardDataProvider);
 
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -52,134 +54,121 @@ class UpcomingPostsCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Section Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF5F3FF),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.calendar_today_rounded,
-                      size: 16,
-                      color: Color(0xFF7C3AED),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Upcoming Posts',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF131B2E),
-                        ),
-                      ),
-                      Text(
-                        'Your content pipeline',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF64748B),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              InkWell(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const QueueScreen()),
-                  );
-                },
-                child: Row(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
+                    const Icon(
+                      Icons.calendar_month_rounded,
+                      size: 20,
+                      color: Color(0xFF0F172A),
+                    ),
+                    const SizedBox(width: 8),
                     Text(
-                      'View Queue',
+                      'Scheduled Posts',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF4A07E8),
+                        color: const Color(0xFF0F172A),
                       ),
                     ),
-                    const SizedBox(width: 2),
-                    const Icon(Icons.chevron_right_rounded, size: 14, color: Color(0xFF4A07E8)),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 3),
+                Text(
+                  'Your upcoming content pipeline ready to be published.',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 14),
 
           // Content Area
           dashboardAsync.when(
             loading: () => Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(16),
-              ),
+              padding: const EdgeInsets.all(32),
               child: const Center(
                 child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF7C3AED)),
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF4A07E8)),
                 ),
               ),
             ),
-            error: (err, _) => _buildEmptyState(context),
+            error: (err, _) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: _buildEmptyState(context),
+            ),
             data: (dashboard) {
-              final activePipeline = dashboard.posts.where((p) {
-                return p.status == PostStatus.scheduled ||
-                    p.status == PostStatus.queued ||
-                    p.status == PostStatus.draft ||
-                    p.scheduledAt.isAfter(DateTime.now().subtract(const Duration(hours: 1)));
+              final allPosts = dashboard.posts.where((p) {
+                return p.status != PostStatus.published;
               }).toList();
 
-              final displayList = activePipeline.isNotEmpty ? activePipeline : dashboard.posts;
+              final displayList = allPosts.isNotEmpty ? allPosts : dashboard.posts;
 
               if (displayList.isEmpty) {
-                return _buildEmptyState(context);
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: _buildEmptyState(context),
+                );
               }
 
-              // Show up to 3 posts
-              final displayPosts = displayList.take(3).toList();
+              final displayedPosts = displayList.take(4).toList();
 
               return Column(
                 children: [
-                  ...displayPosts.map((post) => _buildPostItem(context, post)),
-                  const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: onSchedulePost ??
-                          () {
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        ...displayedPosts.map((post) => _buildWebStylePostItem(context, post)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Showing ${displayedPosts.length} of ${displayList.length} posts',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                        InkWell(
+                          onTap: () {
                             Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const CreatePostFlowScreen()),
+                              MaterialPageRoute(builder: (_) => const QueueScreen()),
                             );
                           },
-                      icon: const Icon(Icons.add_rounded, size: 16, color: Color(0xFF4A07E8)),
-                      label: Text(
-                        'Schedule Another Post',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF4A07E8),
+                          child: Row(
+                            children: [
+                              Text(
+                                'View All',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF0F172A),
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFF0F172A)),
+                            ],
+                          ),
                         ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Color(0xFFEDE9FE), width: 1.2),
-                        backgroundColor: const Color(0xFFFAF8FF),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
+                      ],
                     ),
                   ),
                 ],
@@ -191,132 +180,221 @@ class UpcomingPostsCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildPostItem(BuildContext context, ScheduledPost post) {
-    final isScheduled = post.status == PostStatus.scheduled;
+  Widget _buildWebStylePostItem(BuildContext context, ScheduledPost post) {
+    final now = DateTime.now();
+    final isOverdue = post.scheduledAt.isBefore(now) && post.status != PostStatus.published;
+    final isDraft = post.status == PostStatus.draft;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: const EdgeInsets.only(top: 14, bottom: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0), width: 1),
       ),
-      child: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => PostEditorScreen(postId: post.id),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Top Meta Row: Date Badge + AI Tag + Status
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEEF2FF),
-                          borderRadius: BorderRadius.circular(8),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Top Floating Badge matching Web
+          Positioned(
+            top: -10,
+            left: 12,
+            child: isOverdue
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF3C7),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFFFCD34D), width: 0.8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.warning_amber_rounded, size: 11, color: Color(0xFFD97706)),
+                        const SizedBox(width: 3),
+                        Text(
+                          'Overdue',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF92400E),
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      ],
+                    ),
+                  )
+                : isDraft
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3E8FF),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFE9D5FF), width: 0.8),
+                        ),
+                        child: Text(
+                          'AI Generated Draft',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF7E22CE),
+                          ),
+                        ),
+                      )
+                    : Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDBEAFE),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFBFDBFE), width: 0.8),
+                        ),
+                        child: Text(
+                          'Scheduled',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF1D4ED8),
+                          ),
+                        ),
+                      ),
+          ),
+
+          // Main Card Content
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+            child: Row(
+              children: [
+                // Thumbnail
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: (post.imageUrl != null && post.imageUrl!.isNotEmpty)
+                      ? Image.network(
+                          post.imageUrl!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const Center(
+                            child: Icon(Icons.remove_red_eye_outlined, size: 20, color: Color(0xFF94A3B8)),
+                          ),
+                        )
+                      : const Center(
+                          child: Icon(Icons.remove_red_eye_outlined, size: 20, color: Color(0xFF94A3B8)),
+                        ),
+                ),
+                const SizedBox(width: 10),
+
+                // Title and Meta Subtitle
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        post.title.isNotEmpty ? post.title : 'Scheduled Post',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF0F172A),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      if (isOverdue)
+                        Text(
+                          'Time passed (${_formatDate(post.scheduledAt)}) - Reschedule required',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFFB45309),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        )
+                      else if (isDraft)
+                        Text(
+                          'No schedule date assigned - Click to set',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF64748B),
+                          ),
+                        )
+                      else
+                        Row(
                           children: [
-                            const Icon(Icons.access_time_rounded, size: 12, color: Color(0xFF4F46E5)),
-                            const SizedBox(width: 4),
+                            const Icon(Icons.calendar_today_outlined, size: 11, color: Color(0xFF64748B)),
+                            const SizedBox(width: 3),
                             Text(
-                              _formatDate(post.scheduledAt),
+                              _formatScheduledDateOnly(post.scheduledAt),
                               style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF4F46E5),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF64748B),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                      if (post.isAiGenerated) ...[
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFAF5FF),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFE9D5FF)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.auto_awesome_rounded, size: 10, color: Color(0xFF9333EA)),
-                              const SizedBox(width: 3),
-                              Text(
-                                'AI',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF9333EA),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: isScheduled ? const Color(0xFFECFDF5) : const Color(0xFFEFF6FF),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      isScheduled ? 'Scheduled' : 'Queued',
+                ),
+                const SizedBox(width: 8),
+
+                // Action Button
+                if (isOverdue || isDraft)
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PostEditorScreen(postId: post.id),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.calendar_today_outlined, size: 12),
+                    label: Text(
+                      isOverdue ? 'Reschedule' : 'Set Date',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 10,
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w700,
-                        color: isScheduled ? const Color(0xFF047857) : const Color(0xFF1D4ED8),
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFEA580C),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                      minimumSize: const Size(0, 32),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  )
+                else
+                  InkWell(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PostEditorScreen(postId: post.id),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 34,
+                      height: 34,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF0F172A),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.remove_red_eye_outlined, size: 16, color: Colors.white),
                       ),
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
-              // Title and Preview
-              Text(
-                post.title.isNotEmpty ? post.title : 'Scheduled Post',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1E293B),
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (post.preview.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text(
-                  post.preview,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11.5,
-                    color: const Color(0xFF64748B),
-                    height: 1.3,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
               ],
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -335,7 +413,6 @@ class UpcomingPostsCard extends ConsumerWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Soft Calendar Illustration
               Container(
                 width: 40,
                 height: 40,
@@ -352,7 +429,6 @@ class UpcomingPostsCard extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Title and Subtitle
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -380,7 +456,6 @@ class UpcomingPostsCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          // Full Width Button Below
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(

@@ -98,6 +98,19 @@ class ApiPostRepository implements PostRepository {
         json['ai_generated'] == true ||
         json['automation_generated'] == true;
 
+    // Extract thumbnail URL matching web imgUrl logic
+    String? imgUrl = json['generated_image_url'] ??
+        json['image_url'] ??
+        json['media_url'] ??
+        json['image_data'];
+    if (imgUrl == null && json['media_urls'] is List && (json['media_urls'] as List).isNotEmpty) {
+      imgUrl = (json['media_urls'] as List).first.toString();
+    }
+    if (imgUrl == null && json['image_path'] != null) {
+      final p = json['image_path'].toString();
+      imgUrl = p.startsWith('http') ? p : '${ApiConfig.baseUrl}$p';
+    }
+
     return ScheduledPost(
       id: rawId.toString(),
       title: title,
@@ -107,6 +120,7 @@ class ApiPostRepository implements PostRepository {
       isAiGenerated: isAi,
       scheduledAt: schedAt,
       contentType: topicType.toString(),
+      imageUrl: imgUrl,
     );
   }
 
