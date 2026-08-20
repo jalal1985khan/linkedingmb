@@ -86,7 +86,9 @@ class ApiPostRepository implements PostRepository {
         json['timestamp'];
     if (rawDate != null) {
       try {
-        schedAt = DateTime.parse(rawDate.toString());
+        final s = rawDate.toString().trim();
+        final isoStr = s.contains(' ') && !s.contains('T') ? s.replaceFirst(' ', 'T') : s;
+        schedAt = DateTime.parse(isoStr);
       } catch (_) {}
     }
 
@@ -98,21 +100,17 @@ class ApiPostRepository implements PostRepository {
     // Extract thumbnail URL matching web imgUrl logic
     String? imgUrl = json['generated_image_url'] ??
         json['image_url'] ??
+        json['image_data'] ??
         json['media_url'] ??
-        json['image_data'];
-    if (imgUrl == null && json['media_urls'] is List && (json['media_urls'] as List).isNotEmpty) {
-      imgUrl = (json['media_urls'] as List).first.toString();
-    }
-    if (imgUrl == null && json['image_path'] != null) {
-      final p = json['image_path'].toString();
-      imgUrl = p.startsWith('http') ? p : '${ApiConfig.baseUrl}$p';
-    }
+        json['mediaUrl'] ??
+        json['image_path'];
+    if (imgUrl != null && imgUrl.isEmpty) imgUrl = null;
 
     return ScheduledPost(
       id: rawId.toString(),
       title: title,
-      preview: previewText,
-      platform: 'GOOGLE BUSINESS',
+      preview: previewText.isNotEmpty ? previewText : title,
+      platform: (json['platform']?.toString() ?? 'GOOGLE BUSINESS').toUpperCase(),
       status: _parseStatus(json['status']?.toString()),
       isAiGenerated: isAi,
       scheduledAt: schedAt,
@@ -137,7 +135,6 @@ class ApiPostRepository implements PostRepository {
       };
 
       String cleanId = '';
-      String accParam = '';
       String gmbLocParam = '';
       if (locationId != null &&
           locationId.isNotEmpty &&
@@ -145,7 +142,6 @@ class ApiPostRepository implements PostRepository {
           locationId != 'personal_default' &&
           locationId != 'social_hive_default') {
         cleanId = locationId.replaceFirst('locations/', '');
-        accParam = '&author_urn=${Uri.encodeComponent(locationId)}&account_id=${Uri.encodeComponent(cleanId)}';
         gmbLocParam = '?location_id=${Uri.encodeComponent(cleanId)}';
       }
 
@@ -168,22 +164,37 @@ class ApiPostRepository implements PostRepository {
         }
       }
 
-      // 1. Fetch Primary Scheduler Queue (Matching exact Web call: /api/scheduler/posts?status=pending)
+      // 1. Fetch LinkedIn Scheduler Queue
       try {
-        final schedulerUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?status=pending&limit=50');
-        final response = await _httpClient.get(schedulerUri, headers: headers);
+        final liSchedUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?status=all&limit=100&platform=linkedin');
+        final response = await _httpClient.get(liSchedUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
           final list = decoded is Map ? (decoded['scheduled_posts'] ?? decoded['posts'] ?? decoded['data']) : decoded;
           final prevCount = posts.length;
           addPostsFromList(list);
-          debugPrint('📥 /api/scheduler/posts?status=pending returned ${posts.length - prevCount} active scheduled posts');
+          debugPrint('📥 /api/scheduler/posts (linkedin) returned ${posts.length - prevCount} scheduled posts');
         }
       } catch (e) {
-        debugPrint('⚠️ Error fetching /api/scheduler/posts: $e');
+        debugPrint('⚠️ Error fetching /api/scheduler/posts (linkedin): $e');
       }
 
-      // 2. Fetch from GMB Posts API (/api/gmb/posts)
+      // 2. Fetch GMB Scheduler Queue
+      try {
+        final gmbSchedUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?status=all&limit=100&platform=gmb');
+        final response = await _httpClient.get(gmbSchedUri, headers: headers);
+        if (response.statusCode == 200) {
+          final decoded = jsonDecode(response.body);
+          final list = decoded is Map ? (decoded['scheduled_posts'] ?? decoded['posts'] ?? decoded['data']) : decoded;
+          final prevCount = posts.length;
+          addPostsFromList(list);
+          debugPrint('📥 /api/scheduler/posts (gmb) returned ${posts.length - prevCount} scheduled posts');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error fetching /api/scheduler/posts (gmb): $e');
+      }
+
+      // 3. Fetch from GMB Posts API (/api/gmb/posts)
       try {
         final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts$gmbLocParam');
         final response = await _httpClient.get(gmbUri, headers: headers);
@@ -198,25 +209,42 @@ class ApiPostRepository implements PostRepository {
         debugPrint('⚠️ Error fetching /api/gmb/posts: $e');
       }
 
-      // 3. Fetch AI-generated draft posts (/api/scheduler/posts/generated)
+      // 4. Fetch AI-generated draft posts
       try {
-        final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?limit=50$accParam');
+        final genUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?limit=50&platform=linkedin');
         final response = await _httpClient.get(genUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
           final list = decoded is Map ? (decoded['posts'] ?? decoded['data']) : decoded;
           final prevCount = posts.length;
           addPostsFromList(list);
-          debugPrint('📥 /api/scheduler/posts/generated returned ${posts.length - prevCount} drafts');
+          debugPrint('📥 /api/scheduler/posts/generated (linkedin) returned ${posts.length - prevCount} drafts');
         }
       } catch (e) {
         debugPrint('⚠️ Error fetching /api/scheduler/posts/generated: $e');
       }
 
+      try {
+        final genGmbUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?limit=50&platform=gmb');
+        final response = await _httpClient.get(genGmbUri, headers: headers);
+        if (response.statusCode == 200) {
+          final decoded = jsonDecode(response.body);
+          final list = decoded is Map ? (decoded['posts'] ?? decoded['data']) : decoded;
+          final prevCount = posts.length;
+          addPostsFromList(list);
+          debugPrint('📥 /api/scheduler/posts/generated (gmb) returned ${posts.length - prevCount} drafts');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Error fetching /api/scheduler/posts/generated (gmb): $e');
+      }
+
+      // Sort by scheduledAt ascending
+      posts.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+
       final queued = posts.where((p) => p.status == PostStatus.queued || p.status == PostStatus.scheduled || p.status == PostStatus.draft).length;
       final aiGen = posts.where((p) => p.isAiGenerated).length;
 
-      debugPrint('📅 [ScheduledPosts] Fetched ${posts.length} GMB posts for location: ${locationId ?? 'all'} (Queued: $queued, AI-Gen: $aiGen)');
+      debugPrint('📅 [ScheduledPosts] Fetched ${posts.length} posts for location: ${locationId ?? 'all'} (Queued: $queued, AI-Gen: $aiGen)');
       for (int i = 0; i < posts.length && i < 4; i++) {
         final p = posts[i];
         final overdueStr = p.scheduledAt.isBefore(DateTime.now()) ? ' (OVERDUE)' : '';
