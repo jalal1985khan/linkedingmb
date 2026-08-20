@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/business_profile.dart';
 import '../business_flow/providers/active_location_provider.dart';
 import '../notifications/notification_end_drawer.dart';
+import 'dashboard_controller.dart';
 import 'providers/dashboard_providers.dart';
 import 'widgets/ai_working_banner.dart';
 import 'widgets/business_identity_card.dart';
@@ -76,6 +77,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ref.invalidate(dashboardStatsProvider(locationId));
           ref.invalidate(postActivityProvider(locationId));
           ref.invalidate(dashboardReviewsProvider(locationId));
+          ref.invalidate(dashboardDataProvider);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
