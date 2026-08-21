@@ -98,13 +98,41 @@ class ApiPostRepository implements PostRepository {
         json['automation_generated'] == true;
 
     // Extract thumbnail URL matching web imgUrl logic
-    String? imgUrl = json['generated_image_url'] ??
+    String? imgUrl;
+    final direct = json['generated_image_url'] ??
         json['image_url'] ??
-        json['image_data'] ??
         json['media_url'] ??
         json['mediaUrl'] ??
-        json['image_path'];
-    if (imgUrl != null && imgUrl.isEmpty) imgUrl = null;
+        json['image_data'];
+    if (direct != null && direct.toString().isNotEmpty) {
+      imgUrl = direct.toString();
+    }
+
+    if (imgUrl == null || imgUrl.isEmpty) {
+      final mediaUrls = json['media_urls'] ?? json['mediaUrls'] ?? json['images'] ?? json['photos'];
+      if (mediaUrls is List && mediaUrls.isNotEmpty) {
+        final first = mediaUrls.first;
+        if (first is String && first.isNotEmpty) {
+          imgUrl = first;
+        } else if (first is Map) {
+          imgUrl = first['url']?.toString() ?? first['image_url']?.toString() ?? first['media_url']?.toString();
+        }
+      }
+    }
+
+    if (imgUrl == null || imgUrl.isEmpty) {
+      final imgPath = json['image_path']?.toString();
+      if (imgPath != null && imgPath.isNotEmpty) {
+        if (imgPath.startsWith('http')) {
+          imgUrl = imgPath;
+        } else {
+          final cleanPath = imgPath.startsWith('/') ? imgPath : '/$imgPath';
+          imgUrl = '${ApiConfig.baseUrl}$cleanPath';
+        }
+      }
+    }
+
+    if (imgUrl != null && imgUrl.trim().isEmpty) imgUrl = null;
 
     return ScheduledPost(
       id: rawId.toString(),
@@ -169,51 +197,21 @@ class ApiPostRepository implements PostRepository {
         }
       }
 
-      // 1. Fetch from GMB Posts API (/api/gmb/posts)
+      // 1. Match Web: Fetch GMB Scheduler Queue (/api/scheduler/posts?status=pending&platform=gmb&limit=10)
       try {
-        final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts$gmbLocParam');
-        final response = await _httpClient.get(gmbUri, headers: headers);
-        if (response.statusCode == 200) {
-          final decoded = jsonDecode(response.body);
-          final list = decoded is Map ? (decoded['posts'] ?? decoded['data']) : decoded;
-          final prevCount = posts.length;
-          addPostsFromList(list);
-          debugPrint('📥 /api/gmb/posts returned ${posts.length - prevCount} active GMB posts');
-        }
-
-        // Fallback without location param if 0 returned
-        if (posts.isEmpty && gmbLocParam.isNotEmpty) {
-          final fallbackGmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts');
-          final fbGmbRes = await _httpClient.get(fallbackGmbUri, headers: headers);
-          if (fbGmbRes.statusCode == 200) {
-            final decoded = jsonDecode(fbGmbRes.body);
-            final list = decoded is Map ? (decoded['posts'] ?? decoded['data']) : decoded;
-            final prevCount = posts.length;
-            addPostsFromList(list);
-            if (posts.length > prevCount) {
-              debugPrint('📥 /api/gmb/posts (all locations) returned ${posts.length - prevCount} active GMB posts');
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('⚠️ Error fetching /api/gmb/posts: $e');
-      }
-
-      // 2. Fetch GMB Scheduler Queue (/api/scheduler/posts?platform=gmb)
-      try {
-        final gmbSchedUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=gmb&status=all&limit=100$accParam');
+        final gmbSchedUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?status=pending&platform=gmb&limit=10$accParam');
         final response = await _httpClient.get(gmbSchedUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
           final list = decoded is Map ? (decoded['scheduled_posts'] ?? decoded['posts'] ?? decoded['data']) : decoded;
           final prevCount = posts.length;
           addPostsFromList(list);
-          debugPrint('📥 /api/scheduler/posts (platform=gmb) returned ${posts.length - prevCount} scheduled posts');
+          debugPrint('📥 /api/scheduler/posts (platform=gmb, pending) returned ${posts.length - prevCount} scheduled posts');
         }
 
         // Fallback without account filter if empty
         if (posts.isEmpty && accParam.isNotEmpty) {
-          final fbSchedUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?platform=gmb&status=all&limit=100');
+          final fbSchedUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?status=pending&platform=gmb&limit=10');
           final fbSchedRes = await _httpClient.get(fbSchedUri, headers: headers);
           if (fbSchedRes.statusCode == 200) {
             final decoded = jsonDecode(fbSchedRes.body);
@@ -221,7 +219,7 @@ class ApiPostRepository implements PostRepository {
             final prevCount = posts.length;
             addPostsFromList(list);
             if (posts.length > prevCount) {
-              debugPrint('📥 /api/scheduler/posts (platform=gmb, fallback) returned ${posts.length - prevCount} scheduled posts');
+              debugPrint('📥 /api/scheduler/posts (platform=gmb, pending fallback) returned ${posts.length - prevCount} scheduled posts');
             }
           }
         }
@@ -229,9 +227,9 @@ class ApiPostRepository implements PostRepository {
         debugPrint('⚠️ Error fetching /api/scheduler/posts (gmb): $e');
       }
 
-      // 3. Fetch GMB AI-generated draft posts (/api/scheduler/posts/generated?platform=gmb)
+      // 2. Match Web: Fetch GMB AI-generated draft posts (/api/scheduler/posts/generated?platform=gmb&limit=10)
       try {
-        final genGmbUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=gmb&limit=50$accParam');
+        final genGmbUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=gmb&limit=10$accParam');
         final response = await _httpClient.get(genGmbUri, headers: headers);
         if (response.statusCode == 200) {
           final decoded = jsonDecode(response.body);
@@ -242,7 +240,7 @@ class ApiPostRepository implements PostRepository {
         }
 
         if (posts.isEmpty && accParam.isNotEmpty) {
-          final fbGenUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=gmb&limit=50');
+          final fbGenUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=gmb&limit=10');
           final fbGenRes = await _httpClient.get(fbGenUri, headers: headers);
           if (fbGenRes.statusCode == 200) {
             final decoded = jsonDecode(fbGenRes.body);
@@ -258,8 +256,36 @@ class ApiPostRepository implements PostRepository {
         debugPrint('⚠️ Error fetching /api/scheduler/posts/generated (gmb): $e');
       }
 
-      // Sort by scheduledAt ascending
-      posts.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+      // 3. Fallback: Fetch from GMB Posts API (/api/gmb/posts) ONLY if 0 posts were fetched above
+      if (posts.isEmpty) {
+        try {
+          final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts$gmbLocParam');
+          final response = await _httpClient.get(gmbUri, headers: headers);
+          if (response.statusCode == 200) {
+            final decoded = jsonDecode(response.body);
+            final list = decoded is Map ? (decoded['posts'] ?? decoded['data']) : decoded;
+            final prevCount = posts.length;
+            addPostsFromList(list);
+            debugPrint('📥 /api/gmb/posts returned ${posts.length - prevCount} active GMB posts');
+          }
+
+          if (posts.isEmpty && gmbLocParam.isNotEmpty) {
+            final fallbackGmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts');
+            final fbGmbRes = await _httpClient.get(fallbackGmbUri, headers: headers);
+            if (fbGmbRes.statusCode == 200) {
+              final decoded = jsonDecode(fbGmbRes.body);
+              final list = decoded is Map ? (decoded['posts'] ?? decoded['data']) : decoded;
+              final prevCount = posts.length;
+              addPostsFromList(list);
+              if (posts.length > prevCount) {
+                debugPrint('📥 /api/gmb/posts (all locations) returned ${posts.length - prevCount} active GMB posts');
+              }
+            }
+          }
+        } catch (e) {
+          debugPrint('⚠️ Error fetching /api/gmb/posts: $e');
+        }
+      }
 
       final queued = posts.where((p) => p.status == PostStatus.queued || p.status == PostStatus.scheduled || p.status == PostStatus.draft).length;
       final aiGen = posts.where((p) => p.isAiGenerated).length;

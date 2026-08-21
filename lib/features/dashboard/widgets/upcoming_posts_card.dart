@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/config/api_config.dart';
 import '../../../data/models/scheduled_post.dart';
 import '../dashboard_controller.dart';
 import '../../posts/create_post_flow_screen.dart';
@@ -12,6 +14,69 @@ class UpcomingPostsCard extends ConsumerWidget {
   final VoidCallback? onSchedulePost;
 
   const UpcomingPostsCard({super.key, this.onSchedulePost});
+
+  Widget _buildThumbnail(String? imgUrl) {
+    if (imgUrl == null || imgUrl.trim().isEmpty) {
+      return const Center(
+        child: Icon(Icons.remove_red_eye_outlined, size: 20, color: Color(0xFF94A3B8)),
+      );
+    }
+
+    final trimmed = imgUrl.trim();
+
+    // 1. Base64 Data URI (e.g. data:image/jpeg;base64,...)
+    if (trimmed.startsWith('data:image')) {
+      try {
+        final commaIdx = trimmed.indexOf(',');
+        final base64Str = commaIdx != -1 ? trimmed.substring(commaIdx + 1) : trimmed;
+        final cleanBase64 = base64Str.replaceAll(RegExp(r'\s+'), '');
+        final bytes = base64Decode(cleanBase64);
+        return Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => const Center(
+            child: Icon(Icons.remove_red_eye_outlined, size: 20, color: Color(0xFF94A3B8)),
+          ),
+        );
+      } catch (_) {
+        return const Center(
+          child: Icon(Icons.remove_red_eye_outlined, size: 20, color: Color(0xFF94A3B8)),
+        );
+      }
+    }
+
+    // 2. Pure base64 without prefix
+    if (trimmed.startsWith('/9j/') ||
+        trimmed.startsWith('iVBORw0KGgo') ||
+        (trimmed.length > 300 && !trimmed.startsWith('http') && !trimmed.startsWith('/'))) {
+      try {
+        final cleanBase64 = trimmed.replaceAll(RegExp(r'\s+'), '');
+        final bytes = base64Decode(cleanBase64);
+        return Image.memory(
+          bytes,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => const Center(
+            child: Icon(Icons.remove_red_eye_outlined, size: 20, color: Color(0xFF94A3B8)),
+          ),
+        );
+      } catch (_) {}
+    }
+
+    // 3. Network URL (HTTP/HTTPS or relative)
+    String fullUrl = trimmed;
+    if (!fullUrl.startsWith('http')) {
+      final cleanPath = fullUrl.startsWith('/') ? fullUrl : '/$fullUrl';
+      fullUrl = '${ApiConfig.baseUrl}$cleanPath';
+    }
+
+    return Image.network(
+      fullUrl,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => const Center(
+        child: Icon(Icons.remove_red_eye_outlined, size: 20, color: Color(0xFF94A3B8)),
+      ),
+    );
+  }
 
   String _formatDate(DateTime dt) {
     final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -273,17 +338,7 @@ class UpcomingPostsCard extends ConsumerWidget {
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
                   clipBehavior: Clip.antiAlias,
-                  child: (post.imageUrl != null && post.imageUrl!.isNotEmpty)
-                      ? Image.network(
-                          post.imageUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => const Center(
-                            child: Icon(Icons.remove_red_eye_outlined, size: 20, color: Color(0xFF94A3B8)),
-                          ),
-                        )
-                      : const Center(
-                          child: Icon(Icons.remove_red_eye_outlined, size: 20, color: Color(0xFF94A3B8)),
-                        ),
+                  child: _buildThumbnail(post.imageUrl),
                 ),
                 const SizedBox(width: 10),
 
