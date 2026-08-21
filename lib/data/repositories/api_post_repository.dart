@@ -132,7 +132,16 @@ class ApiPostRepository implements PostRepository {
       }
     }
 
-    if (imgUrl != null && imgUrl.trim().isEmpty) imgUrl = null;
+    if (imgUrl != null && imgUrl.trim().isEmpty) {
+      imgUrl = null;
+    } else if (imgUrl != null && imgUrl.contains('drive.google.com')) {
+      final idMatch = RegExp(r'[?&]id=([a-zA-Z0-9_-]+)').firstMatch(imgUrl);
+      final dMatch = RegExp(r'/d/([a-zA-Z0-9_-]+)').firstMatch(imgUrl);
+      final fileId = idMatch?.group(1) ?? dMatch?.group(1);
+      if (fileId != null && fileId.isNotEmpty) {
+        imgUrl = 'https://lh3.googleusercontent.com/d/$fileId';
+      }
+    }
 
     return ScheduledPost(
       id: rawId.toString(),
