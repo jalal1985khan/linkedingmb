@@ -147,6 +147,24 @@ class _PublishedPostsScreenState extends ConsumerState<PublishedPostsScreen> {
                       ),
                       const Spacer(),
                       IconButton(
+                        tooltip: 'Copy Post Copy',
+                        icon: const Icon(Icons.copy_rounded, size: 19),
+                        color: textSecondary,
+                        onPressed: () {
+                          Clipboard.setData(ClipboardData(text: content));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Post content copied to clipboard!',
+                                style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                              ),
+                              duration: const Duration(seconds: 2),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
                         icon: Icon(Icons.close_rounded, color: textSecondary, size: 22),
                         onPressed: () => Navigator.of(ctx).pop(),
                       ),
@@ -159,7 +177,7 @@ class _PublishedPostsScreenState extends ConsumerState<PublishedPostsScreen> {
                 // 3. Scrollable Detailed Content
                 Flexible(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -253,63 +271,6 @@ class _PublishedPostsScreenState extends ConsumerState<PublishedPostsScreen> {
                         ],
                       ],
                     ),
-                  ),
-                ),
-
-                Divider(height: 1, color: borderColor),
-
-                // 4. Modal Action Buttons Footer
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: content));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Post content copied to clipboard!',
-                                  style: GoogleFonts.plusJakartaSans(fontSize: 13),
-                                ),
-                                duration: const Duration(seconds: 2),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.copy_rounded, size: 17),
-                          label: Text(
-                            'Copy Post Copy',
-                            style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: textPrimary,
-                            side: BorderSide(color: borderColor),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () => Navigator.of(ctx).pop(),
-                          icon: const Icon(Icons.check_rounded, size: 18),
-                          label: Text(
-                            'Done',
-                            style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4F46E5),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        ),
-                      ),
-                    ],
                   ),
                 ),
               ],
