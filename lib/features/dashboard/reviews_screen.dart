@@ -607,16 +607,18 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
             children: [
               Expanded(
                 child: _buildMetricPill(
-                  icon: Icons.thumb_up_rounded,
+                  context: context,
+                  icon: Icons.thumb_up_alt_rounded,
                   iconColor: const Color(0xFF10B981),
-                  bgColor: const Color(0xFFECFDF5),
+                  bgColor: const Color(0xFFF0FDF4),
                   label: 'Positive',
                   value: '$positivePercent%',
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Expanded(
                 child: _buildMetricPill(
+                  context: context,
                   icon: Icons.mark_chat_read_rounded,
                   iconColor: const Color(0xFF3B82F6),
                   bgColor: const Color(0xFFEFF6FF),
@@ -624,10 +626,11 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                   value: '$repliedCount',
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Expanded(
                 child: _buildMetricPill(
-                  icon: Icons.bolt_rounded,
+                  context: context,
+                  icon: Icons.speed_rounded,
                   iconColor: const Color(0xFFF59E0B),
                   bgColor: const Color(0xFFFFFBEB),
                   label: 'Avg Speed',
@@ -687,42 +690,76 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
   }
 
   Widget _buildMetricPill({
+    required BuildContext context,
     required IconData icon,
     required Color iconColor,
     required Color bgColor,
     required String label,
     required String value,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final badgeBg = isDark ? const Color(0xFF0F172A) : Colors.white;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
+        color: isDark ? iconColor.withValues(alpha: 0.12) : bgColor,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark
+              ? iconColor.withValues(alpha: 0.3)
+              : iconColor.withValues(alpha: 0.2),
+          width: 1,
+        ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(icon, size: 16, color: iconColor),
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: badgeBg,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: iconColor.withValues(alpha: isDark ? 0.25 : 0.12),
+                  blurRadius: 3,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Icon(icon, size: 15, color: iconColor),
+            ),
+          ),
           const SizedBox(width: 6),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   value,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     fontWeight: FontWeight.w800,
-                    color: const Color(0xFF0F172A),
+                    color: textPrimary,
+                    height: 1.15,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 1.5),
                 Text(
                   label,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: const Color(0xFF64748B),
+                    color: textSecondary,
+                    height: 1.15,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
