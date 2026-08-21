@@ -284,9 +284,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                 child: DashboardHeaderBar(
                   title: 'Business Profile',
                   subtitle: 'Grow your business with SocialHive AI',
-                  showBackButton: true,
                   showSparkle: true,
-                  onBack: () => Navigator.of(context).maybePop(),
                   onOpenNotifications: () {
                     Scaffold.of(context).openEndDrawer();
                   },
