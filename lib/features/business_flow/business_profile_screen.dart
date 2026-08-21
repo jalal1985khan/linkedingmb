@@ -668,35 +668,45 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                 ),
               ],
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Container(
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                color: cardBgColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: borderColor),
+                border: Border.all(color: borderColor, width: 1.2),
               ),
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TextField(
                     controller: _descriptionController!,
-                    maxLines: 4,
+                    minLines: 5,
+                    maxLines: 8,
                     maxLength: 750,
-                    style: GoogleFonts.inter(fontSize: 13.5, color: textPrimary, height: 1.4),
+                    onChanged: (_) => setState(() {}),
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: textPrimary,
+                      height: 1.5,
+                      fontWeight: FontWeight.w400,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Elevate your online presence with SocialHive...',
-                      hintStyle: GoogleFonts.inter(color: textSecondary, fontSize: 13),
+                      hintStyle: GoogleFonts.inter(color: textSecondary, fontSize: 13.5),
                       border: InputBorder.none,
                       counterText: '',
                       contentPadding: EdgeInsets.zero,
+                      isDense: true,
                     ),
                   ),
+                  const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.bottomRight,
                     child: Text(
-                      '${_descriptionController!.text.length}/750',
+                      '${_descriptionController?.text.length ?? 0}/750',
                       style: GoogleFonts.inter(
-                        fontSize: 11,
+                        fontSize: 11.5,
                         color: textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
