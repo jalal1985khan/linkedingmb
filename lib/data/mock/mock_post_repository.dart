@@ -47,7 +47,7 @@ class MockPostRepository implements PostRepository {
   ];
 
   @override
-  Future<DashboardData> fetchDashboardData() async {
+  Future<DashboardData> fetchDashboardData({String? locationId}) async {
     await Future<void>.delayed(const Duration(milliseconds: 900));
     final posts = [..._posts]..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
 
