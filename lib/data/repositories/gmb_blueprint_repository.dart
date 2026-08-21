@@ -16,6 +16,8 @@ class GMBBlueprintItem {
   final String format;
   final String? status;
   final String? scheduledDate;
+  final List<String> selectionReasons;
+  final int costCredits;
 
   GMBBlueprintItem({
     required this.id,
@@ -27,9 +29,16 @@ class GMBBlueprintItem {
     required this.format,
     this.status,
     this.scheduledDate,
+    this.selectionReasons = const [],
+    this.costCredits = 2,
   });
 
   factory GMBBlueprintItem.fromJson(Map<String, dynamic> json) {
+    final reasons = (json['selection_reasons'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
+
     return GMBBlueprintItem(
       id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
       dayNumber: (json['day_number'] ?? json['day'] ?? 1) as int,
@@ -37,9 +46,11 @@ class GMBBlueprintItem {
       caption: json['caption']?.toString() ?? '',
       mediaConcept: json['media_concept']?.toString() ?? json['image_concept']?.toString() ?? '',
       ctaType: json['cta_type']?.toString() ?? 'LEARN_MORE',
-      format: json['format']?.toString() ?? 'TEXT_IMAGE',
+      format: json['format']?.toString() ?? json['post_type']?.toString() ?? 'TEXT_IMAGE',
       status: json['status']?.toString(),
-      scheduledDate: json['scheduled_date']?.toString(),
+      scheduledDate: json['scheduled_date']?.toString() ?? json['scheduled_at']?.toString(),
+      selectionReasons: reasons,
+      costCredits: (json['cost_credits'] ?? 2) as int,
     );
   }
 
@@ -53,6 +64,8 @@ class GMBBlueprintItem {
     'format': format,
     'status': status,
     'scheduled_date': scheduledDate,
+    'selection_reasons': selectionReasons,
+    'cost_credits': costCredits,
   };
 }
 
@@ -82,12 +95,58 @@ class GMBBlueprint {
       status: json['status']?.toString() ?? 'NO_BLUEPRINT',
       totalItems: (json['total_items'] ?? rawItems.length) as int,
       planDays: (json['plan_days'] ?? 30) as int,
-      estimatedCredits: (json['estimated_credits'] ?? 0) as int,
+      estimatedCredits: (json['estimated_credits'] ?? (rawItems.length * 2)) as int,
       items: rawItems
           .whereType<Map<String, dynamic>>()
           .map(GMBBlueprintItem.fromJson)
           .toList(),
       message: json['message']?.toString(),
+    );
+  }
+}
+
+class GMBTriggerSignal {
+  final String kind;
+  final String label;
+  final String type;
+  final String? detail;
+
+  GMBTriggerSignal({
+    required this.kind,
+    required this.label,
+    required this.type,
+    this.detail,
+  });
+
+  factory GMBTriggerSignal.fromJson(Map<String, dynamic> json) {
+    return GMBTriggerSignal(
+      kind: json['kind']?.toString() ?? 'leaf',
+      label: json['label']?.toString() ?? json['name']?.toString() ?? 'Local Signal',
+      type: json['type']?.toString() ?? 'Season',
+      detail: json['detail']?.toString() ?? json['description']?.toString(),
+    );
+  }
+}
+
+class GMBLearnedArm {
+  final String value;
+  final double score;
+  final int observations;
+  final bool earned;
+
+  GMBLearnedArm({
+    required this.value,
+    required this.score,
+    required this.observations,
+    required this.earned,
+  });
+
+  factory GMBLearnedArm.fromJson(Map<String, dynamic> json) {
+    return GMBLearnedArm(
+      value: json['value']?.toString() ?? '',
+      score: ((json['score'] ?? 0.0) as num).toDouble(),
+      observations: (json['observations'] ?? 0) as int,
+      earned: json['earned'] == true,
     );
   }
 }
@@ -142,7 +201,7 @@ class GMBBlueprintRepository {
       'location_id': locationId,
       'posts_per_week': postsPerWeek,
       'user_role': 'pro',
-      'allowed_formats': allowedFormats ?? ['VIDEO', 'TEXT_IMAGE', 'OFFER', 'EVENT', 'PRODUCT', 'SERVICE'],
+      'allowed_formats': allowedFormats ?? ['VIDEO', 'TEXT_IMAGE', 'OFFER', 'EVENT', 'PRODUCT', 'SERVICE', 'TEXT_ONLY'],
       'auto_schedule': autoSchedule,
     });
 
@@ -182,14 +241,22 @@ class GMBBlueprintRepository {
   Future<GMBBlueprintItem?> improviseBlueprintItem({
     required String locationId,
     required String itemId,
-    String? instruction,
+    String improvementType = 'ENGAGING',
+    String? customInstruction,
+    String? currentTitle,
+    String? currentCaption,
+    String? currentMediaConcept,
   }) async {
     final headers = await _getHeaders();
     final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/automation/blueprint/item/improvise');
     final body = jsonEncode({
       'location_id': locationId,
       'item_id': itemId,
-      if (instruction != null) 'instruction': instruction,
+      'improvement_type': improvementType,
+      if (customInstruction != null) 'custom_instruction': customInstruction,
+      if (currentTitle != null) 'current_title': currentTitle,
+      if (currentCaption != null) 'current_caption': currentCaption,
+      if (currentMediaConcept != null) 'current_media_concept': currentMediaConcept,
     });
 
     final response = await _httpClient.post(uri, headers: headers, body: body);
@@ -204,16 +271,36 @@ class GMBBlueprintRepository {
     return null;
   }
 
-  Future<Map<String, dynamic>> renderAndSchedule(String locationId) async {
-    final headers = await _getHeaders();
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/automation/render-and-schedule');
-    final body = jsonEncode({'location_id': locationId});
+  Future<List<GMBTriggerSignal>> getTriggers(String locationId, {bool refresh = false}) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse(
+        '${ApiConfig.baseUrl}/api/gmb/triggers?location_id=${Uri.encodeComponent(locationId)}&refresh=$refresh',
+      );
+      final response = await _httpClient.get(uri, headers: headers);
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+        final signals = decoded['signals'] as List<dynamic>? ?? [];
+        return signals
+            .whereType<Map<String, dynamic>>()
+            .map(GMBTriggerSignal.fromJson)
+            .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
 
-    final response = await _httpClient.post(uri, headers: headers, body: body);
-    if (response.statusCode != 200) {
-      throw Exception('Failed to schedule blueprint (${response.statusCode})');
-    }
-
-    return jsonDecode(response.body) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> getLearning(String locationId) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse(
+        '${ApiConfig.baseUrl}/api/gmb/learning?location_id=${Uri.encodeComponent(locationId)}',
+      );
+      final response = await _httpClient.get(uri, headers: headers);
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+    } catch (_) {}
+    return {};
   }
 }

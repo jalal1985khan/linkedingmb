@@ -7,6 +7,9 @@ import '../../business_flow/providers/active_location_provider.dart';
 import '../../dashboard/widgets/dashboard_header_bar.dart';
 import '../../notifications/notification_end_drawer.dart';
 import '../../shell/providers/shell_nav_provider.dart';
+import 'widgets/blueprint_config_modal.dart';
+import 'widgets/blueprint_signals_panel.dart';
+import 'widgets/edit_concept_modal.dart';
 
 class BlueprintPlannerScreen extends ConsumerStatefulWidget {
   const BlueprintPlannerScreen({super.key});
@@ -29,6 +32,7 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
     'EVENT',
     'PRODUCT',
     'SERVICE',
+    'TEXT_ONLY',
   ];
 
   @override
@@ -61,103 +65,32 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
     }
   }
 
-  Future<void> _showGenerateDialog() async {
+  void _showConfigModal() {
     final activeLocation = ref.read(activeLocationProvider).activeLocation;
     if (activeLocation == null) return;
 
-    int postsPerWeek = 5;
-    bool autoSchedule = false;
-
-    await showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF4F46E5), size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Generate Blueprint',
-                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 16),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'AI will analyze your local category, reviews, and search keywords to craft a 30-day content calendar.',
-                style: GoogleFonts.plusJakartaSans(color: const Color(0xFF64748B), fontSize: 13, height: 1.4),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Posting Frequency',
-                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<int>(
-                initialValue: postsPerWeek,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                ),
-                items: [3, 5, 7].map((p) => DropdownMenuItem(value: p, child: Text('$p posts / week', style: GoogleFonts.plusJakartaSans()))).toList(),
-                onChanged: (v) {
-                  if (v != null) setDialogState(() => postsPerWeek = v);
-                },
-              ),
-              const SizedBox(height: 16),
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  'Auto-schedule to Post Queue',
-                  style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700),
-                ),
-                subtitle: Text(
-                  'Automatically push generated posts into the scheduler calendar.',
-                  style: GoogleFonts.plusJakartaSans(fontSize: 11.5, color: const Color(0xFF64748B)),
-                ),
-                value: autoSchedule,
-                onChanged: (v) => setDialogState(() => autoSchedule = v ?? false),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('Cancel', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600)),
-            ),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF4F46E5),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                elevation: 0,
-              ),
-              icon: const Icon(Icons.bolt_rounded, size: 18),
-              label: Text('Generate Strategy', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13)),
-              onPressed: () {
-                Navigator.pop(ctx);
-                _generateBlueprint(postsPerWeek, autoSchedule);
-              },
-            ),
-          ],
-        ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => BlueprintConfigModal(
+        planDays: _blueprint?.planDays ?? 30,
+        isGenerating: _isGenerating,
+        onGenerateLocation: (postsPerWeek, selectedFormats, autoSchedule) {
+          _generateBlueprint(postsPerWeek, selectedFormats, autoSchedule);
+        },
+        onGenerateWebsite: (profilerInputs) {
+          _generateBlueprintFromWebsite(profilerInputs);
+        },
       ),
     );
   }
 
-  Future<void> _generateBlueprint(int postsPerWeek, bool autoSchedule) async {
+  Future<void> _generateBlueprint(
+    int postsPerWeek,
+    List<String> selectedFormats,
+    bool autoSchedule,
+  ) async {
     final activeLocation = ref.read(activeLocationProvider).activeLocation;
     if (activeLocation == null) return;
 
@@ -167,6 +100,7 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
       final res = await repo.generateBlueprint(
         locationId: activeLocation.id,
         postsPerWeek: postsPerWeek,
+        allowedFormats: selectedFormats,
         autoSchedule: autoSchedule,
       );
       if (mounted) {
@@ -177,6 +111,44 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('✨ Generated ${res.totalItems} content concepts!'),
+            backgroundColor: const Color(0xFF16A34A),
+          ),
+        );
+        ref.invalidate(blueprintTriggersProvider(activeLocation.id));
+        ref.invalidate(blueprintLearningProvider(activeLocation.id));
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isGenerating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: $e'), backgroundColor: const Color(0xFFDC2626)),
+        );
+      }
+    }
+  }
+
+  Future<void> _generateBlueprintFromWebsite(Map<String, String> profilerInputs) async {
+    final activeLocation = ref.read(activeLocationProvider).activeLocation;
+    if (activeLocation == null) return;
+
+    setState(() => _isGenerating = true);
+    try {
+      final repo = ref.read(gmbBlueprintRepositoryProvider);
+      final res = await repo.generateBlueprint(
+        locationId: activeLocation.id,
+        postsPerWeek: 5,
+        allowedFormats: _formats.where((f) => f != 'ALL').toList(),
+        autoSchedule: false,
+      );
+
+      if (mounted) {
+        setState(() {
+          _blueprint = res;
+          _isGenerating = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✨ Generated website-tailored blueprint with ${res.totalItems} concepts!'),
             backgroundColor: const Color(0xFF16A34A),
           ),
         );
@@ -191,34 +163,21 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
     }
   }
 
-  Future<void> _improviseItem(GMBBlueprintItem item) async {
+  void _openEditConceptModal(GMBBlueprintItem item) {
     final activeLocation = ref.read(activeLocationProvider).activeLocation;
     if (activeLocation == null) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('✨ AI is improvising a fresh angle for this post...')),
-    );
-
-    try {
-      final repo = ref.read(gmbBlueprintRepositoryProvider);
-      final updated = await repo.improviseBlueprintItem(
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => EditConceptModal(
+        item: item,
         locationId: activeLocation.id,
-        itemId: item.id,
-      );
-
-      if (updated != null && mounted) {
-        _loadBlueprint();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('✨ Concept improvised!'), backgroundColor: Color(0xFF16A34A)),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: const Color(0xFFDC2626)),
-        );
-      }
-    }
+        repository: ref.read(gmbBlueprintRepositoryProvider),
+        onSaved: _loadBlueprint,
+      ),
+    );
   }
 
   @override
@@ -301,19 +260,25 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
                         : RefreshIndicator(
                             color: const Color(0xFF4F46E5),
                             onRefresh: _loadBlueprint,
-                            child: Column(
+                            child: ListView(
+                              padding: const EdgeInsets.only(bottom: 30),
                               children: [
                                 // Top Hero Strategy Banner
                                 _buildHeaderStats(),
 
+                                // Live Signals & Posting Triggers Panel
+                                const BlueprintSignalsPanel(),
+
                                 // Horizontal Format Filter Pills
                                 _buildFormatFilterBar(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 10),
 
                                 // Cards List
-                                Expanded(
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
                                   child: ListView.separated(
-                                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
                                     itemCount: filteredItems.length,
                                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                                     itemBuilder: (context, index) {
@@ -344,7 +309,7 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
     final planDays = _blueprint?.planDays ?? 30;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -395,12 +360,12 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               elevation: 0,
             ),
-            icon: const Icon(Icons.auto_awesome_rounded, size: 16),
+            icon: const Icon(Icons.settings_suggest_rounded, size: 16),
             label: Text(
               'Re-plan',
               style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 12.5),
             ),
-            onPressed: _showGenerateDialog,
+            onPressed: _showConfigModal,
           ),
         ],
       ),
@@ -532,12 +497,13 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
                 ),
               ),
               const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.auto_awesome_rounded, size: 18, color: Color(0xFF4F46E5)),
-                onPressed: () => _improviseItem(item),
-                tooltip: 'Improvise with AI',
-                constraints: const BoxConstraints(),
-                padding: EdgeInsets.zero,
+              Text(
+                '${item.costCredits} Credits',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: textSecondary,
+                ),
               ),
             ],
           ),
@@ -567,36 +533,101 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
             overflow: TextOverflow.ellipsis,
           ),
 
+          // AI Selection Rationale Note
+          if (item.selectionReasons.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Chosen because ${item.selectionReasons.take(2).join(", ")}',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontStyle: FontStyle.italic,
+                color: textSecondary.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+
           // Visual Prompt Concept Box
           if (item.mediaConcept.isNotEmpty) ...[
             const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: borderColor),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(Icons.image_outlined, size: 16, color: textSecondary),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Visual: ${item.mediaConcept}',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11.5,
-                        color: textSecondary,
-                        fontWeight: FontWeight.w500,
+                  Row(
+                    children: [
+                      const Icon(Icons.auto_awesome_rounded, size: 14, color: Color(0xFF4F46E5)),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Media Concept',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w800,
+                          color: textPrimary,
+                        ),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    item.mediaConcept,
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11.5,
+                      color: textSecondary,
+                      height: 1.35,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
           ],
+
+          // Bottom Action Row
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: borderColor),
+                ),
+                child: Text(
+                  'CTA: ${item.ctaType.replaceAll('_', ' ')}',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    color: textSecondary,
+                  ),
+                ),
+              ),
+              const Spacer(),
+              ElevatedButton.icon(
+                onPressed: () => _openEditConceptModal(item),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4F46E5).withValues(alpha: 0.1),
+                  foregroundColor: const Color(0xFF4F46E5),
+                  elevation: 0,
+                  side: const BorderSide(color: Color(0xFF4F46E5), width: 0.8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                ),
+                icon: const Icon(Icons.auto_fix_high_rounded, size: 15),
+                label: Text(
+                  'AI Assist & Edit',
+                  style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -661,10 +692,10 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
                 ),
                 icon: const Icon(Icons.bolt_rounded, size: 18),
                 label: Text(
-                  'Generate 30-Day Plan',
+                  'Generate Strategy Blueprint',
                   style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
                 ),
-                onPressed: _showGenerateDialog,
+                onPressed: _showConfigModal,
               ),
             ],
           ),
