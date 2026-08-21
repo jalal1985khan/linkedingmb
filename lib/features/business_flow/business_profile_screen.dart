@@ -669,50 +669,42 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
               ],
             ),
             const SizedBox(height: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: cardBgColor,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: borderColor, width: 1.2),
+            TextField(
+              controller: _descriptionController!,
+              minLines: 5,
+              maxLines: 8,
+              maxLength: 750,
+              onChanged: (_) => setState(() {}),
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: textPrimary,
+                height: 1.5,
+                fontWeight: FontWeight.w400,
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: _descriptionController!,
-                    minLines: 5,
-                    maxLines: 8,
-                    maxLength: 750,
-                    onChanged: (_) => setState(() {}),
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: textPrimary,
-                      height: 1.5,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Elevate your online presence with SocialHive...',
-                      hintStyle: GoogleFonts.inter(color: textSecondary, fontSize: 13.5),
-                      border: InputBorder.none,
-                      counterText: '',
-                      contentPadding: EdgeInsets.zero,
-                      isDense: true,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.bottomRight,
-                    child: Text(
-                      '${_descriptionController?.text.length ?? 0}/750',
-                      style: GoogleFonts.inter(
-                        fontSize: 11.5,
-                        color: textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
+              decoration: InputDecoration(
+                hintText: 'Elevate your online presence with SocialHive, a results-driven marketing consultant...',
+                hintStyle: GoogleFonts.inter(color: textSecondary, fontSize: 13.5),
+                filled: true,
+                fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: borderColor),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: borderColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 1.5),
+                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                counterText: '${_descriptionController?.text.length ?? 0}/750',
+                counterStyle: GoogleFonts.inter(
+                  fontSize: 11.5,
+                  color: textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
