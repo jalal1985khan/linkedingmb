@@ -187,6 +187,31 @@ class BackendBusinessRepository implements BusinessRepository {
     }
   }
 
+  @override
+  Future<List<Map<String, dynamic>>> searchCategories(String query) async {
+    try {
+      final token = await _secureStorage.read(key: _tokenStorageKey);
+      if (token == null || token.isEmpty) return [];
+
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/categories?search=${Uri.encodeComponent(query)}');
+      final response = await _httpClient.get(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map && decoded['categories'] is List) {
+          return List<Map<String, dynamic>>.from(decoded['categories']);
+        }
+      }
+    } catch (_) {}
+    return [];
+  }
+
   BusinessProfile _mapLocationToProfile(Map<String, dynamic> location) {
     final id = _string(location['name']).isNotEmpty
         ? _string(location['name'])

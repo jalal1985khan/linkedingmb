@@ -10,4 +10,5 @@ abstract class BusinessRepository {
     required String category,
     required String currentDescription,
   });
+  Future<List<Map<String, dynamic>>> searchCategories(String query);
 }

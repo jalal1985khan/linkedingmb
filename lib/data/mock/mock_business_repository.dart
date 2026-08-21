@@ -71,4 +71,34 @@ class MockBusinessRepository implements BusinessRepository {
     _profiles.add(profile);
     return profile;
   }
+
+  @override
+  Future<BusinessProfile?> fetchLocationProfile(String locationId) async {
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    try {
+      return _profiles.firstWhere((p) => p.id == locationId);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<String> enhanceDescription({
+    required String businessName,
+    required String category,
+    required String currentDescription,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    return 'Enhanced description for $businessName offering top-tier services in $category.';
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> searchCategories(String query) async {
+    return [
+      {'displayName': 'Marketing consultant', 'categoryId': 'gcid:marketing_consultant'},
+      {'displayName': 'Marketing agency', 'categoryId': 'gcid:marketing_agency'},
+      {'displayName': 'Advertising agency', 'categoryId': 'gcid:advertising_agency'},
+      {'displayName': 'Internet marketing service', 'categoryId': 'gcid:internet_marketing_service'},
+    ];
+  }
 }

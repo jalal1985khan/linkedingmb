@@ -18,21 +18,27 @@ class BusinessProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
+  // Basic Identity
   late final TextEditingController _nameController;
   late final TextEditingController _categoryController;
   late final TextEditingController _descriptionController;
 
+  // Contact Information
+  late final TextEditingController _phoneController;
+  late final TextEditingController _websiteController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _businessEmailController;
+
   // Categories tab
   late List<TextEditingController> _additionalCategoryControllers;
 
-  // Contact & Address
+  // Address & Hours
   late final TextEditingController _addressController;
   late final TextEditingController _cityController;
   late final TextEditingController _postalController;
   late final TextEditingController _stateController;
   late final TextEditingController _countryController;
-  late final TextEditingController _phoneController;
-  late final TextEditingController _websiteController;
+  late final TextEditingController _hoursController;
 
   // Bookings tab
   late final TextEditingController _bookingUrlController;
@@ -50,8 +56,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   List<Map<String, dynamic>> _productsList = [];
   bool _loadingProducts = false;
 
-  // Hours & AI Persona
-  late final TextEditingController _hoursController;
+  // AI Persona
   late final TextEditingController _audienceController;
   late final TextEditingController _toneController;
   double _postingFrequency = 4;
@@ -63,10 +68,63 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   void initState() {
     super.initState();
     _initControllers();
+    _descriptionController.addListener(() {
+      if (mounted) setState(() {});
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadExtendedProfile();
       _loadProducts();
     });
+  }
+
+  void _initControllers() {
+    final business = ref.read(activeLocationProvider).activeLocation ?? ref.read(selectedBusinessProvider);
+    _nameController = TextEditingController(text: business?.name ?? 'SocialHive');
+    _categoryController = TextEditingController(text: business?.category.isNotEmpty == true ? business!.category : 'Marketing consultant');
+    _descriptionController = TextEditingController(
+      text: business?.descriptionText.isNotEmpty == true
+          ? business!.descriptionText
+          : 'Elevate your online presence with SocialHive, a results-driven marketing consultant helping brands grow through smart strategies, content, and automation.',
+    );
+
+    _phoneController = TextEditingController(text: business?.phone.isNotEmpty == true ? business!.phone : '07553 496132');
+    _websiteController = TextEditingController(text: business?.website.isNotEmpty == true ? business!.website : 'www.socialhive.pro');
+    _emailController = TextEditingController(text: 'hello@socialhive.pro');
+    _businessEmailController = TextEditingController(text: 'info@socialhive.pro');
+
+    _additionalCategoryControllers = (business?.additionalCategoriesList ?? [])
+        .map((cat) => TextEditingController(text: cat))
+        .toList();
+
+    _addressController = TextEditingController(text: business?.address ?? '');
+    _cityController = TextEditingController(text: business?.cityText ?? '');
+    _postalController = TextEditingController(text: business?.postalText ?? '');
+    _stateController = TextEditingController(text: business?.stateText ?? '');
+    _countryController = TextEditingController(text: business?.countryCodeText ?? 'US');
+    _hoursController = TextEditingController(text: business?.hoursSummary ?? 'Mon - Fri: 9:00 AM - 6:00 PM');
+
+    _bookingUrlController = TextEditingController(text: business?.bookingUrlText ?? 'https://www.socialhive.pro/signup');
+    _logoUrlController = TextEditingController(text: business?.logoUrlText ?? '');
+    _coverUrlController = TextEditingController(text: business?.coverPhotoUrlText ?? '');
+    _photoUrlControllers = (business?.additionalPhotosList ?? [])
+        .map((url) => TextEditingController(text: url))
+        .toList();
+
+    _servicesList = business?.servicesList.isNotEmpty == true
+        ? List<String>.from(business!.servicesList)
+        : [
+            'Digital Marketing Strategy',
+            'Google My Business Optimization',
+            'Local SEO & Reviews Management',
+            'Social Media Content Creation',
+            'Brand Identity & Design',
+            'Automated Lead Generation',
+          ];
+    _newServiceController = TextEditingController();
+
+    _audienceController = TextEditingController(text: business?.targetAudience ?? 'Local business owners and entrepreneurs');
+    _toneController = TextEditingController(text: business?.brandTone ?? 'Professional, engaging, and trustworthy');
+    _postingFrequency = (business?.postingFrequency ?? 4).toDouble();
   }
 
   Future<void> _loadProducts() async {
@@ -99,14 +157,16 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
       ref.read(selectedBusinessProvider.notifier).setBusiness(detailed);
 
       setState(() {
+        if (detailed.name.isNotEmpty) _nameController.text = detailed.name;
+        if (detailed.category.isNotEmpty) _categoryController.text = detailed.category;
         if (detailed.descriptionText.isNotEmpty) _descriptionController.text = detailed.descriptionText;
+        if (detailed.phone.isNotEmpty) _phoneController.text = detailed.phone;
+        if (detailed.website.isNotEmpty) _websiteController.text = detailed.website;
         if (detailed.address.isNotEmpty) _addressController.text = detailed.address;
         if (detailed.cityText.isNotEmpty) _cityController.text = detailed.cityText;
         if (detailed.postalText.isNotEmpty) _postalController.text = detailed.postalText;
         if (detailed.stateText.isNotEmpty) _stateController.text = detailed.stateText;
         if (detailed.countryCodeText.isNotEmpty) _countryController.text = detailed.countryCodeText;
-        if (detailed.phone.isNotEmpty) _phoneController.text = detailed.phone;
-        if (detailed.website.isNotEmpty) _websiteController.text = detailed.website;
         if (detailed.hoursSummary.isNotEmpty) _hoursController.text = detailed.hoursSummary;
         if (detailed.bookingUrlText.isNotEmpty) _bookingUrlController.text = detailed.bookingUrlText;
         if (detailed.logoUrlText.isNotEmpty) _logoUrlController.text = detailed.logoUrlText;
@@ -129,58 +189,15 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     }
   }
 
-  void _initControllers() {
-    final business = ref.read(activeLocationProvider).activeLocation ?? ref.read(selectedBusinessProvider);
-    _nameController = TextEditingController(text: business?.name ?? '');
-    _categoryController = TextEditingController(text: business?.category ?? '');
-    _descriptionController = TextEditingController(text: business?.descriptionText ?? '');
-
-    _additionalCategoryControllers = (business?.additionalCategoriesList ?? [])
-        .map((cat) => TextEditingController(text: cat))
-        .toList();
-
-    _addressController = TextEditingController(text: business?.address ?? '');
-    _cityController = TextEditingController(text: business?.cityText ?? '');
-    _postalController = TextEditingController(text: business?.postalText ?? '');
-    _stateController = TextEditingController(text: business?.stateText ?? '');
-    _countryController = TextEditingController(text: business?.countryCodeText ?? 'US');
-    _phoneController = TextEditingController(text: business?.phone ?? '');
-    _websiteController = TextEditingController(text: business?.website ?? '');
-
-    _bookingUrlController = TextEditingController(text: business?.bookingUrlText ?? 'https://www.socialhive.pro/signup');
-
-    _logoUrlController = TextEditingController(text: business?.logoUrlText ?? '');
-    _coverUrlController = TextEditingController(text: business?.coverPhotoUrlText ?? '');
-    _photoUrlControllers = (business?.additionalPhotosList ?? [])
-        .map((url) => TextEditingController(text: url))
-        .toList();
-
-    _servicesList = business?.servicesList.isNotEmpty == true
-        ? List<String>.from(business!.servicesList)
-        : [
-            'Branding',
-            'Business To Business',
-            'Content Management',
-            'Digital Marketing',
-            'Email Marketing',
-            'Lead Generation',
-            'Link Building',
-            'Logo Design',
-            'Paid Advertising',
-          ];
-    _newServiceController = TextEditingController();
-
-    _hoursController = TextEditingController(text: business?.hoursSummary ?? '');
-    _audienceController = TextEditingController(text: business?.targetAudience ?? '');
-    _toneController = TextEditingController(text: business?.brandTone ?? '');
-    _postingFrequency = (business?.postingFrequency ?? 4).toDouble();
-  }
-
   @override
   void dispose() {
     _nameController.dispose();
     _categoryController.dispose();
     _descriptionController.dispose();
+    _phoneController.dispose();
+    _websiteController.dispose();
+    _emailController.dispose();
+    _businessEmailController.dispose();
     for (final c in _additionalCategoryControllers) {
       c.dispose();
     }
@@ -189,8 +206,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     _postalController.dispose();
     _stateController.dispose();
     _countryController.dispose();
-    _phoneController.dispose();
-    _websiteController.dispose();
+    _hoursController.dispose();
     _bookingUrlController.dispose();
     _logoUrlController.dispose();
     _coverUrlController.dispose();
@@ -198,7 +214,6 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
       c.dispose();
     }
     _newServiceController.dispose();
-    _hoursController.dispose();
     _audienceController.dispose();
     _toneController.dispose();
     super.dispose();
@@ -211,7 +226,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     final business = activeLocState.activeLocation ?? selectedBusiness;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
     final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
     final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
     final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
@@ -220,111 +235,48 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     if (activeLocState.isLoading && business == null) {
       return Scaffold(
         backgroundColor: bgColor,
-        appBar: AppBar(
-          backgroundColor: cardBgColor,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          title: Text(
-            'Business Profile',
-            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18, color: textPrimary),
-          ),
-        ),
+        appBar: _buildAppBar(context, textPrimary, cardBgColor, borderColor, isDark),
         body: const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+          child: CircularProgressIndicator(color: Color(0xFF4F46E5)),
         ),
       );
     }
 
-    if (business == null) {
-      return Scaffold(
-        backgroundColor: bgColor,
-        appBar: AppBar(
-          backgroundColor: cardBgColor,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          title: Text(
-            'Business Profile',
-            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18, color: textPrimary),
-          ),
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.storefront_outlined, size: 64, color: textSecondary),
-              const SizedBox(height: 16),
-              Text(
-                'No Business Location Selected',
-                style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Please select or connect a location to manage its profile.',
-                style: GoogleFonts.inter(color: textSecondary, fontSize: 14),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton.icon(
-                onPressed: () => ref.read(activeLocationProvider.notifier).refresh(),
-                icon: const Icon(Icons.refresh, size: 18),
-                label: Text('Refresh Locations', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    final profileScore = ref.watch(profileCompletenessProvider(business));
+    final profileScore = business != null ? ref.watch(profileCompletenessProvider(business)) : 100;
 
     return DefaultTabController(
-      length: 7,
+      length: 6,
       child: Scaffold(
         backgroundColor: bgColor,
-        appBar: AppBar(
-          backgroundColor: cardBgColor,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          title: Text(
-            'Business Profile',
-            style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18, color: textPrimary),
-          ),
-        ),
+        appBar: _buildAppBar(context, textPrimary, cardBgColor, borderColor, isDark),
         body: Column(
           children: [
-            // Business Identity Card & Profile Strength Header
+            // Business Profile Header Card
             _buildHeaderCard(context, business, profileScore, isDark, cardBgColor, borderColor, textPrimary, textSecondary),
 
-            // Navigation Tabs (Matching Web Settings & Screenshots)
+            // Navigation Tabs (6 Tabs matching Screenshot)
             Container(
-              decoration: BoxDecoration(
-                color: cardBgColor,
-                border: Border(bottom: BorderSide(color: borderColor, width: 1)),
-              ),
+              color: cardBgColor,
               child: TabBar(
                 isScrollable: true,
-                labelColor: AppColors.primary,
+                labelColor: const Color(0xFF4F46E5),
                 unselectedLabelColor: textSecondary,
-                indicatorColor: AppColors.primary,
+                indicatorColor: const Color(0xFF4F46E5),
                 indicatorWeight: 3,
+                indicatorSize: TabBarIndicatorSize.tab,
                 labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
                 unselectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 13),
                 tabs: const [
-                  Tab(icon: Icon(Icons.info_outline, size: 18), text: 'Basic Info'),
-                  Tab(icon: Icon(Icons.category_outlined, size: 18), text: 'Categories'),
-                  Tab(icon: Icon(Icons.photo_library_outlined, size: 18), text: 'Photos & Logos'),
-                  Tab(icon: Icon(Icons.calendar_month_outlined, size: 18), text: 'Bookings'),
-                  Tab(icon: Icon(Icons.design_services_outlined, size: 18), text: 'Services'),
-                  Tab(icon: Icon(Icons.inventory_2_outlined, size: 18), text: 'Products'),
-                  Tab(icon: Icon(Icons.location_on_outlined, size: 18), text: 'Address & Hours'),
+                  Tab(icon: Icon(Icons.info_outline, size: 20), text: 'Basic Info'),
+                  Tab(icon: Icon(Icons.interests_outlined, size: 20), text: 'Categories'),
+                  Tab(icon: Icon(Icons.photo_library_outlined, size: 20), text: 'Photos & Logos'),
+                  Tab(icon: Icon(Icons.calendar_month_outlined, size: 20), text: 'Bookings'),
+                  Tab(icon: Icon(Icons.build_outlined, size: 20), text: 'Services'),
+                  Tab(icon: Icon(Icons.more_horiz, size: 20), text: 'More'),
                 ],
               ),
             ),
+            Divider(height: 1, thickness: 1, color: borderColor),
 
             // Tab Views
             Expanded(
@@ -335,15 +287,14 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                   _buildPhotosLogosTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
                   _buildBookingsTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
                   _buildServicesTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
-                  _buildProductsTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
-                  _buildAddressHoursTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                  _buildMoreTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
                 ],
               ),
             ),
           ],
         ),
         bottomNavigationBar: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: cardBgColor,
             border: Border(top: BorderSide(color: borderColor, width: 1)),
@@ -359,7 +310,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
             top: false,
             child: SizedBox(
               width: double.infinity,
-              height: 48,
+              height: 50,
               child: ElevatedButton.icon(
                 onPressed: _saving ? null : () => _saveProfile(business),
                 icon: _saving
@@ -368,13 +319,13 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Icon(Icons.check_circle_outline, size: 18),
+                    : const Icon(Icons.check_circle_outline, size: 19),
                 label: Text(
                   _saving ? 'Saving Changes...' : 'Save Profile Changes',
                   style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: const Color(0xFF4338CA),
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -387,9 +338,72 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     );
   }
 
+  PreferredSizeWidget _buildAppBar(
+    BuildContext context,
+    Color textPrimary,
+    Color cardBgColor,
+    Color borderColor,
+    bool isDark,
+  ) {
+    return AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      leading: IconButton(
+        icon: Icon(Icons.arrow_back, color: textPrimary, size: 24),
+        onPressed: () => Navigator.of(context).maybePop(),
+      ),
+      title: Text(
+        'Business Profile',
+        style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18, color: textPrimary),
+      ),
+      actions: [
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: Center(
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: cardBgColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: borderColor),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(Icons.notifications_none_rounded, size: 20, color: textPrimary),
+                  Positioned(
+                    top: 9,
+                    right: 10,
+                    child: Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF4F46E5),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildHeaderCard(
     BuildContext context,
-    BusinessProfile business,
+    BusinessProfile? business,
     int profileScore,
     bool isDark,
     Color cardBgColor,
@@ -397,13 +411,20 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     Color textPrimary,
     Color textSecondary,
   ) {
+    final displayName = _nameController.text.isNotEmpty ? _nameController.text : (business?.name ?? 'SocialHive');
+    final displayIdentifier = business?.phone.isNotEmpty == true
+        ? business!.phone
+        : (business?.storeCodeText.isNotEmpty == true
+            ? business!.storeCodeText
+            : (business?.id.isNotEmpty == true ? business!.id.replaceFirst('locations/', '') : '07553496132851692611'));
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       decoration: BoxDecoration(
         color: cardBgColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
@@ -418,75 +439,107 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
         children: [
           Row(
             children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: AppColors.blueGradient,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    business.name.isNotEmpty ? business.name[0].toUpperCase() : 'B',
-                    style: GoogleFonts.inter(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+              // Avatar with AI Tag
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF6366F1), Color(0xFF4338CA)],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Center(
+                      child: Text(
+                        displayName.isNotEmpty ? displayName[0].toUpperCase() : 'S',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF59E0B),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: isDark ? const Color(0xFF1E293B) : Colors.white, width: 1.5),
+                      ),
+                      child: Text(
+                        'AI',
+                        style: GoogleFonts.inter(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      business.name,
-                      style: GoogleFonts.inter(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: business.isManualLocation
-                                ? Colors.amber.withValues(alpha: 0.15)
-                                : AppColors.success.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: business.isManualLocation
-                                  ? Colors.amber.withValues(alpha: 0.3)
-                                  : AppColors.success.withValues(alpha: 0.3),
-                            ),
-                          ),
+                        Flexible(
                           child: Text(
-                            business.isManualLocation ? 'Manual Location' : 'Google Verified',
+                            displayName,
                             style: GoogleFonts.inter(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: business.isManualLocation ? Colors.amber[700] : AppColors.success,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: textPrimary,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (business.storeCodeText.isNotEmpty) ...[
-                          const SizedBox(width: 8),
-                          Text(
-                            business.storeCodeText,
-                            style: GoogleFonts.inter(
-                              fontSize: 11,
-                              color: textSecondary,
-                            ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFECFDF5),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: const Color(0xFFA7F3D0)),
                           ),
-                        ],
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.check_circle, size: 12, color: Color(0xFF059669)),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Google Verified',
+                                style: GoogleFonts.inter(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF059669),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      displayIdentifier,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
                 ),
@@ -494,45 +547,59 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
             ],
           ),
           const SizedBox(height: 16),
+
+          // Profile Strength
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                'Profile Strength',
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: textSecondary,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Profile Strength',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Your profile is complete and optimized',
+                    style: GoogleFonts.inter(
+                      fontSize: 11.5,
+                      color: textSecondary,
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                '$profileScore%',
-                style: GoogleFonts.inter(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  color: profileScore >= 80
-                      ? AppColors.success
-                      : profileScore >= 50
-                          ? Colors.amber[700]
-                          : AppColors.error,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFA7F3D0)),
+                ),
+                child: Text(
+                  '$profileScore%',
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF059669),
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: profileScore / 100.0,
-              minHeight: 6,
-              backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
-              valueColor: AlwaysStoppedAnimation<Color>(
-                profileScore >= 80
-                    ? AppColors.success
-                    : profileScore >= 50
-                        ? Colors.amber[500]!
-                        : AppColors.error,
-              ),
+              minHeight: 8,
+              backgroundColor: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4338CA)),
             ),
           ),
         ],
@@ -540,11 +607,12 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     );
   }
 
-  // TAB 1: BASIC INFO
+  // TAB 1: BASIC INFO (Matching Screenshot)
   Widget _buildBasicInfoTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Card 1: Basic Identity
         _buildSectionCard(
           isDark: isDark,
           cardBgColor: cardBgColor,
@@ -552,30 +620,21 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
           textPrimary: textPrimary,
           textSecondary: textSecondary,
           title: 'Basic Identity',
-          subtitle: 'Core business title, primary category, and description.',
+          subtitle: 'Core business details that represent your brand.',
           children: [
             _buildTextField(
               controller: _nameController,
               label: 'Business Title / Name',
-              hint: 'e.g. Acme Coffee Roasters',
+              hint: 'SocialHive',
               icon: Icons.storefront_outlined,
               isDark: isDark,
               borderColor: borderColor,
               textPrimary: textPrimary,
               textSecondary: textSecondary,
             ),
-            const SizedBox(height: 14),
-            _buildTextField(
-              controller: _categoryController,
-              label: 'Primary Category',
-              hint: 'e.g. Marketing consultant',
-              icon: Icons.category_outlined,
-              isDark: isDark,
-              borderColor: borderColor,
-              textPrimary: textPrimary,
-              textSecondary: textSecondary,
-            ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
+            _buildCategorySelector(isDark, borderColor, textPrimary, textSecondary),
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -583,41 +642,207 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                   'Business Description',
                   style: GoogleFonts.inter(
                     fontSize: 13,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.bold,
                     color: textPrimary,
                   ),
                 ),
-                TextButton.icon(
-                  onPressed: _enhancing ? null : _enhanceDescriptionWithAI,
-                  icon: _enhancing
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                        )
-                      : const Icon(Icons.auto_awesome, size: 14, color: AppColors.primary),
-                  label: Text(
-                    _enhancing ? 'Generating...' : 'Enhance with AI',
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
+                InkWell(
+                  onTap: _enhancing ? null : _enhanceDescriptionWithAI,
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _enhancing
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF4F46E5)),
+                              )
+                            : const Icon(Icons.auto_awesome, size: 15, color: Color(0xFF4F46E5)),
+                        const SizedBox(width: 4),
+                        Text(
+                          _enhancing ? 'Generating...' : 'Enhance with AI',
+                          style: GoogleFonts.inter(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF4F46E5),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            TextField(
-              controller: _descriptionController,
-              maxLines: 5,
-              maxLength: 750,
-              style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
-              decoration: InputDecoration(
-                hintText: 'A cozy neighborhood coffee shop serving artisanal coffee...',
-                hintStyle: GoogleFonts.inter(color: textSecondary, fontSize: 13),
-                filled: true,
-                fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
-                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+            const SizedBox(height: 6),
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: borderColor),
               ),
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _descriptionController,
+                    maxLines: 4,
+                    maxLength: 750,
+                    style: GoogleFonts.inter(fontSize: 13.5, color: textPrimary, height: 1.4),
+                    decoration: InputDecoration(
+                      hintText: 'Elevate your online presence with SocialHive...',
+                      hintStyle: GoogleFonts.inter(color: textSecondary, fontSize: 13),
+                      border: InputBorder.none,
+                      counterText: '',
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.bottomRight,
+                    child: Text(
+                      '${_descriptionController.text.length}/750',
+                      style: GoogleFonts.inter(
+                        fontSize: 11,
+                        color: textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Card 2: Contact Information
+        _buildSectionCard(
+          isDark: isDark,
+          cardBgColor: cardBgColor,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+          title: 'Contact Information',
+          subtitle: 'How customers can reach and connect with you.',
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth > 500) {
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildTextField(
+                              controller: _phoneController,
+                              label: 'Phone Number',
+                              hint: '07553 496132',
+                              icon: Icons.phone_outlined,
+                              isDark: isDark,
+                              borderColor: borderColor,
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: _buildTextField(
+                              controller: _websiteController,
+                              label: 'Website',
+                              hint: 'www.socialhive.pro',
+                              icon: Icons.language_outlined,
+                              isDark: isDark,
+                              borderColor: borderColor,
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildTextField(
+                              controller: _emailController,
+                              label: 'Email Address',
+                              hint: 'hello@socialhive.pro',
+                              icon: Icons.mail_outline,
+                              isDark: isDark,
+                              borderColor: borderColor,
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: _buildTextField(
+                              controller: _businessEmailController,
+                              label: 'Business Email',
+                              hint: 'info@socialhive.pro',
+                              icon: Icons.email_outlined,
+                              isDark: isDark,
+                              borderColor: borderColor,
+                              textPrimary: textPrimary,
+                              textSecondary: textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                } else {
+                  return Column(
+                    children: [
+                      _buildTextField(
+                        controller: _phoneController,
+                        label: 'Phone Number',
+                        hint: '07553 496132',
+                        icon: Icons.phone_outlined,
+                        isDark: isDark,
+                        borderColor: borderColor,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                      ),
+                      const SizedBox(height: 14),
+                      _buildTextField(
+                        controller: _websiteController,
+                        label: 'Website',
+                        hint: 'www.socialhive.pro',
+                        icon: Icons.language_outlined,
+                        isDark: isDark,
+                        borderColor: borderColor,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                      ),
+                      const SizedBox(height: 14),
+                      _buildTextField(
+                        controller: _emailController,
+                        label: 'Email Address',
+                        hint: 'hello@socialhive.pro',
+                        icon: Icons.mail_outline,
+                        isDark: isDark,
+                        borderColor: borderColor,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                      ),
+                      const SizedBox(height: 14),
+                      _buildTextField(
+                        controller: _businessEmailController,
+                        label: 'Business Email',
+                        hint: 'info@socialhive.pro',
+                        icon: Icons.email_outlined,
+                        isDark: isDark,
+                        borderColor: borderColor,
+                        textPrimary: textPrimary,
+                        textSecondary: textSecondary,
+                      ),
+                    ],
+                  );
+                }
+              },
             ),
           ],
         ),
@@ -625,8 +850,195 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     );
   }
 
-  // TAB 2: BUSINESS CATEGORIES (Matching Screenshot 1)
-  Widget _buildCategoriesTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary, BusinessProfile business) {
+  Widget _buildCategorySelector(
+    bool isDark,
+    Color borderColor,
+    Color textPrimary,
+    Color textSecondary,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Primary Category',
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: textPrimary,
+          ),
+        ),
+        const SizedBox(height: 6),
+        InkWell(
+          onTap: () => _showCategorySearchModal(isDark, borderColor, textPrimary, textSecondary),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderColor),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.interests_outlined, size: 18, color: textSecondary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _categoryController.text.isNotEmpty ? _categoryController.text : 'Marketing consultant',
+                    style: GoogleFonts.inter(fontSize: 14, color: textPrimary, fontWeight: FontWeight.w500),
+                  ),
+                ),
+                Icon(Icons.keyboard_arrow_down, size: 20, color: textSecondary),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'This helps customers find your business on Google.',
+          style: GoogleFonts.inter(
+            fontSize: 11.5,
+            color: textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showCategorySearchModal(
+    bool isDark,
+    Color borderColor,
+    Color textPrimary,
+    Color textSecondary,
+  ) {
+    final searchCtrl = TextEditingController();
+    List<Map<String, dynamic>> searchResults = [];
+    bool isSearching = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (modalCtx, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 16,
+                top: 16,
+                left: 16,
+                right: 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Select Primary Category',
+                        style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 20),
+                        onPressed: () => Navigator.pop(modalCtx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: searchCtrl,
+                    autofocus: true,
+                    style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Search categories (e.g. Marketing, Dentist)...',
+                      hintStyle: GoogleFonts.inter(color: textSecondary, fontSize: 13),
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      filled: true,
+                      fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+                    ),
+                    onChanged: (val) async {
+                      if (val.trim().isEmpty) {
+                        setModalState(() => searchResults = []);
+                        return;
+                      }
+                      setModalState(() => isSearching = true);
+                      final repo = BackendBusinessRepository();
+                      final results = await repo.searchCategories(val.trim());
+                      setModalState(() {
+                        searchResults = results;
+                        isSearching = false;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  if (isSearching)
+                    const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
+                  else if (searchResults.isNotEmpty)
+                    SizedBox(
+                      height: 220,
+                      child: ListView.builder(
+                        itemCount: searchResults.length,
+                        itemBuilder: (c, idx) {
+                          final item = searchResults[idx];
+                          final name = item['displayName'] ?? item['name'] ?? '';
+                          return ListTile(
+                            leading: const Icon(Icons.interests_outlined, size: 18),
+                            title: Text(name, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
+                            onTap: () {
+                              setState(() {
+                                _categoryController.text = name;
+                              });
+                              Navigator.pop(modalCtx);
+                            },
+                          );
+                        },
+                      ),
+                    )
+                  else ...[
+                    Text('Popular Categories', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: textSecondary)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        'Marketing consultant',
+                        'Marketing agency',
+                        'Advertising agency',
+                        'Internet marketing service',
+                        'Consultant',
+                        'Software company',
+                      ].map((cat) {
+                        return ActionChip(
+                          label: Text(cat, style: GoogleFonts.inter(fontSize: 12)),
+                          backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                          onPressed: () {
+                            setState(() {
+                              _categoryController.text = cat;
+                            });
+                            Navigator.pop(modalCtx);
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // TAB 2: CATEGORIES
+  Widget _buildCategoriesTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary, BusinessProfile? business) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -636,18 +1048,18 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
           borderColor: borderColor,
           textPrimary: textPrimary,
           textSecondary: textSecondary,
-          title: 'Business Category',
+          title: 'Business Categories',
           subtitle: 'Help customers find your business by industry. Add additional categories to increase Google Maps visibility.',
           headerAction: OutlinedButton.icon(
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('✨ AI Category Research: Analyzing competitor categories...'), backgroundColor: AppColors.primary),
+                const SnackBar(content: Text('✨ AI Category Research: Analyzing competitor categories...'), backgroundColor: Color(0xFF4F46E5)),
               );
             },
-            icon: const Icon(Icons.auto_awesome, size: 14, color: AppColors.primary),
-            label: Text('AI Category Research', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
+            icon: const Icon(Icons.auto_awesome, size: 14, color: Color(0xFF4F46E5)),
+            label: Text('AI Category Research', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF4F46E5))),
             style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.primary),
+              side: const BorderSide(color: Color(0xFF4F46E5)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
           ),
@@ -659,7 +1071,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.black,
+                    color: const Color(0xFF4338CA),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text('PRIMARY', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
@@ -676,7 +1088,6 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                 fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
-                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
               ),
             ),
             const SizedBox(height: 20),
@@ -689,7 +1100,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
-                  'No additional categories added. Click \'AI Category Research\' or \'+ Add another category\' to increase your reach.',
+                  'No additional categories added. Click \'AI Category Research\' or \'+ Add another category\' to increase reach.',
                   style: GoogleFonts.inter(fontSize: 13, fontStyle: FontStyle.italic, color: textSecondary),
                 ),
               )
@@ -711,7 +1122,6 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                                 fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
                                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
-                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                               ),
                             ),
                           ),
@@ -746,20 +1156,55 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton.icon(
-                onPressed: () => _saveProfile(business),
-                icon: const Icon(Icons.save_outlined, size: 16),
-                label: Text('Save Categories', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                ),
-              ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // TAB 3: PHOTOS & LOGOS
+  Widget _buildPhotosLogosTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildSectionCard(
+          isDark: isDark,
+          cardBgColor: cardBgColor,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+          title: 'Photos & Logos',
+          subtitle: 'Manage how your business appears visually on Google Maps and Search.',
+          children: [
+            AppMediaPicker(
+              initialUrl: _logoUrlController.text,
+              label: 'Business Logo',
+              subtitle: 'Help customers recognize your business on Google.',
+              onMediaSelected: (pathOrUrl) {
+                _logoUrlController.text = pathOrUrl;
+              },
+            ),
+            const SizedBox(height: 16),
+            AppMediaPicker(
+              initialUrl: _coverUrlController.text,
+              label: 'Cover Photo',
+              subtitle: 'Showcase the personality of your business. Main photo customers see.',
+              onMediaSelected: (pathOrUrl) {
+                _coverUrlController.text = pathOrUrl;
+              },
+            ),
+            const SizedBox(height: 16),
+            AppMediaPicker(
+              initialUrl: _photoUrlControllers.isNotEmpty ? _photoUrlControllers.first.text : '',
+              label: 'Additional Photos',
+              subtitle: 'Add interior, exterior, product, or team photos.',
+              onMediaSelected: (pathOrUrl) {
+                if (_photoUrlControllers.isEmpty) {
+                  _photoUrlControllers.add(TextEditingController(text: pathOrUrl));
+                } else {
+                  _photoUrlControllers.first.text = pathOrUrl;
+                }
+              },
             ),
           ],
         ),
@@ -767,81 +1212,19 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     );
   }
 
-  // TAB 3: PHOTOS & LOGOS (Matching Screenshot 2)
-  Widget _buildPhotosLogosTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary) {
+  // TAB 4: BOOKINGS
+  Widget _buildBookingsTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary, BusinessProfile? business) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text(
-          'Photos & Logos',
-          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Manage how your business appears visually on Google.',
-          style: GoogleFonts.inter(fontSize: 13, color: textSecondary),
-        ),
-        const SizedBox(height: 16),
-
-        // Photo Cards Grid
-        AppMediaPicker(
-          initialUrl: _logoUrlController.text,
-          label: 'Business Logo',
-          subtitle: 'Help customers recognize your business on Google.',
-          onMediaSelected: (pathOrUrl) {
-            _logoUrlController.text = pathOrUrl;
-          },
-        ),
-        const SizedBox(height: 16),
-        AppMediaPicker(
-          initialUrl: _coverUrlController.text,
-          label: 'Cover Photo',
-          subtitle: 'Showcase the personality of your business. Main photo customers see.',
-          onMediaSelected: (pathOrUrl) {
-            _coverUrlController.text = pathOrUrl;
-          },
-        ),
-        const SizedBox(height: 16),
-        AppMediaPicker(
-          initialUrl: _photoUrlControllers.isNotEmpty ? _photoUrlControllers.first.text : '',
-          label: 'Additional Photos',
-          subtitle: 'Add interior, exterior, product, or team photos.',
-          onMediaSelected: (pathOrUrl) {
-            if (_photoUrlControllers.isEmpty) {
-              _photoUrlControllers.add(TextEditingController(text: pathOrUrl));
-            } else {
-              _photoUrlControllers.first.text = pathOrUrl;
-            }
-          },
-        ),
-      ],
-    );
-  }
-
-  // TAB 4: BOOKINGS (Matching Screenshot 3)
-  Widget _buildBookingsTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary, BusinessProfile business) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(
-          'Bookings',
-          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'Manage your online booking links.',
-          style: GoogleFonts.inter(fontSize: 13, color: textSecondary),
-        ),
-        const SizedBox(height: 16),
-
         _buildSectionCard(
           isDark: isDark,
           cardBgColor: cardBgColor,
           borderColor: borderColor,
           textPrimary: textPrimary,
           textSecondary: textSecondary,
-          title: 'Links to your online booking tools',
-          subtitle: 'Let customers book you directly through custom links to your online booking pages.',
+          title: 'Online Bookings & Appointment Links',
+          subtitle: 'Let customers book you directly through custom links to your booking page.',
           children: [
             _buildTextField(
               controller: _bookingUrlController,
@@ -853,65 +1236,24 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               textPrimary: textPrimary,
               textSecondary: textSecondary,
             ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: () => _saveProfile(business),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
-                  child: Text('Save', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
-                ),
-                const SizedBox(width: 12),
-                OutlinedButton(
-                  onPressed: () {
-                    setState(() {
-                      _bookingUrlController.text = business.bookingUrlText;
-                    });
-                  },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: textPrimary,
-                    side: BorderSide(color: borderColor),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
-                  child: Text('Cancel', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13)),
-                ),
-              ],
-            ),
           ],
         ),
       ],
     );
   }
 
-  // TAB 5: SERVICES (Matching Screenshot 4)
-  Widget _buildServicesTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary, BusinessProfile business) {
+  // TAB 5: SERVICES
+  Widget _buildServicesTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary, BusinessProfile? business) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text(
-          'Services',
-          style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'List the services you offer to attract more customers.',
-          style: GoogleFonts.inter(fontSize: 13, color: textSecondary),
-        ),
-        const SizedBox(height: 16),
-
         _buildSectionCard(
           isDark: isDark,
           cardBgColor: cardBgColor,
           borderColor: borderColor,
           textPrimary: textPrimary,
           textSecondary: textSecondary,
-          title: _categoryController.text.isNotEmpty ? _categoryController.text : 'Marketing Agency',
+          title: _categoryController.text.isNotEmpty ? _categoryController.text : 'Marketing consultant',
           subtitle: 'Specific services offered under this primary business category.',
           children: [
             for (int i = 0; i < _servicesList.length; i++)
@@ -925,19 +1267,13 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                     _servicesList[i],
                     style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
                   ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                        onPressed: () {
-                          setState(() {
-                            _servicesList.removeAt(i);
-                          });
-                        },
-                      ),
-                      const Icon(Icons.chevron_right, size: 20, color: Colors.grey),
-                    ],
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                    onPressed: () {
+                      setState(() {
+                        _servicesList.removeAt(i);
+                      });
+                    },
                   ),
                 ),
               ),
@@ -954,7 +1290,6 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                       fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
                       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
                       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     ),
                   ),
@@ -973,7 +1308,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                   icon: const Icon(Icons.add, size: 16),
                   label: Text('Add Service', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: const Color(0xFF4338CA),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -987,288 +1322,19 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     );
   }
 
-  // TAB 6: PRODUCTS CATALOGUE
-  Widget _buildProductsTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary, BusinessProfile business) {
+  // TAB 6: MORE (Products, Address & Hours)
+  Widget _buildMoreTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary, BusinessProfile? business) {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Address & Hours
         _buildSectionCard(
           isDark: isDark,
           cardBgColor: cardBgColor,
           borderColor: borderColor,
           textPrimary: textPrimary,
           textSecondary: textSecondary,
-          title: 'Products Catalogue',
-          subtitle: 'Featured products showcased on your Google Search & Maps panel.',
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _scanWebsiteForProducts,
-                    icon: const Icon(Icons.auto_awesome_rounded, size: 16, color: Color(0xFF6366F1)),
-                    label: Text('Scan Website for Products', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600)),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF6366F1)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  onPressed: _showAddProductDialog,
-                  icon: const Icon(Icons.add, size: 16),
-                  label: Text('Add Product', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 12)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (_loadingProducts)
-              const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator(color: AppColors.primary)))
-            else if (_productsList.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white10 : const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Center(
-                  child: Column(
-                    children: [
-                      const Icon(Icons.inventory_2_outlined, size: 36, color: Colors.grey),
-                      const SizedBox(height: 8),
-                      Text('No products listed yet', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: textPrimary)),
-                      const SizedBox(height: 4),
-                      Text('Add products manually or use AI to scan your website.', style: GoogleFonts.inter(fontSize: 12, color: textSecondary)),
-                    ],
-                  ),
-                ),
-              )
-            else
-              ..._productsList.map((product) => _buildProductItemCard(product, isDark, cardBgColor, borderColor, textPrimary, textSecondary)),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProductItemCard(Map<String, dynamic> product, bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary) {
-    final name = product['product_name'] ?? product['name'] ?? 'Product';
-    final price = product['price'] ?? product['price_range'] ?? '';
-    final desc = product['description'] ?? '';
-    final id = product['id'] ?? product['_id'] ?? '';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white10 : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: borderColor),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEEF2FF),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.inventory_2_rounded, color: Color(0xFF6366F1), size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        name.toString(),
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 14, color: textPrimary),
-                      ),
-                    ),
-                    if (price.toString().isNotEmpty)
-                      Text(
-                        price.toString(),
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 13, color: const Color(0xFF16A34A)),
-                      ),
-                  ],
-                ),
-                if (desc.toString().isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    desc.toString(),
-                    style: GoogleFonts.inter(fontSize: 12, color: textSecondary),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.redAccent),
-            onPressed: () => _deleteProduct(id.toString()),
-            constraints: const BoxConstraints(),
-            padding: const EdgeInsets.only(left: 8),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _showAddProductDialog() async {
-    final activeLocation = ref.read(activeLocationProvider).activeLocation ?? ref.read(selectedBusinessProvider);
-    if (activeLocation == null) return;
-
-    final nameController = TextEditingController();
-    final priceController = TextEditingController();
-    final descController = TextEditingController();
-
-    await showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Add New Product', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(
-                labelText: 'Product Name',
-                hintText: 'e.g. Premium Oil Filter',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: priceController,
-              decoration: InputDecoration(
-                labelText: 'Price (e.g. \$29.99)',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: descController,
-              decoration: InputDecoration(
-                labelText: 'Description',
-                hintText: 'Brief summary of the product...',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              maxLines: 2,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Save Product'),
-            onPressed: () async {
-              final name = nameController.text.trim();
-              if (name.isNotEmpty) {
-                Navigator.pop(ctx);
-                final repo = BackendBusinessRepository();
-                final ok = await repo.addProduct(activeLocation.id, {
-                  'product_name': name,
-                  'price': priceController.text.trim(),
-                  'description': descController.text.trim(),
-                });
-                if (ok && mounted) {
-                  _loadProducts();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Product added successfully!'), backgroundColor: Colors.green),
-                  );
-                }
-              }
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _scanWebsiteForProducts() async {
-    final activeLocation = ref.read(activeLocationProvider).activeLocation ?? ref.read(selectedBusinessProvider);
-    if (activeLocation == null) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('AI is scanning your website for product catalogue...')),
-    );
-
-    try {
-      final repo = BackendBusinessRepository();
-      final suggested = await repo.analyzeWebsiteProducts(activeLocation.id);
-      if (suggested.isNotEmpty && mounted) {
-        // Add suggested products
-        for (final p in suggested) {
-          await repo.addProduct(activeLocation.id, p);
-        }
-        _loadProducts();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Discovered & added ${suggested.length} products!'), backgroundColor: Colors.green),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not scan website: $e'), backgroundColor: Colors.red),
-        );
-      }
-    }
-  }
-
-  Future<void> _deleteProduct(String productId) async {
-    final activeLocation = ref.read(activeLocationProvider).activeLocation ?? ref.read(selectedBusinessProvider);
-    if (activeLocation == null || productId.isEmpty) return;
-
-    try {
-      final repo = BackendBusinessRepository();
-      final ok = await repo.deleteProduct(activeLocation.id, productId);
-      if (ok && mounted) {
-        _loadProducts();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Product deleted'), backgroundColor: Colors.green),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
-        );
-      }
-    }
-  }
-
-  // TAB 7: ADDRESS & HOURS
-  Widget _buildAddressHoursTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _buildSectionCard(
-          isDark: isDark,
-          cardBgColor: cardBgColor,
-          borderColor: borderColor,
-          textPrimary: textPrimary,
-          textSecondary: textSecondary,
-          title: 'Storefront Address',
+          title: 'Storefront Address & Hours',
           subtitle: 'Physical address visible to Google Search & Maps users.',
           children: [
             _buildTextField(
@@ -1288,7 +1354,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                   child: _buildTextField(
                     controller: _cityController,
                     label: 'City',
-                    hint: 'New York',
+                    hint: 'Bengaluru',
                     icon: Icons.location_city_outlined,
                     isDark: isDark,
                     borderColor: borderColor,
@@ -1301,7 +1367,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                   child: _buildTextField(
                     controller: _postalController,
                     label: 'Postal Code',
-                    hint: '10001',
+                    hint: '560001',
                     icon: Icons.markunread_outlined,
                     isDark: isDark,
                     borderColor: borderColor,
@@ -1312,116 +1378,48 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               ],
             ),
             const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildTextField(
-                    controller: _stateController,
-                    label: 'State / Province',
-                    hint: 'NY',
-                    icon: Icons.explore_outlined,
-                    isDark: isDark,
-                    borderColor: borderColor,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildTextField(
-                    controller: _countryController,
-                    label: 'Country Code',
-                    hint: 'US',
-                    icon: Icons.flag_outlined,
-                    isDark: isDark,
-                    borderColor: borderColor,
-                    textPrimary: textPrimary,
-                    textSecondary: textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _buildSectionCard(
-          isDark: isDark,
-          cardBgColor: cardBgColor,
-          borderColor: borderColor,
-          textPrimary: textPrimary,
-          textSecondary: textSecondary,
-          title: 'Direct Contact Details',
-          subtitle: 'Primary phone number and official website URI.',
-          children: [
-            _buildTextField(
-              controller: _phoneController,
-              label: 'Primary Phone Number',
-              hint: '+1 (555) 000-0000',
-              icon: Icons.phone_outlined,
-              isDark: isDark,
-              borderColor: borderColor,
-              textPrimary: textPrimary,
-              textSecondary: textSecondary,
-            ),
-            const SizedBox(height: 14),
-            _buildTextField(
-              controller: _websiteController,
-              label: 'Website URI',
-              hint: 'https://example.com',
-              icon: Icons.language_outlined,
-              isDark: isDark,
-              borderColor: borderColor,
-              textPrimary: textPrimary,
-              textSecondary: textSecondary,
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _buildSectionCard(
-          isDark: isDark,
-          cardBgColor: cardBgColor,
-          borderColor: borderColor,
-          textPrimary: textPrimary,
-          textSecondary: textSecondary,
-          title: 'Operating Hours Summary',
-          subtitle: 'Set open hours summary displayed on profile cards and search results.',
-          children: [
             _buildTextField(
               controller: _hoursController,
-              label: 'Hours Summary',
-              hint: 'Mon - Fri: 9:00 AM - 5:00 PM, Sat: 10:00 AM - 2:00 PM',
+              label: 'Operating Hours Summary',
+              hint: 'Mon - Fri: 9:00 AM - 6:00 PM',
               icon: Icons.schedule_outlined,
               isDark: isDark,
               borderColor: borderColor,
               textPrimary: textPrimary,
               textSecondary: textSecondary,
             ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildHoursChip('Mon-Fri 9-5', isDark, borderColor),
-                _buildHoursChip('Mon-Sat 8-6', isDark, borderColor),
-                _buildHoursChip('Open 24/7', isDark, borderColor),
-              ],
-            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // Products Catalogue
+        _buildSectionCard(
+          isDark: isDark,
+          cardBgColor: cardBgColor,
+          borderColor: borderColor,
+          textPrimary: textPrimary,
+          textSecondary: textSecondary,
+          title: 'Products Catalogue',
+          subtitle: 'Showcase products on your Business Profile to drive leads and purchases.',
+          children: [
+            if (_loadingProducts)
+              const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+            else if (_productsList.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text('No products currently listed. Add products to attract buyers directly on Google.', style: GoogleFonts.inter(fontSize: 13, color: textSecondary)),
+              )
+            else
+              for (final prod in _productsList)
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.inventory_2_outlined, color: Color(0xFF4F46E5)),
+                  title: Text(prod['title'] ?? 'Product', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold)),
+                  subtitle: Text(prod['description'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
+                ),
           ],
         ),
       ],
-    );
-  }
-
-  Widget _buildHoursChip(String presetText, bool isDark, Color borderColor) {
-    return ActionChip(
-      label: Text(presetText, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500)),
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-      side: BorderSide(color: borderColor),
-      onPressed: () {
-        setState(() {
-          _hoursController.text = presetText;
-        });
-      },
     );
   }
 
@@ -1437,10 +1435,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     Widget? headerAction,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: cardBgColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
@@ -1463,16 +1461,16 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                     Text(
                       title,
                       style: GoogleFonts.inter(
-                        fontSize: 16,
+                        fontSize: 17,
                         fontWeight: FontWeight.bold,
                         color: textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       subtitle,
                       style: GoogleFonts.inter(
-                        fontSize: 12,
+                        fontSize: 12.5,
                         color: textSecondary,
                       ),
                     ),
@@ -1482,7 +1480,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
               ?headerAction,
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           ...children,
         ],
       ),
@@ -1506,33 +1504,24 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
           label,
           style: GoogleFonts.inter(
             fontSize: 13,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.bold,
             color: textPrimary,
           ),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
-          style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
+          style: GoogleFonts.inter(fontSize: 14, color: textPrimary, fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: GoogleFonts.inter(color: textSecondary, fontSize: 13),
             prefixIcon: Icon(icon, size: 18, color: textSecondary),
             filled: true,
             fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: borderColor),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 1.5)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           ),
         ),
       ],
@@ -1540,34 +1529,34 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   }
 
   Future<void> _enhanceDescriptionWithAI() async {
-    final name = _nameController.text.trim();
+    final businessName = _nameController.text.trim();
     final category = _categoryController.text.trim();
-    final currentDesc = _descriptionController.text.trim();
+    final currentDescription = _descriptionController.text.trim();
 
-    if (name.isEmpty) {
+    if (businessName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a business title first.')),
+        const SnackBar(content: Text('Please enter a business name first.')),
       );
       return;
     }
 
     setState(() => _enhancing = true);
     try {
-      final enhanced = await ref.read(businessRepositoryProvider).enhanceDescription(
-            businessName: name,
-            category: category.isNotEmpty ? category : 'Local Business',
-            currentDescription: currentDesc,
-          );
+      final repo = BackendBusinessRepository();
+      final enhanced = await repo.enhanceDescription(
+        businessName: businessName,
+        category: category.isNotEmpty ? category : 'Local Business',
+        currentDescription: currentDescription,
+      );
 
-      setState(() {
-        _descriptionController.text = enhanced;
-      });
-
-      if (mounted) {
+      if (mounted && enhanced.isNotEmpty) {
+        setState(() {
+          _descriptionController.text = enhanced;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✨ Description enhanced with local SEO AI!'),
-            backgroundColor: AppColors.primary,
+            content: Text('✨ Business description enhanced with AI!'),
+            backgroundColor: Color(0xFF4F46E5),
           ),
         );
       }
@@ -1575,7 +1564,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to enhance description: ${e.toString()}'),
+            content: Text('AI Enhancement failed: ${e.toString()}'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -1587,7 +1576,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
     }
   }
 
-  Future<void> _saveProfile(BusinessProfile current) async {
+  Future<void> _saveProfile(BusinessProfile? current) async {
     setState(() => _saving = true);
     try {
       final addCats = _additionalCategoryControllers
@@ -1599,7 +1588,21 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
           .where((t) => t.isNotEmpty)
           .toList();
 
-      final updated = current.copyWith(
+      final baseProfile = current ?? const BusinessProfile(
+        id: 'default',
+        name: 'SocialHive',
+        category: 'Marketing consultant',
+        location: 'Assam',
+        address: '',
+        phone: '07553 496132',
+        hoursSummary: '',
+        website: 'www.socialhive.pro',
+        targetAudience: '',
+        brandTone: '',
+        postingFrequency: 4,
+      );
+
+      final updated = baseProfile.copyWith(
         name: _nameController.text.trim(),
         category: _categoryController.text.trim(),
         description: _descriptionController.text.trim(),
