@@ -36,11 +36,11 @@ class DashboardHeaderBar extends ConsumerWidget {
     return Row(
       children: [
         // Left Icon: Back Button or 4-Square Grid Icon
-        InkWell(
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: showBackButton
               ? (onBack ?? () => Navigator.of(context).maybePop())
               : (onOpenDrawer ?? () => Scaffold.maybeOf(context)?.openDrawer()),
-          borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -115,7 +115,7 @@ class DashboardHeaderBar extends ConsumerWidget {
                   ),
                   if (showSparkle) ...[
                     const SizedBox(width: 4),
-                    const Text('✨', style: TextStyle(fontSize: 12)),
+                    const Icon(Icons.auto_awesome_rounded, size: 13, color: Color(0xFFF59E0B)),
                   ],
                 ],
               ),
@@ -124,9 +124,9 @@ class DashboardHeaderBar extends ConsumerWidget {
         ),
 
         // Notification Bell Icon with Badge
-        InkWell(
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTap: onOpenNotifications ?? () => Scaffold.maybeOf(context)?.openEndDrawer(),
-          borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(

@@ -478,9 +478,9 @@ class _CreatePostFlowScreenState extends ConsumerState<CreatePostFlowScreen> {
                                   color: textPrimary,
                                 ),
                               ),
-                              InkWell(
+                              GestureDetector(
+                                behavior: HitTestBehavior.opaque,
                                 onTap: _busy ? null : () => _onGenerateAIPreset('update'),
-                                borderRadius: BorderRadius.circular(8),
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                   decoration: BoxDecoration(
