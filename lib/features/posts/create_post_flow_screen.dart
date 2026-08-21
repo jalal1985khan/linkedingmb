@@ -348,14 +348,8 @@ class _CreatePostFlowScreenState extends ConsumerState<CreatePostFlowScreen> {
                   title: 'Create Post',
                   subtitle: activeLocation?.name ?? 'SocialHive',
                   showSparkle: true,
-                  showBackButton: widget.showScaffold,
-                  onBack: () {
-                    if (widget.showScaffold) {
-                      Navigator.of(context).maybePop();
-                    } else {
-                      ref.handleSmartBack(context);
-                    }
-                  },
+                  showBackButton: true,
+                  onBack: () => ref.handleSmartBack(context),
                   onOpenNotifications: () {
                     Scaffold.maybeOf(context)?.openEndDrawer();
                   },
