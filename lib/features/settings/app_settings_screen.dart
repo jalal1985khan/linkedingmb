@@ -67,40 +67,40 @@ class AppSettingsScreen extends ConsumerWidget {
               // Settings Content
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 32),
                   children: [
                     // Account Profile Header Card
                     Container(
-                      padding: const EdgeInsets.all(18),
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: cardBgColor,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: borderColor),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.03),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
                       child: Row(
                         children: [
                           Container(
-                            width: 52,
-                            height: 52,
+                            width: 48,
+                            height: 48,
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(14),
                               boxShadow: [
                                 BoxShadow(
                                   color: const Color(0xFF4F46E5).withValues(alpha: 0.25),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
                                 ),
                               ],
                             ),
@@ -112,7 +112,7 @@ class AppSettingsScreen extends ConsumerWidget {
                                     .toUpperCase(),
                                 style: GoogleFonts.plusJakartaSans(
                                   fontWeight: FontWeight.w800,
-                                  fontSize: 22,
+                                  fontSize: 20,
                                   color: Colors.white,
                                 ),
                               ),
@@ -127,7 +127,7 @@ class AppSettingsScreen extends ConsumerWidget {
                                   user?.name.isNotEmpty == true ? user!.name : 'Buddy Individual',
                                   style: GoogleFonts.plusJakartaSans(
                                     fontWeight: FontWeight.w800,
-                                    fontSize: 16,
+                                    fontSize: 15.5,
                                     color: textPrimary,
                                   ),
                                 ),
@@ -145,11 +145,13 @@ class AppSettingsScreen extends ConsumerWidget {
                             ),
                           ),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFC7D2FE)),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
+                              ),
                             ),
                             child: Text(
                               creditsAsync.valueOrNull?.subscriptionType.toUpperCase() ?? 'PRO',
@@ -165,7 +167,7 @@ class AppSettingsScreen extends ConsumerWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 20),
 
                     // SYSTEM STATUS Section
                     Padding(
@@ -176,7 +178,7 @@ class AppSettingsScreen extends ConsumerWidget {
                           color: textSecondary,
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
-                          letterSpacing: 1.2,
+                          letterSpacing: 1.1,
                         ),
                       ),
                     ),
@@ -184,12 +186,12 @@ class AppSettingsScreen extends ConsumerWidget {
                     Container(
                       decoration: BoxDecoration(
                         color: cardBgColor,
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: borderColor),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
-                            blurRadius: 8,
+                            blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -204,7 +206,7 @@ class AppSettingsScreen extends ConsumerWidget {
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.5) : const Color(0xFFDCFCE7),
-                                    shape: BoxShape.circle,
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 18),
                                 ),
@@ -214,7 +216,7 @@ class AppSettingsScreen extends ConsumerWidget {
                                     'AI Post Generator',
                                     style: GoogleFonts.plusJakartaSans(
                                       fontWeight: FontWeight.w700,
-                                      fontSize: 14,
+                                      fontSize: 13.5,
                                       color: textPrimary,
                                     ),
                                   ),
@@ -223,7 +225,7 @@ class AppSettingsScreen extends ConsumerWidget {
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.5) : const Color(0xFFDCFCE7),
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -251,7 +253,7 @@ class AppSettingsScreen extends ConsumerWidget {
                               ],
                             ),
                           ),
-                          Divider(height: 1, indent: 16, endIndent: 16, color: borderColor),
+                          Divider(height: 1, color: borderColor),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                             child: Row(
@@ -262,7 +264,7 @@ class AppSettingsScreen extends ConsumerWidget {
                                     color: credits <= 0
                                         ? (isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.5) : const Color(0xFFFEE2E2))
                                         : (isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF)),
-                                    shape: BoxShape.circle,
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Icon(
                                     credits <= 0 ? Icons.warning_amber_rounded : Icons.bolt_rounded,
@@ -279,10 +281,11 @@ class AppSettingsScreen extends ConsumerWidget {
                                         'Available Credits',
                                         style: GoogleFonts.plusJakartaSans(
                                           fontWeight: FontWeight.w700,
-                                          fontSize: 14,
+                                          fontSize: 13.5,
                                           color: textPrimary,
                                         ),
                                       ),
+                                      const SizedBox(height: 1),
                                       Text(
                                         credits <= 0 ? 'Automation is paused until recharge' : 'Monthly cycle',
                                         style: GoogleFonts.plusJakartaSans(fontSize: 11.5, color: textSecondary),
@@ -294,7 +297,7 @@ class AppSettingsScreen extends ConsumerWidget {
                                   '$credits',
                                   style: GoogleFonts.plusJakartaSans(
                                     fontWeight: FontWeight.w800,
-                                    fontSize: 16,
+                                    fontSize: 15.5,
                                     color: credits <= 0 ? const Color(0xFFDC2626) : textPrimary,
                                   ),
                                 ),
@@ -306,14 +309,14 @@ class AppSettingsScreen extends ConsumerWidget {
                                   },
                                   child: Padding(
                                     padding: const EdgeInsets.all(6),
-                                    child: Icon(Icons.refresh_rounded, size: 20, color: textSecondary),
+                                    child: Icon(Icons.refresh_rounded, size: 18, color: textSecondary),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                           if (activeLocation != null) ...[
-                            Divider(height: 1, indent: 16, endIndent: 16, color: borderColor),
+                            Divider(height: 1, color: borderColor),
                             Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               child: Row(
@@ -322,7 +325,7 @@ class AppSettingsScreen extends ConsumerWidget {
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
                                       color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
-                                      shape: BoxShape.circle,
+                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: const Icon(Icons.storefront_rounded, color: Color(0xFF4F46E5), size: 18),
                                   ),
@@ -335,14 +338,15 @@ class AppSettingsScreen extends ConsumerWidget {
                                           'Connected Business',
                                           style: GoogleFonts.plusJakartaSans(
                                             fontWeight: FontWeight.w700,
-                                            fontSize: 14,
+                                            fontSize: 13.5,
                                             color: textPrimary,
                                           ),
                                         ),
+                                        const SizedBox(height: 1),
                                         Text(
                                           activeLocation.name,
                                           style: GoogleFonts.plusJakartaSans(
-                                            fontSize: 12,
+                                            fontSize: 11.5,
                                             color: textSecondary,
                                             fontWeight: FontWeight.w600,
                                           ),
@@ -360,7 +364,7 @@ class AppSettingsScreen extends ConsumerWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 22),
+                    const SizedBox(height: 20),
 
                     // PREFERENCES Section
                     Padding(
@@ -371,7 +375,7 @@ class AppSettingsScreen extends ConsumerWidget {
                           color: textSecondary,
                           fontSize: 11,
                           fontWeight: FontWeight.w800,
-                          letterSpacing: 1.2,
+                          letterSpacing: 1.1,
                         ),
                       ),
                     ),
@@ -379,12 +383,12 @@ class AppSettingsScreen extends ConsumerWidget {
                     Container(
                       decoration: BoxDecoration(
                         color: cardBgColor,
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: borderColor),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
-                            blurRadius: 8,
+                            blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),
                         ],
@@ -408,7 +412,7 @@ class AppSettingsScreen extends ConsumerWidget {
                                       color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: const Icon(Icons.tune_rounded, color: Color(0xFF4F46E5), size: 20),
+                                    child: const Icon(Icons.tune_rounded, color: Color(0xFF4F46E5), size: 18),
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -419,10 +423,11 @@ class AppSettingsScreen extends ConsumerWidget {
                                           'Automation Settings',
                                           style: GoogleFonts.plusJakartaSans(
                                             fontWeight: FontWeight.w700,
-                                            fontSize: 14,
+                                            fontSize: 13.5,
                                             color: textPrimary,
                                           ),
                                         ),
+                                        const SizedBox(height: 1),
                                         Text(
                                           'Configure AI posting schedules & frequency',
                                           style: GoogleFonts.plusJakartaSans(fontSize: 11.5, color: textSecondary),
@@ -430,7 +435,7 @@ class AppSettingsScreen extends ConsumerWidget {
                                       ],
                                     ),
                                   ),
-                                  Icon(Icons.chevron_right_rounded, color: textSecondary),
+                                  Icon(Icons.chevron_right_rounded, color: textSecondary, size: 20),
                                 ],
                               ),
                             ),
@@ -439,77 +444,100 @@ class AppSettingsScreen extends ConsumerWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 24),
 
                     // LOGOUT ACTION BUTTON
-                    OutlinedButton.icon(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFFDC2626),
-                        side: BorderSide(
-                          color: isDark ? const Color(0xFF991B1B) : const Color(0xFFFCA5A5),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                        backgroundColor: isDark ? const Color(0xFF450A0A).withValues(alpha: 0.4) : const Color(0xFFFEF2F2),
-                      ),
-                      onPressed: () async {
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            backgroundColor: cardBgColor,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                            title: Text(
-                              'Sign Out',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontWeight: FontWeight.w800,
-                                color: textPrimary,
-                              ),
-                            ),
-                            content: Text(
-                              'Are you sure you want to sign out of your Google Business account?',
-                              style: GoogleFonts.plusJakartaSans(
-                                color: textSecondary,
-                                fontSize: 13.5,
-                              ),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(ctx).pop(false),
-                                child: Text(
-                                  'Cancel',
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontWeight: FontWeight.w700,
-                                    color: textSecondary,
-                                  ),
-                                ),
-                              ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFDC2626),
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                                onPressed: () => Navigator.of(ctx).pop(true),
-                                child: Text(
-                                  'Sign Out',
-                                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800),
-                                ),
-                              ),
-                            ],
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFDC2626),
+                          side: BorderSide(
+                            color: isDark ? const Color(0xFF991B1B) : const Color(0xFFFCA5A5),
                           ),
-                        );
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          backgroundColor: isDark ? const Color(0xFF450A0A).withValues(alpha: 0.4) : const Color(0xFFFEF2F2),
+                        ),
+                        onPressed: () async {
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              backgroundColor: cardBgColor,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              title: Text(
+                                'Sign Out',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 17,
+                                  color: textPrimary,
+                                ),
+                              ),
+                              content: Text(
+                                'Are you sure you want to sign out of your Google Business account?',
+                                style: GoogleFonts.plusJakartaSans(
+                                  color: textSecondary,
+                                  fontSize: 13.5,
+                                  height: 1.4,
+                                ),
+                              ),
+                              actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              actions: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: SizedBox(
+                                        height: 44,
+                                        child: OutlinedButton(
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: textPrimary,
+                                            side: BorderSide(color: borderColor),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                          ),
+                                          onPressed: () => Navigator.of(ctx).pop(false),
+                                          child: Text(
+                                            'Cancel',
+                                            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: SizedBox(
+                                        height: 44,
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: const Color(0xFFDC2626),
+                                            foregroundColor: Colors.white,
+                                            elevation: 0,
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                          ),
+                                          onPressed: () => Navigator.of(ctx).pop(true),
+                                          child: Text(
+                                            'Sign Out',
+                                            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 13),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
 
-                        if (confirm == true) {
-                          ref.read(authControllerProvider.notifier).signOut();
-                        }
-                      },
-                      icon: const Icon(Icons.logout_rounded, size: 20),
-                      label: Text(
-                        'Sign Out Account',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14,
+                          if (confirm == true) {
+                            ref.read(authControllerProvider.notifier).signOut();
+                          }
+                        },
+                        icon: const Icon(Icons.logout_rounded, size: 18),
+                        label: Text(
+                          'Sign Out Account',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13.5,
+                          ),
                         ),
                       ),
                     ),
