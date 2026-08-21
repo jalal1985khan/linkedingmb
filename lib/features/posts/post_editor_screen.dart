@@ -282,8 +282,9 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
           const SizedBox(height: 6),
           TextField(
             controller: _summaryController,
-            maxLines: 5,
-            style: GoogleFonts.inter(fontSize: 14, color: textPrimary, height: 1.4),
+            minLines: 7,
+            maxLines: 12,
+            style: GoogleFonts.inter(fontSize: 14, color: textPrimary, height: 1.5),
             decoration: _inputDecoration('Write detailed update or promotional text...', isDark, borderColor, textSecondary),
           ),
           const SizedBox(height: 16),

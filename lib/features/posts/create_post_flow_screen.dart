@@ -512,8 +512,8 @@ class _CreatePostFlowScreenState extends ConsumerState<CreatePostFlowScreen> {
                 const SizedBox(height: 6),
                 TextField(
                   controller: _summaryController,
-                  minLines: 5,
-                  maxLines: 9,
+                  minLines: 7,
+                  maxLines: 12,
                   maxLength: 1500,
                   style: GoogleFonts.inter(fontSize: 14, color: textPrimary, height: 1.5),
                   decoration: InputDecoration(
