@@ -1128,13 +1128,16 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
             const SizedBox(height: 6),
             TextField(
               controller: _categoryController,
-              style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
+              style: GoogleFonts.inter(fontSize: 14, color: textPrimary, fontWeight: FontWeight.w500),
               decoration: InputDecoration(
                 hintText: 'Marketing consultant',
+                hintStyle: GoogleFonts.inter(color: textSecondary, fontSize: 13),
                 filled: true,
                 fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
                 enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 1.5)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
               ),
             ),
             const SizedBox(height: 20),
@@ -1156,31 +1159,30 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                 children: [
                   for (int i = 0; i < addCats.length; i++)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: addCats[i],
-                              style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
-                              decoration: InputDecoration(
-                                hintText: 'e.g. Advertising Agency',
-                                filled: true,
-                                fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
-                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outline, color: AppColors.error),
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: TextField(
+                        controller: addCats[i],
+                        style: GoogleFonts.inter(fontSize: 14, color: textPrimary, fontWeight: FontWeight.w500),
+                        decoration: InputDecoration(
+                          hintText: 'e.g. Advertising Agency',
+                          hintStyle: GoogleFonts.inter(color: textSecondary, fontSize: 13),
+                          filled: true,
+                          fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+                          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 1.5)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 20, color: Color(0xFFEF4444)),
+                            splashRadius: 18,
+                            tooltip: 'Remove category',
                             onPressed: () {
                               setState(() {
                                 addCats.removeAt(i);
                               });
                             },
                           ),
-                        ],
+                        ),
                       ),
                     ),
                 ],
