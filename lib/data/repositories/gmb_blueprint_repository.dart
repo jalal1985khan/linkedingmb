@@ -6,6 +6,20 @@ import 'package:http/http.dart' as http;
 
 import '../../core/config/api_config.dart';
 
+int _parseInt(dynamic val, int fallback) {
+  if (val == null) return fallback;
+  if (val is int) return val;
+  if (val is num) return val.toInt();
+  return int.tryParse(val.toString()) ?? fallback;
+}
+
+double _parseDouble(dynamic val, double fallback) {
+  if (val == null) return fallback;
+  if (val is double) return val;
+  if (val is num) return val.toDouble();
+  return double.tryParse(val.toString()) ?? fallback;
+}
+
 class GMBBlueprintItem {
   final String id;
   final int dayNumber;
@@ -21,12 +35,12 @@ class GMBBlueprintItem {
 
   GMBBlueprintItem({
     required this.id,
-    required this.dayNumber,
-    required this.title,
-    required this.caption,
-    required this.mediaConcept,
-    required this.ctaType,
-    required this.format,
+    this.dayNumber = 1,
+    this.title = 'Untitled Concept',
+    this.caption = '',
+    this.mediaConcept = '',
+    this.ctaType = 'LEARN_MORE',
+    this.format = 'TEXT_IMAGE',
     this.status,
     this.scheduledDate,
     this.selectionReasons = const [],
@@ -41,7 +55,7 @@ class GMBBlueprintItem {
 
     return GMBBlueprintItem(
       id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
-      dayNumber: (json['day_number'] ?? json['day'] ?? 1) as int,
+      dayNumber: _parseInt(json['day_number'] ?? json['day'], 1),
       title: json['title']?.toString() ?? 'Untitled Concept',
       caption: json['caption']?.toString() ?? '',
       mediaConcept: json['media_concept']?.toString() ?? json['image_concept']?.toString() ?? '',
@@ -50,7 +64,7 @@ class GMBBlueprintItem {
       status: json['status']?.toString(),
       scheduledDate: json['scheduled_date']?.toString() ?? json['scheduled_at']?.toString(),
       selectionReasons: reasons,
-      costCredits: (json['cost_credits'] ?? 2) as int,
+      costCredits: _parseInt(json['cost_credits'], 2),
     );
   }
 
@@ -93,9 +107,9 @@ class GMBBlueprint {
     return GMBBlueprint(
       success: json['success'] == true,
       status: json['status']?.toString() ?? 'NO_BLUEPRINT',
-      totalItems: (json['total_items'] ?? rawItems.length) as int,
-      planDays: (json['plan_days'] ?? 30) as int,
-      estimatedCredits: (json['estimated_credits'] ?? (rawItems.length * 2)) as int,
+      totalItems: _parseInt(json['total_items'], rawItems.length),
+      planDays: _parseInt(json['plan_days'], 30),
+      estimatedCredits: _parseInt(json['estimated_credits'], rawItems.length * 2),
       items: rawItems
           .whereType<Map<String, dynamic>>()
           .map(GMBBlueprintItem.fromJson)
@@ -144,8 +158,8 @@ class GMBLearnedArm {
   factory GMBLearnedArm.fromJson(Map<String, dynamic> json) {
     return GMBLearnedArm(
       value: json['value']?.toString() ?? '',
-      score: ((json['score'] ?? 0.0) as num).toDouble(),
-      observations: (json['observations'] ?? 0) as int,
+      score: _parseDouble(json['score'], 0.0),
+      observations: _parseInt(json['observations'], 0),
       earned: json['earned'] == true,
     );
   }
@@ -228,10 +242,10 @@ class GMBBlueprintRepository {
     final body = jsonEncode({
       'location_id': locationId,
       'item_id': itemId,
-      if (title != null) 'title': title,
-      if (caption != null) 'caption': caption,
-      if (mediaConcept != null) 'media_concept': mediaConcept,
-      if (ctaType != null) 'cta_type': ctaType,
+      'title': ?title,
+      'caption': ?caption,
+      'media_concept': ?mediaConcept,
+      'cta_type': ?ctaType,
     });
 
     final response = await _httpClient.put(uri, headers: headers, body: body);
@@ -253,10 +267,10 @@ class GMBBlueprintRepository {
       'location_id': locationId,
       'item_id': itemId,
       'improvement_type': improvementType,
-      if (customInstruction != null) 'custom_instruction': customInstruction,
-      if (currentTitle != null) 'current_title': currentTitle,
-      if (currentCaption != null) 'current_caption': currentCaption,
-      if (currentMediaConcept != null) 'current_media_concept': currentMediaConcept,
+      'custom_instruction': ?customInstruction,
+      'current_title': ?currentTitle,
+      'current_caption': ?currentCaption,
+      'current_media_concept': ?currentMediaConcept,
     });
 
     final response = await _httpClient.post(uri, headers: headers, body: body);
