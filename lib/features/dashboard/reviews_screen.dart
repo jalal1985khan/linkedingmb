@@ -793,52 +793,81 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
       clipBehavior: Clip.none,
       child: Row(
         children: [
-          _buildFilterChip('All Reviews ($allCount)', 0),
-          _buildFilterChip('Unreplied ($unrepliedCount)', 1),
-          _buildFilterChip('Positive ($positiveCount)', 2),
-          _buildFilterChip('Negative ($negativeCount)', 3),
+          _buildFilterChip('All Reviews', allCount, 0),
+          _buildFilterChip('Unreplied', unrepliedCount, 1),
+          _buildFilterChip('Positive', positiveCount, 2),
+          _buildFilterChip('Negative', negativeCount, 3),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChip(String label, int filterIndex) {
+  Widget _buildFilterChip(String label, int count, int filterIndex) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = _selectedFilter == filterIndex;
     final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
     final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return GestureDetector(
       onTap: () => setState(() => _selectedFilter = filterIndex),
       child: Container(
-        margin: const EdgeInsets.only(right: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
           color: isSelected ? const Color(0xFF4F46E5) : cardBgColor,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: isSelected
-                ? const Color(0xFF4F46E5)
-                : borderColor,
+            color: isSelected ? const Color(0xFF4F46E5) : borderColor,
+            width: 1,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
                     color: const Color(0xFF4F46E5).withValues(alpha: 0.25),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1.5),
                   ),
                 ]
-              : null,
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+                    blurRadius: 3,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.plusJakartaSans(
-            color: isSelected ? Colors.white : textSecondary,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            fontSize: 13,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                color: isSelected ? Colors.white : textPrimary,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                fontSize: 12.5,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.22)
+                    : (isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9)),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '$count',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected ? Colors.white : textSecondary,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
