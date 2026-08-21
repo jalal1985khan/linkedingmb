@@ -1331,44 +1331,54 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                 ),
               ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _newServiceController,
-                    style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
-                    decoration: InputDecoration(
-                      hintText: 'e.g. SEO Optimization',
-                      filled: true,
-                      fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    ),
-                  ),
+            TextField(
+              controller: _newServiceController,
+              style: GoogleFonts.inter(fontSize: 14, color: textPrimary, fontWeight: FontWeight.w500),
+              decoration: InputDecoration(
+                hintText: 'e.g. SEO Optimization',
+                hintStyle: GoogleFonts.inter(color: textSecondary, fontSize: 13),
+                filled: true,
+                fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 1.5)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+              ),
+              onSubmitted: (val) {
+                final text = val.trim();
+                if (text.isNotEmpty) {
+                  setState(() {
+                    _servicesList ??= [];
+                    _servicesList!.add(text);
+                    _newServiceController?.clear();
+                  });
+                }
+              },
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  final text = _newServiceController?.text.trim() ?? '';
+                  if (text.isNotEmpty) {
+                    setState(() {
+                      _servicesList ??= [];
+                      _servicesList!.add(text);
+                      _newServiceController?.clear();
+                    });
+                  }
+                },
+                icon: const Icon(Icons.add, size: 16),
+                label: Text('Add Service', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4338CA),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                 ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    final text = _newServiceController?.text.trim() ?? '';
-                    if (text.isNotEmpty) {
-                      setState(() {
-                        _servicesList ??= [];
-                        _servicesList!.add(text);
-                        _newServiceController?.clear();
-                      });
-                    }
-                  },
-                  icon: const Icon(Icons.add, size: 16),
-                  label: Text('Add Service', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4338CA),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
