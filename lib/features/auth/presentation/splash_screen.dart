@@ -36,30 +36,24 @@ class SplashScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 32.0),
               child: Column(
                 children: [
-                  const Spacer(flex: 2),
+                  const Spacer(flex: 1),
 
-                  // Official Splash Logo
+                  // High-Res 3D Briefcase Orbit Illustration Image
                   Flexible(
-                    flex: 8,
+                    flex: 6,
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 220, maxWidth: 220),
+                      constraints: const BoxConstraints(maxHeight: 240, maxWidth: 240),
                       child: Image.asset(
-                        'assets/images/splash.png',
+                        'assets/images/gmb_briefcase_3d.png',
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) {
-                          return Image.asset(
-                            'assets/images/logo.png',
-                            fit: BoxFit.contain,
-                            errorBuilder: (ctx, err, st) {
-                              return _buildFallbackLogo();
-                            },
-                          );
+                          return _buildFallbackIllustration();
                         },
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
                   // Brand Title: SocialHive
                   RichText(
@@ -172,35 +166,118 @@ class SplashScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFallbackLogo() {
-    return Container(
-      width: 140,
-      height: 140,
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF6366F1),
-            Color(0xFF4F46E5),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF4F46E5).withValues(alpha: 0.35),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+  Widget _buildFallbackIllustration() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Container(
+          width: 240,
+          height: 240,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+              width: 1.5,
+            ),
           ),
-        ],
-      ),
-      child: const Center(
-        child: Icon(
-          Icons.auto_awesome_rounded,
-          color: Colors.white,
-          size: 54,
         ),
-      ),
+        Positioned(
+          bottom: 25,
+          child: Container(
+            width: 180,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: Color(0xFFEEECFF),
+              borderRadius: BorderRadius.all(Radius.elliptical(180, 40)),
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 45,
+          child: _build3DBriefcase(),
+        ),
+      ],
+    );
+  }
+
+  // 3D Styled Briefcase Widget
+  Widget _build3DBriefcase() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Handle
+        Container(
+          width: 50,
+          height: 22,
+          decoration: BoxDecoration(
+            color: const Color(0xFF4F46E5),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(12),
+              topRight: Radius.circular(12),
+            ),
+            border: Border.all(color: const Color(0xFF6366F1), width: 3),
+          ),
+        ),
+        // Briefcase Body
+        Container(
+          width: 140,
+          height: 100,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF6366F1),
+                Color(0xFF4F46E5),
+                Color(0xFF4338CA),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF4338CA).withValues(alpha: 0.35),
+                blurRadius: 18,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Strap details
+              Positioned(
+                top: 25,
+                child: Container(
+                  width: 140,
+                  height: 12,
+                  color: Colors.white.withValues(alpha: 0.1),
+                ),
+              ),
+              // Golden center lock badge
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFBBF24),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.lock_rounded,
+                  size: 16,
+                  color: Color(0xFF78350F),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
