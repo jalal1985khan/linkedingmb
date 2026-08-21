@@ -7,6 +7,8 @@ import '../../data/models/business_profile.dart';
 import '../../data/repositories/backend_business_repository.dart';
 import '../../shared/widgets/app_media_picker.dart';
 import '../dashboard/providers/dashboard_providers.dart';
+import '../dashboard/widgets/dashboard_header_bar.dart';
+import '../notifications/notification_end_drawer.dart';
 import 'business_flow_controller.dart';
 import 'providers/active_location_provider.dart';
 
@@ -258,7 +260,6 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
     if (activeLocState.isLoading && business == null) {
       return Scaffold(
         backgroundColor: bgColor,
-        appBar: _buildAppBar(context, textPrimary, cardBgColor, borderColor, isDark),
         body: const Center(
           child: CircularProgressIndicator(color: Color(0xFF4F46E5)),
         ),
@@ -269,53 +270,70 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
 
     return Scaffold(
       backgroundColor: bgColor,
-      appBar: _buildAppBar(context, textPrimary, cardBgColor, borderColor, isDark),
-      body: Column(
-        children: [
-          // Business Profile Header Card
-          _buildHeaderCard(context, business, profileScore, isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-
-          // Navigation Tabs (6 Tabs matching Screenshot)
-          Container(
-            color: cardBgColor,
-            child: TabBar(
-              controller: _tabController!,
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              labelColor: const Color(0xFF4F46E5),
-              unselectedLabelColor: textSecondary,
-              indicatorColor: const Color(0xFF4F46E5),
-              indicatorWeight: 3,
-              indicatorSize: TabBarIndicatorSize.tab,
-              labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
-              unselectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 13),
-              tabs: const [
-                Tab(icon: Icon(Icons.info_outline, size: 20), text: 'Basic Info'),
-                Tab(icon: Icon(Icons.interests_outlined, size: 20), text: 'Categories'),
-                Tab(icon: Icon(Icons.photo_library_outlined, size: 20), text: 'Photos & Logos'),
-                Tab(icon: Icon(Icons.calendar_month_outlined, size: 20), text: 'Bookings'),
-                Tab(icon: Icon(Icons.build_outlined, size: 20), text: 'Services'),
-                Tab(icon: Icon(Icons.more_horiz, size: 20), text: 'More'),
-              ],
+      endDrawer: const NotificationEndDrawer(),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Standard Fixed DashboardHeaderBar across the app
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 4.0),
+              child: DashboardHeaderBar(
+                title: 'Business Profile',
+                subtitle: 'Grow your business with SocialHive AI',
+                showBackButton: true,
+                showSparkle: true,
+                onBack: () => Navigator.of(context).maybePop(),
+                onOpenNotifications: () {
+                  Scaffold.of(context).openEndDrawer();
+                },
+              ),
             ),
-          ),
-          Divider(height: 1, thickness: 1, color: borderColor),
 
-          // Tab Views
-          Expanded(
-            child: TabBarView(
-              controller: _tabController!,
-              children: [
-                _buildBasicInfoTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-                _buildCategoriesTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
-                _buildPhotosLogosTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-                _buildBookingsTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
-                _buildServicesTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
-                _buildMoreTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
-              ],
+            // Business Profile Header Card
+            _buildHeaderCard(context, business, profileScore, isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+
+            // Navigation Tabs (6 Tabs matching Screenshot)
+            Container(
+              color: cardBgColor,
+              child: TabBar(
+                controller: _tabController!,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                labelColor: const Color(0xFF4F46E5),
+                unselectedLabelColor: textSecondary,
+                indicatorColor: const Color(0xFF4F46E5),
+                indicatorWeight: 3,
+                indicatorSize: TabBarIndicatorSize.tab,
+                labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
+                unselectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 13),
+                tabs: const [
+                  Tab(icon: Icon(Icons.info_outline, size: 20), text: 'Basic Info'),
+                  Tab(icon: Icon(Icons.interests_outlined, size: 20), text: 'Categories'),
+                  Tab(icon: Icon(Icons.photo_library_outlined, size: 20), text: 'Photos & Logos'),
+                  Tab(icon: Icon(Icons.calendar_month_outlined, size: 20), text: 'Bookings'),
+                  Tab(icon: Icon(Icons.build_outlined, size: 20), text: 'Services'),
+                  Tab(icon: Icon(Icons.more_horiz, size: 20), text: 'More'),
+                ],
+              ),
             ),
-          ),
-        ],
+            Divider(height: 1, thickness: 1, color: borderColor),
+
+            // Tab Views
+            Expanded(
+              child: TabBarView(
+                controller: _tabController!,
+                children: [
+                  _buildBasicInfoTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                  _buildCategoriesTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
+                  _buildPhotosLogosTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                  _buildBookingsTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
+                  _buildServicesTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
+                  _buildMoreTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -358,69 +376,6 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
           ),
         ),
       ),
-    );
-  }
-
-  PreferredSizeWidget _buildAppBar(
-    BuildContext context,
-    Color textPrimary,
-    Color cardBgColor,
-    Color borderColor,
-    bool isDark,
-  ) {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: textPrimary, size: 24),
-        onPressed: () => Navigator.of(context).maybePop(),
-      ),
-      title: Text(
-        'Business Profile',
-        style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18, color: textPrimary),
-      ),
-      actions: [
-        Padding(
-          padding: const EdgeInsets.only(right: 16),
-          child: Center(
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: cardBgColor,
-                shape: BoxShape.circle,
-                border: Border.all(color: borderColor),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Icon(Icons.notifications_none_rounded, size: 20, color: textPrimary),
-                  Positioned(
-                    top: 9,
-                    right: 10,
-                    child: Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF4F46E5),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
