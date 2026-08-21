@@ -58,47 +58,18 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
       child: SafeArea(
         child: Column(
           children: [
-            // 1. Header Bar with New Post Action Button
+            // 1. Standard Unified DashboardHeaderBar
             Padding(
               padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 4.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: DashboardHeaderBar(
-                      title: 'Post Queue & Scheduler',
-                      subtitle: activeLoc?.name ?? 'SocialHive',
-                      showSparkle: true,
-                      showBackButton: true,
-                      onBack: () => ref.handleSmartBack(context),
-                      onOpenNotifications: () {
-                        Scaffold.maybeOf(context)?.openEndDrawer();
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const CreatePostFlowScreen()),
-                      );
-                    },
-                    icon: const Icon(Icons.add_rounded, size: 16),
-                    label: Text(
-                      'New Post',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4F46E5),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    ),
-                  ),
-                ],
+              child: DashboardHeaderBar(
+                title: 'Post Queue & Scheduler',
+                subtitle: activeLoc?.name ?? 'SocialHive',
+                showSparkle: true,
+                showBackButton: true,
+                onBack: () => ref.handleSmartBack(context),
+                onOpenNotifications: () {
+                  Scaffold.maybeOf(context)?.openEndDrawer();
+                },
               ),
             ),
             const SizedBox(height: 6),
