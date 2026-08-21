@@ -18,49 +18,49 @@ class BusinessProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+  TabController? _tabController;
 
   // Basic Identity
-  late final TextEditingController _nameController;
-  late final TextEditingController _categoryController;
-  late final TextEditingController _descriptionController;
+  TextEditingController? _nameController;
+  TextEditingController? _categoryController;
+  TextEditingController? _descriptionController;
 
   // Contact Information
-  late final TextEditingController _phoneController;
-  late final TextEditingController _websiteController;
-  late final TextEditingController _emailController;
-  late final TextEditingController _businessEmailController;
+  TextEditingController? _phoneController;
+  TextEditingController? _websiteController;
+  TextEditingController? _emailController;
+  TextEditingController? _businessEmailController;
 
   // Categories tab
   List<TextEditingController> _additionalCategoryControllers = [];
 
   // Address & Hours
-  late final TextEditingController _addressController;
-  late final TextEditingController _cityController;
-  late final TextEditingController _postalController;
-  late final TextEditingController _stateController;
-  late final TextEditingController _countryController;
-  late final TextEditingController _hoursController;
+  TextEditingController? _addressController;
+  TextEditingController? _cityController;
+  TextEditingController? _postalController;
+  TextEditingController? _stateController;
+  TextEditingController? _countryController;
+  TextEditingController? _hoursController;
 
   // Bookings tab
-  late final TextEditingController _bookingUrlController;
+  TextEditingController? _bookingUrlController;
 
   // Photos & Logos tab
-  late final TextEditingController _logoUrlController;
-  late final TextEditingController _coverUrlController;
+  TextEditingController? _logoUrlController;
+  TextEditingController? _coverUrlController;
   List<TextEditingController> _photoUrlControllers = [];
 
   // Services tab
   List<String> _servicesList = [];
-  late final TextEditingController _newServiceController;
+  TextEditingController? _newServiceController;
 
   // Products tab
   List<Map<String, dynamic>> _productsList = [];
   bool _loadingProducts = false;
 
   // AI Persona
-  late final TextEditingController _audienceController;
-  late final TextEditingController _toneController;
+  TextEditingController? _audienceController;
+  TextEditingController? _toneController;
   double _postingFrequency = 4;
 
   bool _saving = false;
@@ -69,9 +69,8 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
-    _initControllers();
-    _descriptionController.addListener(() {
+    _ensureControllers();
+    _descriptionController?.addListener(() {
       if (mounted) setState(() {});
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -80,54 +79,63 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
     });
   }
 
-  void _initControllers() {
-    final business = ref.read(activeLocationProvider).activeLocation ?? ref.read(selectedBusinessProvider);
-    _nameController = TextEditingController(text: business?.name ?? 'SocialHive');
-    _categoryController = TextEditingController(text: business?.category.isNotEmpty == true ? business!.category : 'Marketing consultant');
-    _descriptionController = TextEditingController(
-      text: business?.descriptionText.isNotEmpty == true
-          ? business!.descriptionText
+  void _ensureControllers([BusinessProfile? business]) {
+    _tabController ??= TabController(length: 6, vsync: this);
+    final b = business ?? ref.read(activeLocationProvider).activeLocation ?? ref.read(selectedBusinessProvider);
+
+    _nameController ??= TextEditingController(text: b?.name ?? 'SocialHive');
+    _categoryController ??= TextEditingController(text: b?.category.isNotEmpty == true ? b!.category : 'Marketing consultant');
+    _descriptionController ??= TextEditingController(
+      text: b?.descriptionText.isNotEmpty == true
+          ? b!.descriptionText
           : 'Elevate your online presence with SocialHive, a results-driven marketing consultant helping brands grow through smart strategies, content, and automation.',
     );
 
-    _phoneController = TextEditingController(text: business?.phone.isNotEmpty == true ? business!.phone : '07553 496132');
-    _websiteController = TextEditingController(text: business?.website.isNotEmpty == true ? business!.website : 'www.socialhive.pro');
-    _emailController = TextEditingController(text: 'hello@socialhive.pro');
-    _businessEmailController = TextEditingController(text: 'info@socialhive.pro');
+    _phoneController ??= TextEditingController(text: b?.phone.isNotEmpty == true ? b!.phone : '07553 496132');
+    _websiteController ??= TextEditingController(text: b?.website.isNotEmpty == true ? b!.website : 'www.socialhive.pro');
+    _emailController ??= TextEditingController(text: 'hello@socialhive.pro');
+    _businessEmailController ??= TextEditingController(text: 'info@socialhive.pro');
 
-    _additionalCategoryControllers = (business?.additionalCategoriesList ?? [])
-        .map((cat) => TextEditingController(text: cat))
-        .toList();
+    if (_additionalCategoryControllers.isEmpty && (b?.additionalCategoriesList.isNotEmpty == true)) {
+      _additionalCategoryControllers = b!.additionalCategoriesList
+          .map((cat) => TextEditingController(text: cat))
+          .toList();
+    }
 
-    _addressController = TextEditingController(text: business?.address ?? '');
-    _cityController = TextEditingController(text: business?.cityText ?? '');
-    _postalController = TextEditingController(text: business?.postalText ?? '');
-    _stateController = TextEditingController(text: business?.stateText ?? '');
-    _countryController = TextEditingController(text: business?.countryCodeText ?? 'US');
-    _hoursController = TextEditingController(text: business?.hoursSummary ?? 'Mon - Fri: 9:00 AM - 6:00 PM');
+    _addressController ??= TextEditingController(text: b?.address ?? '');
+    _cityController ??= TextEditingController(text: b?.cityText ?? '');
+    _postalController ??= TextEditingController(text: b?.postalText ?? '');
+    _stateController ??= TextEditingController(text: b?.stateText ?? '');
+    _countryController ??= TextEditingController(text: b?.countryCodeText ?? 'US');
+    _hoursController ??= TextEditingController(text: b?.hoursSummary ?? 'Mon - Fri: 9:00 AM - 6:00 PM');
 
-    _bookingUrlController = TextEditingController(text: business?.bookingUrlText ?? 'https://www.socialhive.pro/signup');
-    _logoUrlController = TextEditingController(text: business?.logoUrlText ?? '');
-    _coverUrlController = TextEditingController(text: business?.coverPhotoUrlText ?? '');
-    _photoUrlControllers = (business?.additionalPhotosList ?? [])
-        .map((url) => TextEditingController(text: url))
-        .toList();
+    _bookingUrlController ??= TextEditingController(text: b?.bookingUrlText ?? 'https://www.socialhive.pro/signup');
+    _logoUrlController ??= TextEditingController(text: b?.logoUrlText ?? '');
+    _coverUrlController ??= TextEditingController(text: b?.coverPhotoUrlText ?? '');
 
-    _servicesList = business?.servicesList.isNotEmpty == true
-        ? List<String>.from(business!.servicesList)
-        : [
-            'Digital Marketing Strategy',
-            'Google My Business Optimization',
-            'Local SEO & Reviews Management',
-            'Social Media Content Creation',
-            'Brand Identity & Design',
-            'Automated Lead Generation',
-          ];
-    _newServiceController = TextEditingController();
+    if (_photoUrlControllers.isEmpty && (b?.additionalPhotosList.isNotEmpty == true)) {
+      _photoUrlControllers = b!.additionalPhotosList
+          .map((url) => TextEditingController(text: url))
+          .toList();
+    }
 
-    _audienceController = TextEditingController(text: business?.targetAudience ?? 'Local business owners and entrepreneurs');
-    _toneController = TextEditingController(text: business?.brandTone ?? 'Professional, engaging, and trustworthy');
-    _postingFrequency = (business?.postingFrequency ?? 4).toDouble();
+    if (_servicesList.isEmpty) {
+      _servicesList = b?.servicesList.isNotEmpty == true
+          ? List<String>.from(b!.servicesList)
+          : [
+              'Digital Marketing Strategy',
+              'Google My Business Optimization',
+              'Local SEO & Reviews Management',
+              'Social Media Content Creation',
+              'Brand Identity & Design',
+              'Automated Lead Generation',
+            ];
+    }
+    _newServiceController ??= TextEditingController();
+
+    _audienceController ??= TextEditingController(text: b?.targetAudience ?? 'Local business owners and entrepreneurs');
+    _toneController ??= TextEditingController(text: b?.brandTone ?? 'Professional, engaging, and trustworthy');
+    _postingFrequency = (b?.postingFrequency ?? 4).toDouble();
   }
 
   Future<void> _loadProducts() async {
@@ -160,20 +168,20 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
       ref.read(selectedBusinessProvider.notifier).setBusiness(detailed);
 
       setState(() {
-        if (detailed.name.isNotEmpty) _nameController.text = detailed.name;
-        if (detailed.category.isNotEmpty) _categoryController.text = detailed.category;
-        if (detailed.descriptionText.isNotEmpty) _descriptionController.text = detailed.descriptionText;
-        if (detailed.phone.isNotEmpty) _phoneController.text = detailed.phone;
-        if (detailed.website.isNotEmpty) _websiteController.text = detailed.website;
-        if (detailed.address.isNotEmpty) _addressController.text = detailed.address;
-        if (detailed.cityText.isNotEmpty) _cityController.text = detailed.cityText;
-        if (detailed.postalText.isNotEmpty) _postalController.text = detailed.postalText;
-        if (detailed.stateText.isNotEmpty) _stateController.text = detailed.stateText;
-        if (detailed.countryCodeText.isNotEmpty) _countryController.text = detailed.countryCodeText;
-        if (detailed.hoursSummary.isNotEmpty) _hoursController.text = detailed.hoursSummary;
-        if (detailed.bookingUrlText.isNotEmpty) _bookingUrlController.text = detailed.bookingUrlText;
-        if (detailed.logoUrlText.isNotEmpty) _logoUrlController.text = detailed.logoUrlText;
-        if (detailed.coverPhotoUrlText.isNotEmpty) _coverUrlController.text = detailed.coverPhotoUrlText;
+        if (detailed.name.isNotEmpty) _nameController?.text = detailed.name;
+        if (detailed.category.isNotEmpty) _categoryController?.text = detailed.category;
+        if (detailed.descriptionText.isNotEmpty) _descriptionController?.text = detailed.descriptionText;
+        if (detailed.phone.isNotEmpty) _phoneController?.text = detailed.phone;
+        if (detailed.website.isNotEmpty) _websiteController?.text = detailed.website;
+        if (detailed.address.isNotEmpty) _addressController?.text = detailed.address;
+        if (detailed.cityText.isNotEmpty) _cityController?.text = detailed.cityText;
+        if (detailed.postalText.isNotEmpty) _postalController?.text = detailed.postalText;
+        if (detailed.stateText.isNotEmpty) _stateController?.text = detailed.stateText;
+        if (detailed.countryCodeText.isNotEmpty) _countryController?.text = detailed.countryCodeText;
+        if (detailed.hoursSummary.isNotEmpty) _hoursController?.text = detailed.hoursSummary;
+        if (detailed.bookingUrlText.isNotEmpty) _bookingUrlController?.text = detailed.bookingUrlText;
+        if (detailed.logoUrlText.isNotEmpty) _logoUrlController?.text = detailed.logoUrlText;
+        if (detailed.coverPhotoUrlText.isNotEmpty) _coverUrlController?.text = detailed.coverPhotoUrlText;
 
         if (detailed.additionalCategoriesList.isNotEmpty) {
           _additionalCategoryControllers = detailed.additionalCategoriesList
@@ -194,32 +202,32 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
 
   @override
   void dispose() {
-    _tabController.dispose();
-    _nameController.dispose();
-    _categoryController.dispose();
-    _descriptionController.dispose();
-    _phoneController.dispose();
-    _websiteController.dispose();
-    _emailController.dispose();
-    _businessEmailController.dispose();
+    _tabController?.dispose();
+    _nameController?.dispose();
+    _categoryController?.dispose();
+    _descriptionController?.dispose();
+    _phoneController?.dispose();
+    _websiteController?.dispose();
+    _emailController?.dispose();
+    _businessEmailController?.dispose();
     for (final c in _additionalCategoryControllers) {
       c.dispose();
     }
-    _addressController.dispose();
-    _cityController.dispose();
-    _postalController.dispose();
-    _stateController.dispose();
-    _countryController.dispose();
-    _hoursController.dispose();
-    _bookingUrlController.dispose();
-    _logoUrlController.dispose();
-    _coverUrlController.dispose();
+    _addressController?.dispose();
+    _cityController?.dispose();
+    _postalController?.dispose();
+    _stateController?.dispose();
+    _countryController?.dispose();
+    _hoursController?.dispose();
+    _bookingUrlController?.dispose();
+    _logoUrlController?.dispose();
+    _coverUrlController?.dispose();
     for (final c in _photoUrlControllers) {
       c.dispose();
     }
-    _newServiceController.dispose();
-    _audienceController.dispose();
-    _toneController.dispose();
+    _newServiceController?.dispose();
+    _audienceController?.dispose();
+    _toneController?.dispose();
     super.dispose();
   }
 
@@ -229,6 +237,8 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
     final selectedBusiness = ref.watch(selectedBusinessProvider);
     final business = activeLocState.activeLocation ?? selectedBusiness;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    _ensureControllers(business);
 
     final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
     final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
@@ -260,7 +270,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
           Container(
             color: cardBgColor,
             child: TabBar(
-              controller: _tabController,
+              controller: _tabController!,
               isScrollable: true,
               tabAlignment: TabAlignment.start,
               labelColor: const Color(0xFF4F46E5),
@@ -285,7 +295,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
           // Tab Views
           Expanded(
             child: TabBarView(
-              controller: _tabController,
+              controller: _tabController!,
               children: [
                 _buildBasicInfoTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
                 _buildCategoriesTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
@@ -415,7 +425,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
     Color textPrimary,
     Color textSecondary,
   ) {
-    final displayName = _nameController.text.isNotEmpty ? _nameController.text : (business?.name ?? 'SocialHive');
+    final displayName = _nameController?.text.isNotEmpty == true ? _nameController!.text : (business?.name ?? 'SocialHive');
     final displayIdentifier = business?.phone.isNotEmpty == true
         ? business!.phone
         : (business?.storeCodeText.isNotEmpty == true
@@ -629,7 +639,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
           subtitle: 'Core business details that represent your brand.',
           children: [
             _buildTextField(
-              controller: _nameController,
+              controller: _nameController!,
               label: 'Business Title / Name',
               hint: 'SocialHive',
               icon: Icons.storefront_outlined,
@@ -693,7 +703,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
               child: Column(
                 children: [
                   TextField(
-                    controller: _descriptionController,
+                    controller: _descriptionController!,
                     maxLines: 4,
                     maxLength: 750,
                     style: GoogleFonts.inter(fontSize: 13.5, color: textPrimary, height: 1.4),
@@ -708,7 +718,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                   Align(
                     alignment: Alignment.bottomRight,
                     child: Text(
-                      '${_descriptionController.text.length}/750',
+                      '${_descriptionController!.text.length}/750',
                       style: GoogleFonts.inter(
                         fontSize: 11,
                         color: textSecondary,
@@ -742,7 +752,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                         children: [
                           Expanded(
                             child: _buildTextField(
-                              controller: _phoneController,
+                              controller: _phoneController!,
                               label: 'Phone Number',
                               hint: '07553 496132',
                               icon: Icons.phone_outlined,
@@ -755,7 +765,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                           const SizedBox(width: 14),
                           Expanded(
                             child: _buildTextField(
-                              controller: _websiteController,
+                              controller: _websiteController!,
                               label: 'Website',
                               hint: 'www.socialhive.pro',
                               icon: Icons.language_outlined,
@@ -772,7 +782,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                         children: [
                           Expanded(
                             child: _buildTextField(
-                              controller: _emailController,
+                              controller: _emailController!,
                               label: 'Email Address',
                               hint: 'hello@socialhive.pro',
                               icon: Icons.mail_outline,
@@ -785,7 +795,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                           const SizedBox(width: 14),
                           Expanded(
                             child: _buildTextField(
-                              controller: _businessEmailController,
+                              controller: _businessEmailController!,
                               label: 'Business Email',
                               hint: 'info@socialhive.pro',
                               icon: Icons.email_outlined,
@@ -803,7 +813,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                   return Column(
                     children: [
                       _buildTextField(
-                        controller: _phoneController,
+                        controller: _phoneController!,
                         label: 'Phone Number',
                         hint: '07553 496132',
                         icon: Icons.phone_outlined,
@@ -814,7 +824,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                       ),
                       const SizedBox(height: 14),
                       _buildTextField(
-                        controller: _websiteController,
+                        controller: _websiteController!,
                         label: 'Website',
                         hint: 'www.socialhive.pro',
                         icon: Icons.language_outlined,
@@ -825,7 +835,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                       ),
                       const SizedBox(height: 14),
                       _buildTextField(
-                        controller: _emailController,
+                        controller: _emailController!,
                         label: 'Email Address',
                         hint: 'hello@socialhive.pro',
                         icon: Icons.mail_outline,
@@ -836,7 +846,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                       ),
                       const SizedBox(height: 14),
                       _buildTextField(
-                        controller: _businessEmailController,
+                        controller: _businessEmailController!,
                         label: 'Business Email',
                         hint: 'info@socialhive.pro',
                         icon: Icons.email_outlined,
@@ -890,7 +900,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    _categoryController.text.isNotEmpty ? _categoryController.text : 'Marketing consultant',
+                    _categoryController?.text.isNotEmpty == true ? _categoryController!.text : 'Marketing consultant',
                     style: GoogleFonts.inter(fontSize: 14, color: textPrimary, fontWeight: FontWeight.w500),
                   ),
                 ),
@@ -999,7 +1009,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                             title: Text(name, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600)),
                             onTap: () {
                               setState(() {
-                                _categoryController.text = name;
+                                _categoryController?.text = name;
                               });
                               Navigator.pop(modalCtx);
                             },
@@ -1026,7 +1036,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                           backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
                           onPressed: () {
                             setState(() {
-                              _categoryController.text = cat;
+                              _categoryController?.text = cat;
                             });
                             Navigator.pop(modalCtx);
                           },
@@ -1183,20 +1193,20 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
           subtitle: 'Manage how your business appears visually on Google Maps and Search.',
           children: [
             AppMediaPicker(
-              initialUrl: _logoUrlController.text,
+              initialUrl: _logoUrlController?.text ?? '',
               label: 'Business Logo',
               subtitle: 'Help customers recognize your business on Google.',
               onMediaSelected: (pathOrUrl) {
-                _logoUrlController.text = pathOrUrl;
+                _logoUrlController?.text = pathOrUrl;
               },
             ),
             const SizedBox(height: 16),
             AppMediaPicker(
-              initialUrl: _coverUrlController.text,
+              initialUrl: _coverUrlController?.text ?? '',
               label: 'Cover Photo',
               subtitle: 'Showcase the personality of your business. Main photo customers see.',
               onMediaSelected: (pathOrUrl) {
-                _coverUrlController.text = pathOrUrl;
+                _coverUrlController?.text = pathOrUrl;
               },
             ),
             const SizedBox(height: 16),
@@ -1233,7 +1243,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
           subtitle: 'Let customers book you directly through custom links to your booking page.',
           children: [
             _buildTextField(
-              controller: _bookingUrlController,
+              controller: _bookingUrlController!,
               label: 'Booking URL',
               hint: 'https://www.socialhive.pro/signup',
               icon: Icons.link_outlined,
@@ -1259,7 +1269,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
           borderColor: borderColor,
           textPrimary: textPrimary,
           textSecondary: textSecondary,
-          title: _categoryController.text.isNotEmpty ? _categoryController.text : 'Marketing consultant',
+          title: _categoryController?.text.isNotEmpty == true ? _categoryController!.text : 'Marketing consultant',
           subtitle: 'Specific services offered under this primary business category.',
           children: [
             for (int i = 0; i < _servicesList.length; i++)
@@ -1303,11 +1313,11 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
                   onPressed: () {
-                    final text = _newServiceController.text.trim();
+                    final text = _newServiceController?.text.trim() ?? '';
                     if (text.isNotEmpty) {
                       setState(() {
                         _servicesList.add(text);
-                        _newServiceController.clear();
+                        _newServiceController?.clear();
                       });
                     }
                   },
@@ -1344,7 +1354,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
           subtitle: 'Physical address visible to Google Search & Maps users.',
           children: [
             _buildTextField(
-              controller: _addressController,
+              controller: _addressController!,
               label: 'Street Address',
               hint: '123 Main Street',
               icon: Icons.map_outlined,
@@ -1358,7 +1368,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
               children: [
                 Expanded(
                   child: _buildTextField(
-                    controller: _cityController,
+                    controller: _cityController!,
                     label: 'City',
                     hint: 'Bengaluru',
                     icon: Icons.location_city_outlined,
@@ -1371,7 +1381,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildTextField(
-                    controller: _postalController,
+                    controller: _postalController!,
                     label: 'Postal Code',
                     hint: '560001',
                     icon: Icons.markunread_outlined,
@@ -1385,7 +1395,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
             ),
             const SizedBox(height: 14),
             _buildTextField(
-              controller: _hoursController,
+              controller: _hoursController!,
               label: 'Operating Hours Summary',
               hint: 'Mon - Fri: 9:00 AM - 6:00 PM',
               icon: Icons.schedule_outlined,
@@ -1535,9 +1545,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
   }
 
   Future<void> _enhanceDescriptionWithAI() async {
-    final businessName = _nameController.text.trim();
-    final category = _categoryController.text.trim();
-    final currentDescription = _descriptionController.text.trim();
+    final businessName = _nameController?.text.trim() ?? '';
+    final category = _categoryController?.text.trim() ?? '';
+    final currentDescription = _descriptionController?.text.trim() ?? '';
 
     if (businessName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1557,7 +1567,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
 
       if (mounted && enhanced.isNotEmpty) {
         setState(() {
-          _descriptionController.text = enhanced;
+          _descriptionController?.text = enhanced;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1609,25 +1619,25 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
       );
 
       final updated = baseProfile.copyWith(
-        name: _nameController.text.trim(),
-        category: _categoryController.text.trim(),
-        description: _descriptionController.text.trim(),
+        name: _nameController?.text.trim() ?? '',
+        category: _categoryController?.text.trim() ?? '',
+        description: _descriptionController?.text.trim() ?? '',
         additionalCategories: addCats,
-        address: _addressController.text.trim(),
-        city: _cityController.text.trim(),
-        postal: _postalController.text.trim(),
-        state: _stateController.text.trim(),
-        countryCode: _countryController.text.trim(),
-        phone: _phoneController.text.trim(),
-        website: _websiteController.text.trim(),
-        bookingUrl: _bookingUrlController.text.trim(),
-        logoUrl: _logoUrlController.text.trim(),
-        coverPhotoUrl: _coverUrlController.text.trim(),
+        address: _addressController?.text.trim() ?? '',
+        city: _cityController?.text.trim() ?? '',
+        postal: _postalController?.text.trim() ?? '',
+        state: _stateController?.text.trim() ?? '',
+        countryCode: _countryController?.text.trim() ?? '',
+        phone: _phoneController?.text.trim() ?? '',
+        website: _websiteController?.text.trim() ?? '',
+        bookingUrl: _bookingUrlController?.text.trim() ?? '',
+        logoUrl: _logoUrlController?.text ?? '',
+        coverPhotoUrl: _coverUrlController?.text ?? '',
         additionalPhotos: addPhotos,
         services: _servicesList,
-        hoursSummary: _hoursController.text.trim(),
-        targetAudience: _audienceController.text.trim(),
-        brandTone: _toneController.text.trim(),
+        hoursSummary: _hoursController?.text.trim() ?? '',
+        targetAudience: _audienceController?.text.trim() ?? '',
+        brandTone: _toneController?.text.trim() ?? '',
         postingFrequency: _postingFrequency.round(),
       );
 
