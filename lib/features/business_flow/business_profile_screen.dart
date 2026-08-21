@@ -251,7 +251,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
 
     _ensureControllers(business);
 
-    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final bgGradient = isDark ? AppColors.backgroundGradientDark : AppColors.backgroundGradientLight;
     final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
     final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
     final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
@@ -259,9 +259,11 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
 
     if (activeLocState.isLoading && business == null) {
       return Scaffold(
-        backgroundColor: bgColor,
-        body: const Center(
-          child: CircularProgressIndicator(color: Color(0xFF4F46E5)),
+        body: Container(
+          decoration: BoxDecoration(gradient: bgGradient),
+          child: const Center(
+            child: CircularProgressIndicator(color: Color(0xFF4F46E5)),
+          ),
         ),
       );
     }
@@ -269,25 +271,27 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
     final profileScore = business != null ? ref.watch(profileCompletenessProvider(business)) : 100;
 
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFFAF8FF),
       endDrawer: const NotificationEndDrawer(),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Standard Fixed DashboardHeaderBar across the app (Always pinned at top)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 4.0),
-              child: DashboardHeaderBar(
-                title: 'Business Profile',
-                subtitle: 'Grow your business with SocialHive AI',
-                showBackButton: true,
-                showSparkle: true,
-                onBack: () => Navigator.of(context).maybePop(),
-                onOpenNotifications: () {
-                  Scaffold.of(context).openEndDrawer();
-                },
+      body: Container(
+        decoration: BoxDecoration(gradient: bgGradient),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Standard Fixed DashboardHeaderBar across the app (Always pinned at top)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 4.0),
+                child: DashboardHeaderBar(
+                  title: 'Business Profile',
+                  subtitle: 'Grow your business with SocialHive AI',
+                  showBackButton: true,
+                  showSparkle: true,
+                  onBack: () => Navigator.of(context).maybePop(),
+                  onOpenNotifications: () {
+                    Scaffold.of(context).openEndDrawer();
+                  },
+                ),
               ),
-            ),
 
             // Collapsible Profile Card on scroll with Pinned TabBar
             Expanded(
@@ -342,7 +346,8 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
           ],
         ),
       ),
-      bottomNavigationBar: Container(
+    ),
+    bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
           color: cardBgColor,

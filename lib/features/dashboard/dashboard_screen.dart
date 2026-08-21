@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_colors.dart';
 import '../../data/models/business_profile.dart';
 import '../business_flow/providers/active_location_provider.dart';
 import '../notifications/notification_end_drawer.dart';
@@ -29,20 +30,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgGradient = isDark ? AppColors.backgroundGradientDark : AppColors.backgroundGradientLight;
     final body = _buildBody(context);
+
+    final gradientBody = Container(
+      decoration: BoxDecoration(gradient: bgGradient),
+      child: body,
+    );
 
     if (!widget.showScaffold) {
       return Material(
-        color: const Color(0xFFFAF8FF),
-        child: body,
+        color: Colors.transparent,
+        child: gradientBody,
       );
     }
 
     return Scaffold(
       key: _scaffoldKey,
-      backgroundColor: const Color(0xFFFAF8FF),
+      backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFFAF8FF),
       endDrawer: const NotificationEndDrawer(),
-      body: body,
+      body: gradientBody,
     );
   }
 

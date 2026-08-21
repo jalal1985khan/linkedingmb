@@ -337,11 +337,18 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        top: false,
-        child: IndexedStack(
-          index: _index,
-          children: screens,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.backgroundGradientDark
+              : AppColors.backgroundGradientLight,
+        ),
+        child: SafeArea(
+          top: false,
+          child: IndexedStack(
+            index: _index,
+            children: screens,
+          ),
         ),
       ),
       bottomNavigationBar: Container(
