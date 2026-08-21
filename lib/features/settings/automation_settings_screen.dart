@@ -5,6 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../auth/auth_controller.dart';
 import '../business_flow/providers/active_location_provider.dart';
+import '../dashboard/widgets/dashboard_header_bar.dart';
+import '../notifications/notification_end_drawer.dart';
+import '../shell/providers/shell_nav_provider.dart';
 import 'automation_settings_controller.dart';
 
 class AutomationSettingsScreen extends ConsumerStatefulWidget {
@@ -766,27 +769,53 @@ class _AutomationSettingsScreenState extends ConsumerState<AutomationSettingsScr
           ),
     );
 
-    if (!widget.showScaffold) {
-      return Scaffold(backgroundColor: const Color(0xFFF8FAFC), body: body);
-    }
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgGradient = isDark
+        ? const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0F172A), Color(0xFF0B0F19)],
+          )
+        : const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF0F4FF), Color(0xFFFAF8FF), Color(0xFFFFFFFF)],
+            stops: [0.0, 0.35, 1.0],
+          );
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1E1B4B)),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: Text('GMB Auto-Pilot Hub', style: GoogleFonts.plusJakartaSans(color: const Color(0xFF1E1B4B), fontWeight: FontWeight.w700, fontSize: 18)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: const Color(0xFFE2E8F0), height: 1),
+      backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFFAF8FF),
+      endDrawer: const NotificationEndDrawer(),
+      body: Container(
+        decoration: BoxDecoration(gradient: bgGradient),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 4.0),
+                child: DashboardHeaderBar(
+                  title: 'Auto-Pilot Hub',
+                  subtitle: activeLocation?.name ?? 'Automation Rules',
+                  showSparkle: true,
+                  showBackButton: widget.showScaffold,
+                  onBack: () {
+                    if (widget.showScaffold) {
+                      Navigator.of(context).maybePop();
+                    } else {
+                      ref.handleSmartBack(context);
+                    }
+                  },
+                  onOpenNotifications: () {
+                    Scaffold.maybeOf(context)?.openEndDrawer();
+                  },
+                ),
+              ),
+              const SizedBox(height: 6),
+              Expanded(child: body),
+            ],
+          ),
         ),
       ),
-      body: body,
     );
   }
 }
