@@ -44,13 +44,13 @@ class _BlueprintConfigModalState extends State<BlueprintConfigModal> {
   final TextEditingController _goalsController = TextEditingController();
 
   final List<Map<String, dynamic>> _availableFormats = [
-    {'id': 'TEXT_IMAGE', 'label': 'Photo & Graphic', 'icon': Icons.image_rounded},
-    {'id': 'VIDEO', 'label': 'Video Script', 'icon': Icons.videocam_rounded},
-    {'id': 'OFFER', 'label': 'Special Offer', 'icon': Icons.local_offer_rounded},
-    {'id': 'EVENT', 'label': 'Event / Meetup', 'icon': Icons.event_rounded},
-    {'id': 'PRODUCT', 'label': 'Product Spotlight', 'icon': Icons.shopping_bag_rounded},
-    {'id': 'SERVICE', 'label': 'Service Feature', 'icon': Icons.business_center_rounded},
-    {'id': 'TEXT_ONLY', 'label': 'Text Announcement', 'icon': Icons.short_text_rounded},
+    {'id': 'TEXT_IMAGE', 'label': 'Photo & Graphic', 'icon': Icons.image_outlined},
+    {'id': 'VIDEO', 'label': 'Video Script', 'icon': Icons.videocam_outlined},
+    {'id': 'OFFER', 'label': 'Special Offer', 'icon': Icons.local_offer_outlined},
+    {'id': 'EVENT', 'label': 'Event / Meetup', 'icon': Icons.event_outlined},
+    {'id': 'PRODUCT', 'label': 'Product Spotlight', 'icon': Icons.shopping_bag_outlined},
+    {'id': 'SERVICE', 'label': 'Service Feature', 'icon': Icons.business_center_outlined},
+    {'id': 'TEXT_ONLY', 'label': 'Text Announcement', 'icon': Icons.notes_rounded},
   ];
 
   @override
@@ -92,7 +92,7 @@ class _BlueprintConfigModalState extends State<BlueprintConfigModal> {
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.88,
+        maxHeight: MediaQuery.of(context).size.height * 0.90,
       ),
       decoration: BoxDecoration(
         color: cardBgColor,
@@ -122,7 +122,7 @@ class _BlueprintConfigModalState extends State<BlueprintConfigModal> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEEF2FF),
+                    color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.settings_suggest_rounded, color: Color(0xFF4F46E5), size: 22),
@@ -178,6 +178,15 @@ class _BlueprintConfigModalState extends State<BlueprintConfigModal> {
                         decoration: BoxDecoration(
                           color: _mode == 0 ? const Color(0xFF4F46E5) : Colors.transparent,
                           borderRadius: BorderRadius.circular(9),
+                          boxShadow: _mode == 0
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFF4F46E5).withValues(alpha: 0.25),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
                         ),
                         alignment: Alignment.center,
                         child: Text(
@@ -200,6 +209,15 @@ class _BlueprintConfigModalState extends State<BlueprintConfigModal> {
                         decoration: BoxDecoration(
                           color: _mode == 1 ? const Color(0xFF4F46E5) : Colors.transparent,
                           borderRadius: BorderRadius.circular(9),
+                          boxShadow: _mode == 1
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFF4F46E5).withValues(alpha: 0.25),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
                         ),
                         alignment: Alignment.center,
                         child: Text(
@@ -222,7 +240,7 @@ class _BlueprintConfigModalState extends State<BlueprintConfigModal> {
           // Scrollable Form Content
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: _mode == 0
                   ? _buildLocationContextForm(isDark, cardBgColor, borderColor, textPrimary, textSecondary)
                   : _buildWebCrawlerForm(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
@@ -253,36 +271,53 @@ class _BlueprintConfigModalState extends State<BlueprintConfigModal> {
                 const SizedBox(width: 12),
                 Expanded(
                   flex: 2,
-                  child: ElevatedButton.icon(
-                    onPressed: widget.isGenerating
-                        ? null
-                        : () {
-                            Navigator.pop(context);
-                            if (_mode == 0) {
-                              widget.onGenerateLocation(_postsPerWeek, _selectedFormats, _autoSchedule);
-                            } else {
-                              widget.onGenerateWebsite({
-                                'websiteUrl': _websiteUrlController.text.trim(),
-                                'targetAudience': _targetAudienceController.text.trim(),
-                                'brandPersona': _brandPersonaController.text.trim(),
-                                'productsServices': _productsServicesController.text.trim(),
-                                'goals': _goalsController.text.trim(),
-                              });
-                            }
-                          },
-                    icon: widget.isGenerating
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Icon(Icons.bolt_rounded, size: 18),
-                    label: Text(
-                      widget.isGenerating ? 'Generating Strategy...' : 'Generate Blueprint',
-                      style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 13.5),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF4F46E5), Color(0xFF3730A3)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4F46E5),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(vertical: 13),
+                    child: ElevatedButton.icon(
+                      onPressed: widget.isGenerating
+                          ? null
+                          : () {
+                              Navigator.pop(context);
+                              if (_mode == 0) {
+                                widget.onGenerateLocation(_postsPerWeek, _selectedFormats, _autoSchedule);
+                              } else {
+                                widget.onGenerateWebsite({
+                                  'websiteUrl': _websiteUrlController.text.trim(),
+                                  'targetAudience': _targetAudienceController.text.trim(),
+                                  'brandPersona': _brandPersonaController.text.trim(),
+                                  'productsServices': _productsServicesController.text.trim(),
+                                  'goals': _goalsController.text.trim(),
+                                });
+                              }
+                            },
+                      icon: widget.isGenerating
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Icon(Icons.bolt_rounded, size: 18),
+                      label: Text(
+                        widget.isGenerating ? 'Generating Strategy...' : 'Generate Blueprint',
+                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 13.5),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 13),
+                      ),
                     ),
                   ),
                 ),
@@ -322,13 +357,27 @@ class _BlueprintConfigModalState extends State<BlueprintConfigModal> {
             return Expanded(
               child: GestureDetector(
                 onTap: () => setState(() => _postsPerWeek = p),
-                child: Container(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
                   margin: EdgeInsets.only(right: p == 7 ? 0 : 8),
                   padding: const EdgeInsets.symmetric(vertical: 11),
                   decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFF4F46E5) : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC)),
+                    color: isSelected
+                        ? const Color(0xFF4F46E5)
+                        : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC)),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: isSelected ? const Color(0xFF4F46E5) : borderColor),
+                    border: Border.all(
+                      color: isSelected ? const Color(0xFF4F46E5) : borderColor,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
                   ),
                   alignment: Alignment.center,
                   child: Text(
@@ -370,41 +419,50 @@ class _BlueprintConfigModalState extends State<BlueprintConfigModal> {
           itemBuilder: (context, index) {
             final fmt = _availableFormats[index];
             final id = fmt['id'] as String;
+            final icon = fmt['icon'] as IconData;
             final isChecked = _selectedFormats.contains(id);
 
             return GestureDetector(
               onTap: () => _toggleFormat(id),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 140),
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: isChecked
-                      ? const Color(0xFF4F46E5).withValues(alpha: 0.08)
+                      ? (isDark ? const Color(0xFF312E81).withValues(alpha: 0.4) : const Color(0xFFEEF2FF))
                       : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC)),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                     color: isChecked ? const Color(0xFF4F46E5) : borderColor,
+                    width: isChecked ? 1.2 : 1.0,
                   ),
                 ),
                 child: Row(
                   children: [
                     Icon(
-                      isChecked ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                      icon,
                       color: isChecked ? const Color(0xFF4F46E5) : textSecondary,
-                      size: 18,
+                      size: 16,
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: 7),
                     Expanded(
                       child: Text(
                         fmt['label'] as String,
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11.5,
                           fontWeight: isChecked ? FontWeight.w700 : FontWeight.w500,
-                          color: textPrimary,
+                          color: isChecked ? textPrimary : textSecondary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (isChecked)
+                      const Icon(
+                        Icons.check_circle_rounded,
+                        color: Color(0xFF4F46E5),
+                        size: 15,
+                      ),
                   ],
                 ),
               ),
@@ -413,47 +471,69 @@ class _BlueprintConfigModalState extends State<BlueprintConfigModal> {
         ),
         const SizedBox(height: 16),
 
-        // Auto-schedule Checkbox
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor),
-          ),
-          child: Row(
-            children: [
-              Checkbox(
-                value: _autoSchedule,
-                activeColor: const Color(0xFF4F46E5),
-                onChanged: (val) => setState(() => _autoSchedule = val ?? false),
+        // Auto-schedule Toggle Card
+        GestureDetector(
+          onTap: () => setState(() => _autoSchedule = !_autoSchedule),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: _autoSchedule ? const Color(0xFF4F46E5).withValues(alpha: 0.4) : borderColor,
               ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Auto-schedule to Post Queue',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w700,
-                        color: textPrimary,
-                      ),
-                    ),
-                    Text(
-                      'Automatically push generated posts into the scheduler queue.',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
-                        color: textSecondary,
-                      ),
-                    ),
-                  ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(7),
+                  decoration: BoxDecoration(
+                    color: _autoSchedule
+                        ? const Color(0xFF4F46E5).withValues(alpha: 0.1)
+                        : (isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.schedule_send_rounded,
+                    color: _autoSchedule ? const Color(0xFF4F46E5) : textSecondary,
+                    size: 18,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Auto-schedule to Post Queue',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Directly queue rendered posts into calendar',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          color: textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: _autoSchedule,
+                  activeThumbColor: const Color(0xFF4F46E5),
+                  activeTrackColor: const Color(0xFFC7D2FE),
+                  onChanged: (val) => setState(() => _autoSchedule = val),
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
       ],
     );
   }
@@ -503,7 +583,7 @@ class _BlueprintConfigModalState extends State<BlueprintConfigModal> {
         _buildTextField('Featured Products / Services (comma separated)', _productsServicesController, 'SEO Audit, Marketing Consulting, Web Design', textPrimary, textSecondary, borderColor),
         const SizedBox(height: 12),
         _buildTextField('Primary Business Goals (comma separated)', _goalsController, 'Lead Generation, Local Awareness, Bookings', textPrimary, textSecondary, borderColor),
-        const SizedBox(height: 16),
+        const SizedBox(height: 8),
       ],
     );
   }
