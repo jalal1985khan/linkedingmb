@@ -17,7 +17,9 @@ class BusinessProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<BusinessProfileScreen> createState() => _BusinessProfileScreenState();
 }
 
-class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
+class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
   // Basic Identity
   late final TextEditingController _nameController;
   late final TextEditingController _categoryController;
@@ -30,7 +32,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   late final TextEditingController _businessEmailController;
 
   // Categories tab
-  late List<TextEditingController> _additionalCategoryControllers;
+  List<TextEditingController> _additionalCategoryControllers = [];
 
   // Address & Hours
   late final TextEditingController _addressController;
@@ -46,10 +48,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   // Photos & Logos tab
   late final TextEditingController _logoUrlController;
   late final TextEditingController _coverUrlController;
-  late List<TextEditingController> _photoUrlControllers;
+  List<TextEditingController> _photoUrlControllers = [];
 
   // Services tab
-  late List<String> _servicesList;
+  List<String> _servicesList = [];
   late final TextEditingController _newServiceController;
 
   // Products tab
@@ -67,6 +69,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 6, vsync: this);
     _initControllers();
     _descriptionController.addListener(() {
       if (mounted) setState(() {});
@@ -191,6 +194,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
 
   @override
   void dispose() {
+    _tabController.dispose();
     _nameController.dispose();
     _categoryController.dispose();
     _descriptionController.dispose();
@@ -244,92 +248,92 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
 
     final profileScore = business != null ? ref.watch(profileCompletenessProvider(business)) : 100;
 
-    return DefaultTabController(
-      length: 6,
-      child: Scaffold(
-        backgroundColor: bgColor,
-        appBar: _buildAppBar(context, textPrimary, cardBgColor, borderColor, isDark),
-        body: Column(
-          children: [
-            // Business Profile Header Card
-            _buildHeaderCard(context, business, profileScore, isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+    return Scaffold(
+      backgroundColor: bgColor,
+      appBar: _buildAppBar(context, textPrimary, cardBgColor, borderColor, isDark),
+      body: Column(
+        children: [
+          // Business Profile Header Card
+          _buildHeaderCard(context, business, profileScore, isDark, cardBgColor, borderColor, textPrimary, textSecondary),
 
-            // Navigation Tabs (6 Tabs matching Screenshot)
-            Container(
-              color: cardBgColor,
-              child: TabBar(
-                isScrollable: true,
-                labelColor: const Color(0xFF4F46E5),
-                unselectedLabelColor: textSecondary,
-                indicatorColor: const Color(0xFF4F46E5),
-                indicatorWeight: 3,
-                indicatorSize: TabBarIndicatorSize.tab,
-                labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
-                unselectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 13),
-                tabs: const [
-                  Tab(icon: Icon(Icons.info_outline, size: 20), text: 'Basic Info'),
-                  Tab(icon: Icon(Icons.interests_outlined, size: 20), text: 'Categories'),
-                  Tab(icon: Icon(Icons.photo_library_outlined, size: 20), text: 'Photos & Logos'),
-                  Tab(icon: Icon(Icons.calendar_month_outlined, size: 20), text: 'Bookings'),
-                  Tab(icon: Icon(Icons.build_outlined, size: 20), text: 'Services'),
-                  Tab(icon: Icon(Icons.more_horiz, size: 20), text: 'More'),
-                ],
-              ),
+          // Navigation Tabs (6 Tabs matching Screenshot)
+          Container(
+            color: cardBgColor,
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              labelColor: const Color(0xFF4F46E5),
+              unselectedLabelColor: textSecondary,
+              indicatorColor: const Color(0xFF4F46E5),
+              indicatorWeight: 3,
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
+              unselectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 13),
+              tabs: const [
+                Tab(icon: Icon(Icons.info_outline, size: 20), text: 'Basic Info'),
+                Tab(icon: Icon(Icons.interests_outlined, size: 20), text: 'Categories'),
+                Tab(icon: Icon(Icons.photo_library_outlined, size: 20), text: 'Photos & Logos'),
+                Tab(icon: Icon(Icons.calendar_month_outlined, size: 20), text: 'Bookings'),
+                Tab(icon: Icon(Icons.build_outlined, size: 20), text: 'Services'),
+                Tab(icon: Icon(Icons.more_horiz, size: 20), text: 'More'),
+              ],
             ),
-            Divider(height: 1, thickness: 1, color: borderColor),
+          ),
+          Divider(height: 1, thickness: 1, color: borderColor),
 
-            // Tab Views
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _buildBasicInfoTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-                  _buildCategoriesTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
-                  _buildPhotosLogosTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-                  _buildBookingsTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
-                  _buildServicesTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
-                  _buildMoreTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
-                ],
-              ),
+          // Tab Views
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildBasicInfoTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                _buildCategoriesTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
+                _buildPhotosLogosTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                _buildBookingsTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
+                _buildServicesTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
+                _buildMoreTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
+              ],
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: cardBgColor,
+          border: Border(top: BorderSide(color: borderColor, width: 1)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, -3),
             ),
           ],
         ),
-        bottomNavigationBar: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: cardBgColor,
-            border: Border(top: BorderSide(color: borderColor, width: 1)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, -3),
+        child: SafeArea(
+          top: false,
+          child: SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton.icon(
+              onPressed: _saving ? null : () => _saveProfile(business),
+              icon: _saving
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Icon(Icons.check_circle_outline, size: 19),
+              label: Text(
+                _saving ? 'Saving Changes...' : 'Save Profile Changes',
+                style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold),
               ),
-            ],
-          ),
-          child: SafeArea(
-            top: false,
-            child: SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: _saving ? null : () => _saveProfile(business),
-                icon: _saving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : const Icon(Icons.check_circle_outline, size: 19),
-                label: Text(
-                  _saving ? 'Saving Changes...' : 'Save Profile Changes',
-                  style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.bold),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4338CA),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4338CA),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
@@ -438,6 +442,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Avatar with AI Tag
               Stack(
@@ -492,21 +497,19 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
-                        Flexible(
-                          child: Text(
-                            displayName,
-                            style: GoogleFonts.inter(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: textPrimary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        Text(
+                          displayName,
+                          style: GoogleFonts.inter(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: textPrimary,
                           ),
                         ),
-                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
@@ -553,27 +556,30 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Profile Strength',
-                    style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: textPrimary,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Profile Strength',
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Your profile is complete and optimized',
-                    style: GoogleFonts.inter(
-                      fontSize: 11.5,
-                      color: textSecondary,
+                    const SizedBox(height: 2),
+                    Text(
+                      'Your profile is complete and optimized',
+                      style: GoogleFonts.inter(
+                        fontSize: 11.5,
+                        color: textSecondary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                 decoration: BoxDecoration(
