@@ -45,7 +45,6 @@ class _QAEngineScreenState extends ConsumerState<QAEngineScreen> {
         setState(() {
           _publishedQAs = published;
           _drafts = drafts;
-          // Default to drafts if there are drafts, else published
           if (_drafts.isNotEmpty) {
             _selectedTabIndex = 1;
           } else {
@@ -93,7 +92,6 @@ class _QAEngineScreenState extends ConsumerState<QAEngineScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Drag handle
             Center(
               child: Container(
                 margin: const EdgeInsets.only(top: 12, bottom: 8),
@@ -554,23 +552,26 @@ class _QAEngineScreenState extends ConsumerState<QAEngineScreen> {
                     : RefreshIndicator(
                         color: const Color(0xFF4F46E5),
                         onRefresh: _loadData,
-                        child: ListView(
+                        child: SingleChildScrollView(
                           padding: const EdgeInsets.fromLTRB(16, 4, 16, 30),
-                          children: [
-                            // Top Hero Banner
-                            _buildHeroBanner(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-                            const SizedBox(height: 12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Top Hero Banner
+                              _buildHeroBanner(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                              const SizedBox(height: 12),
 
-                            // Segmented Tabs Bar
-                            _buildPillTabs(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-                            const SizedBox(height: 14),
+                              // Segmented Tabs Bar
+                              _buildPillTabs(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                              const SizedBox(height: 14),
 
-                            // List of Q&As
-                            if (_selectedTabIndex == 0)
-                              _buildPublishedList(isDark, cardBgColor, borderColor, textPrimary, textSecondary)
-                            else
-                              _buildDraftsList(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-                          ],
+                              // List of Q&As
+                              if (_selectedTabIndex == 0)
+                                _buildPublishedList(isDark, cardBgColor, borderColor, textPrimary, textSecondary)
+                              else
+                                _buildDraftsList(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                            ],
+                          ),
                         ),
                       ),
               ),
@@ -795,14 +796,13 @@ class _QAEngineScreenState extends ConsumerState<QAEngineScreen> {
       );
     }
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _publishedQAs.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        return _buildQACard(_publishedQAs[index], isDraft: false, isDark: isDark, cardBgColor: cardBgColor, borderColor: borderColor, textPrimary: textPrimary, textSecondary: textSecondary);
-      },
+    return Column(
+      children: _publishedQAs.map((item) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _buildQACard(item, isDraft: false, isDark: isDark, cardBgColor: cardBgColor, borderColor: borderColor, textPrimary: textPrimary, textSecondary: textSecondary),
+        );
+      }).toList(),
     );
   }
 
@@ -840,14 +840,13 @@ class _QAEngineScreenState extends ConsumerState<QAEngineScreen> {
       );
     }
 
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _drafts.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        return _buildQACard(_drafts[index], isDraft: true, isDark: isDark, cardBgColor: cardBgColor, borderColor: borderColor, textPrimary: textPrimary, textSecondary: textSecondary);
-      },
+    return Column(
+      children: _drafts.map((item) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _buildQACard(item, isDraft: true, isDark: isDark, cardBgColor: cardBgColor, borderColor: borderColor, textPrimary: textPrimary, textSecondary: textSecondary),
+        );
+      }).toList(),
     );
   }
 
