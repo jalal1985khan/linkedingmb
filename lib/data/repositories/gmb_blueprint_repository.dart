@@ -22,30 +22,46 @@ double _parseDouble(dynamic val, double fallback) {
 
 class GMBBlueprintItem {
   final String id;
-  final int dayNumber;
-  final String title;
-  final String caption;
-  final String mediaConcept;
-  final String ctaType;
-  final String format;
+  final int? _dayNumber;
+  final String? _title;
+  final String? _caption;
+  final String? _mediaConcept;
+  final String? _ctaType;
+  final String? _format;
   final String? status;
   final String? scheduledDate;
-  final List<String> selectionReasons;
-  final int costCredits;
+  final List<String>? _selectionReasons;
+  final int? _costCredits;
 
   GMBBlueprintItem({
     required this.id,
-    this.dayNumber = 1,
-    this.title = 'Untitled Concept',
-    this.caption = '',
-    this.mediaConcept = '',
-    this.ctaType = 'LEARN_MORE',
-    this.format = 'TEXT_IMAGE',
+    int? dayNumber,
+    String? title,
+    String? caption,
+    String? mediaConcept,
+    String? ctaType,
+    String? format,
     this.status,
     this.scheduledDate,
-    this.selectionReasons = const [],
-    this.costCredits = 2,
-  });
+    List<String>? selectionReasons,
+    int? costCredits,
+  })  : _dayNumber = dayNumber ?? 1,
+        _title = title ?? 'Untitled Concept',
+        _caption = caption ?? '',
+        _mediaConcept = mediaConcept ?? '',
+        _ctaType = ctaType ?? 'LEARN_MORE',
+        _format = format ?? 'TEXT_IMAGE',
+        _selectionReasons = selectionReasons ?? const [],
+        _costCredits = costCredits ?? 2;
+
+  int get dayNumber => _dayNumber ?? 1;
+  String get title => _title ?? 'Untitled Concept';
+  String get caption => _caption ?? '';
+  String get mediaConcept => _mediaConcept ?? '';
+  String get ctaType => _ctaType ?? 'LEARN_MORE';
+  String get format => _format ?? 'TEXT_IMAGE';
+  List<String> get selectionReasons => _selectionReasons ?? const [];
+  int get costCredits => _costCredits ?? 2;
 
   factory GMBBlueprintItem.fromJson(Map<String, dynamic> json) {
     final reasons = (json['selection_reasons'] as List<dynamic>?)
@@ -85,22 +101,32 @@ class GMBBlueprintItem {
 
 class GMBBlueprint {
   final bool success;
-  final String status;
-  final int totalItems;
-  final int planDays;
-  final int estimatedCredits;
-  final List<GMBBlueprintItem> items;
+  final String? _status;
+  final int? _totalItems;
+  final int? _planDays;
+  final int? _estimatedCredits;
+  final List<GMBBlueprintItem>? _items;
   final String? message;
 
   GMBBlueprint({
     required this.success,
-    required this.status,
-    required this.totalItems,
-    required this.planDays,
-    required this.estimatedCredits,
-    required this.items,
+    String? status,
+    int? totalItems,
+    int? planDays,
+    int? estimatedCredits,
+    List<GMBBlueprintItem>? items,
     this.message,
-  });
+  })  : _status = status ?? 'NO_BLUEPRINT',
+        _totalItems = totalItems ?? 0,
+        _planDays = planDays ?? 30,
+        _estimatedCredits = estimatedCredits ?? 0,
+        _items = items ?? const [];
+
+  String get status => _status ?? 'NO_BLUEPRINT';
+  int get totalItems => _totalItems ?? items.length;
+  int get planDays => _planDays ?? 30;
+  int get estimatedCredits => _estimatedCredits ?? (items.length * 2);
+  List<GMBBlueprintItem> get items => _items ?? const [];
 
   factory GMBBlueprint.fromJson(Map<String, dynamic> json) {
     final rawItems = json['items'] as List<dynamic>? ?? [];
