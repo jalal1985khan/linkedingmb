@@ -4,9 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../data/repositories/gmbapi_repository.dart';
 import '../business_flow/providers/active_location_provider.dart';
+import '../dashboard/widgets/dashboard_header_bar.dart';
+import '../notifications/notification_end_drawer.dart';
 import 'create_post_flow_screen.dart';
 
 final publishedPostsProvider = FutureProvider.autoDispose<List<dynamic>>((ref) async {
@@ -25,232 +26,324 @@ class PublishedPostsScreen extends ConsumerStatefulWidget {
 }
 
 class _PublishedPostsScreenState extends ConsumerState<PublishedPostsScreen> {
+  GlobalKey<ScaffoldState>? _scaffoldKey;
   String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _scaffoldKey ??= GlobalKey<ScaffoldState>();
+  }
 
   @override
   Widget build(BuildContext context) {
     final postsAsync = ref.watch(publishedPostsProvider);
     final activeLoc = ref.watch(activeLocationProvider).activeLocation;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final scaffoldKey = _scaffoldKey ??= GlobalKey<ScaffoldState>();
 
-    final body = RefreshIndicator(
-      color: AppColors.primary,
-      onRefresh: () async => ref.refresh(publishedPostsProvider),
-      child: postsAsync.when(
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
-        error: (err, stack) => SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(24),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 60),
-                Icon(Icons.error_outline_rounded, size: 48, color: Colors.red.shade400),
-                const SizedBox(height: 16),
-                Text(
-                  'Failed to load published posts',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    color: const Color(0xFF1E1B4B),
-                  ),
+    // Design System Tokens
+    final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1E1B4B);
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    final bgGradient = isDark
+        ? const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0F172A), Color(0xFF0B0F19)],
+          )
+        : const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF0F4FF), Color(0xFFFAF8FF), Color(0xFFFFFFFF)],
+            stops: [0.0, 0.35, 1.0],
+          );
+
+    final content = Container(
+      decoration: BoxDecoration(gradient: bgGradient),
+      child: SafeArea(
+        child: Column(
+          children: [
+            // 1. Standard Unified DashboardHeaderBar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 4.0),
+              child: DashboardHeaderBar(
+                title: 'Published Posts History',
+                subtitle: activeLoc?.name ?? 'SocialHive',
+                showSparkle: true,
+                showBackButton: true,
+                onBack: () => Navigator.of(context).maybePop(),
+                onOpenNotifications: () {
+                  if (scaffoldKey.currentState != null) {
+                    scaffoldKey.currentState!.openEndDrawer();
+                  } else {
+                    Scaffold.maybeOf(context)?.openEndDrawer();
+                  }
+                },
+              ),
+            ),
+
+            // 2. Search & Filter Bar
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 8.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: cardBgColor,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: borderColor),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  err.toString(),
-                  textAlign: TextAlign.center,
+                child: TextField(
+                  onChanged: (val) => setState(() => _searchQuery = val),
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
-                    color: const Color(0xFF64748B),
+                    color: textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Search published posts...',
+                    hintStyle: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      color: textSecondary,
+                    ),
+                    prefixIcon: const Icon(Icons.search_rounded, size: 20, color: Color(0xFF6366F1)),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(Icons.clear_rounded, size: 18, color: textSecondary),
+                            onPressed: () => setState(() => _searchQuery = ''),
+                          )
+                        : null,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    filled: true,
+                    fillColor: Colors.transparent,
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
                   ),
                 ),
-                const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  onPressed: () => ref.refresh(publishedPostsProvider),
-                  icon: const Icon(Icons.refresh_rounded, size: 18),
-                  label: const Text('Try Again'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-        data: (rawPosts) {
-          final posts = rawPosts.where((p) {
-            if (_searchQuery.isEmpty) return true;
-            final text = (p['content'] ?? p['summary'] ?? p['caption'] ?? p['title'] ?? '').toString().toLowerCase();
-            return text.contains(_searchQuery.toLowerCase());
-          }).toList();
 
-          if (posts.isEmpty) {
-            return SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFDCFCE7),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.published_with_changes_rounded,
-                        size: 40,
-                        color: Color(0xFF15803D),
+            // 3. Posts Stream / List
+            Expanded(
+              child: RefreshIndicator(
+                color: const Color(0xFF4F46E5),
+                onRefresh: () async => ref.refresh(publishedPostsProvider),
+                child: postsAsync.when(
+                  loading: () => const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF4F46E5)),
+                  ),
+                  error: (err, stack) => SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(24),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: cardBgColor,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: borderColor),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFEF2F2),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Icon(Icons.error_outline_rounded, size: 28, color: Color(0xFFDC2626)),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Failed to load published posts',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16,
+                                color: textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              err.toString(),
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                color: textSecondary,
+                              ),
+                            ),
+                            const SizedBox(height: 18),
+                            ElevatedButton.icon(
+                              onPressed: () => ref.refresh(publishedPostsProvider),
+                              icon: const Icon(Icons.refresh_rounded, size: 18),
+                              label: Text(
+                                'Try Again',
+                                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF4F46E5),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    Text(
-                      _searchQuery.isNotEmpty ? 'No Matching Posts' : 'No Published Posts Yet',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                        color: const Color(0xFF1E1B4B),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _searchQuery.isNotEmpty
-                          ? 'Try searching with a different keyword.'
-                          : 'Your published Google Business Profile posts will automatically appear here.',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        color: const Color(0xFF64748B),
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const CreatePostFlowScreen(),
+                  ),
+                  data: (rawPosts) {
+                    final posts = rawPosts.where((p) {
+                      if (_searchQuery.isEmpty) return true;
+                      final text = (p['content'] ?? p['summary'] ?? p['caption'] ?? p['title'] ?? '').toString().toLowerCase();
+                      return text.contains(_searchQuery.toLowerCase());
+                    }).toList();
+
+                    if (posts.isEmpty) {
+                      return SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(28),
+                            decoration: BoxDecoration(
+                              color: cardBgColor,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: borderColor),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFDCFCE7),
+                                    borderRadius: BorderRadius.circular(18),
+                                  ),
+                                  child: const Icon(
+                                    Icons.published_with_changes_rounded,
+                                    size: 32,
+                                    color: Color(0xFF15803D),
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                Text(
+                                  _searchQuery.isNotEmpty ? 'No Matching Posts' : 'No Published Posts Yet',
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 18,
+                                    color: textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  _searchQuery.isNotEmpty
+                                      ? 'Try searching with a different keyword.'
+                                      : 'Your published Google Business Profile posts will automatically appear here.',
+                                  textAlign: TextAlign.center,
+                                  style: GoogleFonts.plusJakartaSans(
+                                    fontSize: 13,
+                                    color: textSecondary,
+                                    height: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => const CreatePostFlowScreen(),
+                                      ),
+                                    );
+                                  },
+                                  icon: const Icon(Icons.add_rounded, size: 19),
+                                  label: Text(
+                                    'Create New GMB Post',
+                                    style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF4F46E5),
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      primary: false,
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      itemCount: posts.length,
+                      itemBuilder: (context, index) {
+                        final post = posts[index];
+                        return _PublishedPostCard(
+                          post: post,
+                          isDark: isDark,
+                          cardBgColor: cardBgColor,
+                          borderColor: borderColor,
+                          textPrimary: textPrimary,
+                          textSecondary: textSecondary,
                         );
                       },
-                      icon: const Icon(Icons.add_rounded, size: 20),
-                      label: const Text('Create New GMB Post'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          return Column(
-            children: [
-              // Search & Header Stats Bar
-              Container(
-                color: Colors.white,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                child: Column(
-                  children: [
-                    TextField(
-                      onChanged: (val) => setState(() => _searchQuery = val),
-                      decoration: InputDecoration(
-                        hintText: 'Search published posts...',
-                        hintStyle: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
-                          color: const Color(0xFF94A3B8),
-                        ),
-                        prefixIcon: const Icon(Icons.search_rounded, size: 20, color: Color(0xFF64748B)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppColors.primary),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1, color: Color(0xFFE2E8F0)),
-
-              // Posts List
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                  itemCount: posts.length,
-                  itemBuilder: (context, index) {
-                    final post = posts[index];
-                    return _PublishedPostCard(post: post);
+                    );
                   },
                 ),
               ),
-            ],
-          );
-        },
+            ),
+          ],
+        ),
       ),
     );
 
     if (!widget.showScaffold) {
-      return body;
+      return content;
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Published Posts History',
-              style: GoogleFonts.plusJakartaSans(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: const Color(0xFF1E1B4B),
-              ),
-            ),
-            if (activeLoc != null)
-              Text(
-                activeLoc.name,
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  color: const Color(0xFF64748B),
-                ),
-              ),
-          ],
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: body,
+      key: scaffoldKey,
+      backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFFAF8FF),
+      endDrawer: const NotificationEndDrawer(),
+      body: content,
     );
   }
 }
 
 class _PublishedPostCard extends StatelessWidget {
-  const _PublishedPostCard({required this.post});
+  const _PublishedPostCard({
+    required this.post,
+    required this.isDark,
+    required this.cardBgColor,
+    required this.borderColor,
+    required this.textPrimary,
+    required this.textSecondary,
+  });
 
   final dynamic post;
+  final bool isDark;
+  final Color cardBgColor;
+  final Color borderColor;
+  final Color textPrimary;
+  final Color textSecondary;
 
   @override
   Widget build(BuildContext context) {
@@ -267,18 +360,24 @@ class _PublishedPostCard extends StatelessWidget {
       } catch (_) {}
     }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: cardBgColor,
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      color: Colors.white,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Status Bar
+          // 1. Header Status Bar
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
             child: Row(
@@ -286,21 +385,25 @@ class _PublishedPostCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFDCFCE7),
+                    color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.5) : const Color(0xFFDCFCE7),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFF86EFAC)),
+                    border: Border.all(color: isDark ? const Color(0xFF059669) : const Color(0xFF86EFAC)),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF15803D)),
+                      Icon(
+                        Icons.check_circle_rounded,
+                        size: 14,
+                        color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF15803D),
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Published',
                         style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w700,
+                          fontWeight: FontWeight.w800,
                           fontSize: 11,
-                          color: const Color(0xFF15803D),
+                          color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF15803D),
                         ),
                       ),
                     ],
@@ -310,15 +413,15 @@ class _PublishedPostCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEEF2FF),
+                    color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     postType,
                     style: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       fontSize: 10,
-                      color: const Color(0xFF4338CA),
+                      color: isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4338CA),
                     ),
                   ),
                 ),
@@ -326,14 +429,14 @@ class _PublishedPostCard extends StatelessWidget {
                 if (postedDate != null)
                   Row(
                     children: [
-                      const Icon(Icons.access_time_rounded, size: 13, color: Color(0xFF94A3B8)),
+                      Icon(Icons.access_time_rounded, size: 13, color: textSecondary),
                       const SizedBox(width: 4),
                       Text(
                         DateFormat('MMM d, y • h:mm a').format(postedDate),
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
-                          color: const Color(0xFF64748B),
-                          fontWeight: FontWeight.w500,
+                          color: textSecondary,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -342,7 +445,7 @@ class _PublishedPostCard extends StatelessWidget {
             ),
           ),
 
-          // Post Image (if present)
+          // 2. Post Image (if present)
           if (imageUrl != null && imageUrl.toString().isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -358,7 +461,7 @@ class _PublishedPostCard extends StatelessWidget {
               ),
             ),
 
-          // Content Text
+          // 3. Content Text
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -368,34 +471,43 @@ class _PublishedPostCard extends StatelessWidget {
                   content,
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
-                    color: const Color(0xFF1E1B4B),
+                    color: textPrimary,
                     height: 1.5,
                   ),
                 ),
                 if (actionType != null) ...[
                   const SizedBox(height: 12),
-                  Chip(
-                    avatar: const Icon(Icons.touch_app_rounded, size: 14, color: AppColors.primary),
-                    label: Text(
-                      'CTA: $actionType',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
-                      ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: borderColor),
                     ),
-                    backgroundColor: const Color(0xFFF1F5F9),
-                    side: BorderSide.none,
-                    padding: const EdgeInsets.all(4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.touch_app_rounded, size: 14, color: Color(0xFF4F46E5)),
+                        const SizedBox(width: 6),
+                        Text(
+                          'CTA: $actionType',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF4F46E5),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ],
             ),
           ),
 
-          const Divider(height: 1, color: Color(0xFFF1F5F9)),
+          Divider(height: 1, color: borderColor),
 
-          // Actions Footer
+          // 4. Actions Footer
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
@@ -404,19 +516,20 @@ class _PublishedPostCard extends StatelessWidget {
                   onPressed: () {
                     Clipboard.setData(ClipboardData(text: content));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Post content copied to clipboard!'),
-                        duration: Duration(seconds: 2),
+                      SnackBar(
+                        content: Text('Post content copied to clipboard!', style: GoogleFonts.plusJakartaSans(fontSize: 13)),
+                        duration: const Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
                       ),
                     );
                   },
-                  icon: const Icon(Icons.copy_rounded, size: 16, color: Color(0xFF64748B)),
+                  icon: Icon(Icons.copy_rounded, size: 16, color: textSecondary),
                   label: Text(
                     'Copy Content',
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF64748B),
+                      color: textSecondary,
                     ),
                   ),
                 ),
@@ -424,19 +537,19 @@ class _PublishedPostCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color: isDark ? const Color(0xFF1E3A8A).withValues(alpha: 0.3) : const Color(0xFFF0F7FF),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: isDark ? const Color(0xFF1D4ED8) : const Color(0xFFBFDBFE)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.g_mobiledata_rounded, size: 18, color: Color(0xFF4285F4)),
+                      const Icon(Icons.g_mobiledata_rounded, size: 18, color: Color(0xFF3B82F6)),
                       Text(
                         'Live GMB',
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF4285F4),
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF3B82F6),
                         ),
                       ),
                     ],
