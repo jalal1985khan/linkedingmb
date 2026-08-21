@@ -9,6 +9,7 @@ import '../../shared/widgets/app_media_picker.dart';
 import '../dashboard/providers/dashboard_providers.dart';
 import '../dashboard/widgets/dashboard_header_bar.dart';
 import '../notifications/notification_end_drawer.dart';
+import '../shell/widgets/main_app_drawer.dart';
 import 'business_flow_controller.dart';
 import 'providers/active_location_provider.dart';
 
@@ -20,6 +21,7 @@ class BusinessProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> with SingleTickerProviderStateMixin {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   TabController? _tabController;
 
   // Basic Identity
@@ -271,7 +273,9 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
     final profileScore = business != null ? ref.watch(profileCompletenessProvider(business)) : 100;
 
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFFAF8FF),
+      drawer: const MainAppDrawer(),
       endDrawer: const NotificationEndDrawer(),
       body: Container(
         decoration: BoxDecoration(gradient: bgGradient),
@@ -285,8 +289,11 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                   title: 'Business Profile',
                   subtitle: 'Grow your business with SocialHive AI',
                   showSparkle: true,
+                  onOpenDrawer: () {
+                    _scaffoldKey.currentState?.openDrawer();
+                  },
                   onOpenNotifications: () {
-                    Scaffold.of(context).openEndDrawer();
+                    _scaffoldKey.currentState?.openEndDrawer();
                   },
                 ),
               ),
