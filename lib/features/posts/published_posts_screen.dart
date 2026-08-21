@@ -204,7 +204,16 @@ class _PublishedPostsScreenState extends ConsumerState<PublishedPostsScreen> {
                     ),
                   ),
                   data: (rawPosts) {
-                    final posts = rawPosts.where((p) {
+                    final sortedList = List<dynamic>.from(rawPosts);
+                    sortedList.sort((a, b) {
+                      final rawA = a['posted_at'] ?? a['created_at'] ?? a['scheduled_time'] ?? a['createTime'] ?? a['updateTime'];
+                      final rawB = b['posted_at'] ?? b['created_at'] ?? b['scheduled_time'] ?? b['createTime'] ?? b['updateTime'];
+                      final dateA = rawA != null ? (DateTime.tryParse(rawA.toString()) ?? DateTime.fromMillisecondsSinceEpoch(0)) : DateTime.fromMillisecondsSinceEpoch(0);
+                      final dateB = rawB != null ? (DateTime.tryParse(rawB.toString()) ?? DateTime.fromMillisecondsSinceEpoch(0)) : DateTime.fromMillisecondsSinceEpoch(0);
+                      return dateB.compareTo(dateA); // Newest / latest post at the top
+                    });
+
+                    final posts = sortedList.where((p) {
                       if (_searchQuery.isEmpty) return true;
                       final text = (p['content'] ?? p['summary'] ?? p['caption'] ?? p['title'] ?? '').toString().toLowerCase();
                       return text.contains(_searchQuery.toLowerCase());
