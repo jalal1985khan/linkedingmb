@@ -243,10 +243,10 @@ class SeoAndPostActivityRow extends StatelessWidget {
   // Post Activity Card
   Widget _buildPostActivityCard(BuildContext context) {
     final activity = postActivity ?? const PostActivityStats();
-    final aiGenerated = activity.aiGenerated > 0 ? activity.aiGenerated : 11;
+    final aiGenerated = activity.aiGenerated;
     final manual = activity.manualGenerated;
-    final inQueue = activity.queued > 0 ? activity.queued : 11;
-    final published = activity.posted > 0 ? activity.posted : 5;
+    final inQueue = activity.queued;
+    final published = activity.posted;
 
     return Container(
       padding: const EdgeInsets.all(16),

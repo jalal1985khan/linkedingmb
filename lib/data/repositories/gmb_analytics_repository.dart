@@ -259,15 +259,18 @@ class GMBAnalyticsRepository {
         debugPrint('⚠️ Error fetching activity-chart: $e');
       }
 
-      // Helper function to run the full calculation with or without location parameter (Matching Web fallback)
+      // Helper function to run calculation scoped strictly to the selected location
       Future<PostActivityStats> computeFallback(bool useLocation) async {
         int aiCount = 0;
         int manualCount = 0;
         int queuedCount = 0;
         int postedCount = 0;
+        final seenPostIds = <String>{};
 
-        final accParam = (useLocation && !isAllOrEmpty)
-            ? '&account_id=${Uri.encodeComponent(locationId)}'
+        final cleanLocId = (locationId ?? '').replaceFirst('locations/', '');
+        final fullLocId = cleanLocId.isNotEmpty ? 'locations/$cleanLocId' : '';
+        final accParam = (useLocation && !isAllOrEmpty && fullLocId.isNotEmpty)
+            ? '&account_id=${Uri.encodeComponent(fullLocId)}&author_urn=${Uri.encodeComponent(fullLocId)}'
             : '';
 
         // a) Query /api/scheduler/posts/generated?platform=gmb
@@ -278,8 +281,16 @@ class GMBAnalyticsRepository {
             final decoded = jsonDecode(response.body);
             final list = decoded is List ? decoded : (decoded['posts'] ?? decoded['data'] ?? []);
             if (list is List) {
-              aiCount += list.length;
-              queuedCount += list.length;
+              for (final item in list) {
+                if (item is Map) {
+                  final id = (item['id'] ?? item['_id'] ?? '').toString();
+                  if (id.isNotEmpty && seenPostIds.contains(id)) continue;
+                  if (id.isNotEmpty) seenPostIds.add(id);
+
+                  aiCount++;
+                  queuedCount++;
+                }
+              }
             }
           }
         } catch (e) {
@@ -296,6 +307,17 @@ class GMBAnalyticsRepository {
             if (list is List) {
               for (final p in list) {
                 if (p is Map) {
+                  final id = (p['id'] ?? p['_id'] ?? '').toString();
+                  if (id.isNotEmpty && seenPostIds.contains(id)) continue;
+                  if (id.isNotEmpty) seenPostIds.add(id);
+
+                  final isAi = p['is_ai_generated'] == true || p['is_ai'] == true || p['automation_generated'] == true || p['isAiGenerated'] == true;
+                  if (isAi) {
+                    aiCount++;
+                  } else {
+                    manualCount++;
+                  }
+
                   final st = (p['status'] ?? '').toString().toLowerCase();
                   if (st == 'posted' || st == 'published' || st == 'success' || st == 'completed' || st == 'live') {
                     postedCount++;
@@ -318,7 +340,15 @@ class GMBAnalyticsRepository {
             final decoded = jsonDecode(response.body);
             final list = decoded is List ? decoded : (decoded['posts'] ?? decoded['data'] ?? []);
             if (list is List) {
-              postedCount += list.length;
+              for (final item in list) {
+                if (item is Map) {
+                  final id = (item['id'] ?? item['_id'] ?? '').toString();
+                  if (id.isNotEmpty && seenPostIds.contains(id)) continue;
+                  if (id.isNotEmpty) seenPostIds.add(id);
+
+                  postedCount++;
+                }
+              }
             }
           }
         } catch (e) {
@@ -328,7 +358,7 @@ class GMBAnalyticsRepository {
         // d) Query /api/gmb/posts if location specified
         if (useLocation && !isAllOrEmpty) {
           try {
-            final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts?location_id=${Uri.encodeComponent(locationId)}');
+            final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts?location_id=${Uri.encodeComponent(cleanLocId)}');
             final response = await _httpClient.get(gmbUri, headers: {'Authorization': 'Bearer $token'});
             if (response.statusCode == 200) {
               final decoded = jsonDecode(response.body);
@@ -336,6 +366,10 @@ class GMBAnalyticsRepository {
               if (list is List) {
                 for (final item in list) {
                   if (item is Map) {
+                    final id = (item['id'] ?? item['_id'] ?? '').toString();
+                    if (id.isNotEmpty && seenPostIds.contains(id)) continue;
+                    if (id.isNotEmpty) seenPostIds.add(id);
+
                     final isAi = item['is_ai_generated'] == true || item['is_ai'] == true || item['model_used'] != null;
                     if (isAi) {
                       aiCount++;

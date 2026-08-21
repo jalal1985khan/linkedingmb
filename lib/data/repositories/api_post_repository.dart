@@ -168,10 +168,10 @@ class ApiPostRepository implements PostRepository {
       if (locationId != null &&
           locationId.isNotEmpty &&
           locationId != 'all' &&
-          locationId != 'personal_default' &&
-          locationId != 'social_hive_default') {
+          locationId != 'personal_default') {
         cleanId = locationId.replaceFirst('locations/', '');
-        accParam = '&author_urn=${Uri.encodeComponent(locationId)}&account_id=${Uri.encodeComponent(cleanId)}&location_id=${Uri.encodeComponent(cleanId)}';
+        final fullLocId = 'locations/$cleanId';
+        accParam = '&author_urn=${Uri.encodeComponent(fullLocId)}&account_id=${Uri.encodeComponent(cleanId)}&location_id=${Uri.encodeComponent(cleanId)}';
         gmbLocParam = '?location_id=${Uri.encodeComponent(cleanId)}';
       }
 
@@ -208,21 +208,6 @@ class ApiPostRepository implements PostRepository {
           addPostsFromList(list);
           debugPrint('📥 /api/scheduler/posts (platform=gmb, pending) returned ${posts.length - prevCount} scheduled posts');
         }
-
-        // Fallback without account filter if empty
-        if (posts.isEmpty && accParam.isNotEmpty) {
-          final fbSchedUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts?status=pending&platform=gmb&limit=10');
-          final fbSchedRes = await _httpClient.get(fbSchedUri, headers: headers);
-          if (fbSchedRes.statusCode == 200) {
-            final decoded = jsonDecode(fbSchedRes.body);
-            final list = decoded is Map ? (decoded['scheduled_posts'] ?? decoded['posts'] ?? decoded['data']) : decoded;
-            final prevCount = posts.length;
-            addPostsFromList(list);
-            if (posts.length > prevCount) {
-              debugPrint('📥 /api/scheduler/posts (platform=gmb, pending fallback) returned ${posts.length - prevCount} scheduled posts');
-            }
-          }
-        }
       } catch (e) {
         debugPrint('⚠️ Error fetching /api/scheduler/posts (gmb): $e');
       }
@@ -238,26 +223,12 @@ class ApiPostRepository implements PostRepository {
           addPostsFromList(list);
           debugPrint('📥 /api/scheduler/posts/generated (platform=gmb) returned ${posts.length - prevCount} drafts');
         }
-
-        if (posts.isEmpty && accParam.isNotEmpty) {
-          final fbGenUri = Uri.parse('${ApiConfig.baseUrl}/api/scheduler/posts/generated?platform=gmb&limit=10');
-          final fbGenRes = await _httpClient.get(fbGenUri, headers: headers);
-          if (fbGenRes.statusCode == 200) {
-            final decoded = jsonDecode(fbGenRes.body);
-            final list = decoded is Map ? (decoded['posts'] ?? decoded['data']) : decoded;
-            final prevCount = posts.length;
-            addPostsFromList(list);
-            if (posts.length > prevCount) {
-              debugPrint('📥 /api/scheduler/posts/generated (platform=gmb, fallback) returned ${posts.length - prevCount} drafts');
-            }
-          }
-        }
       } catch (e) {
         debugPrint('⚠️ Error fetching /api/scheduler/posts/generated (gmb): $e');
       }
 
       // 3. Fallback: Fetch from GMB Posts API (/api/gmb/posts) ONLY if 0 posts were fetched above
-      if (posts.isEmpty) {
+      if (posts.isEmpty && gmbLocParam.isNotEmpty) {
         try {
           final gmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts$gmbLocParam');
           final response = await _httpClient.get(gmbUri, headers: headers);
@@ -267,20 +238,6 @@ class ApiPostRepository implements PostRepository {
             final prevCount = posts.length;
             addPostsFromList(list);
             debugPrint('📥 /api/gmb/posts returned ${posts.length - prevCount} active GMB posts');
-          }
-
-          if (posts.isEmpty && gmbLocParam.isNotEmpty) {
-            final fallbackGmbUri = Uri.parse('${ApiConfig.baseUrl}/api/gmb/posts');
-            final fbGmbRes = await _httpClient.get(fallbackGmbUri, headers: headers);
-            if (fbGmbRes.statusCode == 200) {
-              final decoded = jsonDecode(fbGmbRes.body);
-              final list = decoded is Map ? (decoded['posts'] ?? decoded['data']) : decoded;
-              final prevCount = posts.length;
-              addPostsFromList(list);
-              if (posts.length > prevCount) {
-                debugPrint('📥 /api/gmb/posts (all locations) returned ${posts.length - prevCount} active GMB posts');
-              }
-            }
           }
         } catch (e) {
           debugPrint('⚠️ Error fetching /api/gmb/posts: $e');
