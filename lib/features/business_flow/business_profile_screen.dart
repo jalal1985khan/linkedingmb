@@ -32,7 +32,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
   TextEditingController? _businessEmailController;
 
   // Categories tab
-  List<TextEditingController> _additionalCategoryControllers = [];
+  List<TextEditingController>? _additionalCategoryControllers;
 
   // Address & Hours
   TextEditingController? _addressController;
@@ -48,14 +48,14 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
   // Photos & Logos tab
   TextEditingController? _logoUrlController;
   TextEditingController? _coverUrlController;
-  List<TextEditingController> _photoUrlControllers = [];
+  List<TextEditingController>? _photoUrlControllers;
 
   // Services tab
-  List<String> _servicesList = [];
+  List<String>? _servicesList;
   TextEditingController? _newServiceController;
 
   // Products tab
-  List<Map<String, dynamic>> _productsList = [];
+  List<Map<String, dynamic>>? _productsList;
   bool _loadingProducts = false;
 
   // AI Persona
@@ -81,6 +81,11 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
 
   void _ensureControllers([BusinessProfile? business]) {
     _tabController ??= TabController(length: 6, vsync: this);
+    _additionalCategoryControllers ??= [];
+    _photoUrlControllers ??= [];
+    _servicesList ??= [];
+    _productsList ??= [];
+
     final b = business ?? ref.read(activeLocationProvider).activeLocation ?? ref.read(selectedBusinessProvider);
 
     _nameController ??= TextEditingController(text: b?.name ?? 'SocialHive');
@@ -96,7 +101,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
     _emailController ??= TextEditingController(text: 'hello@socialhive.pro');
     _businessEmailController ??= TextEditingController(text: 'info@socialhive.pro');
 
-    if (_additionalCategoryControllers.isEmpty && (b?.additionalCategoriesList.isNotEmpty == true)) {
+    if (_additionalCategoryControllers!.isEmpty && (b?.additionalCategoriesList.isNotEmpty == true)) {
       _additionalCategoryControllers = b!.additionalCategoriesList
           .map((cat) => TextEditingController(text: cat))
           .toList();
@@ -113,13 +118,13 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
     _logoUrlController ??= TextEditingController(text: b?.logoUrlText ?? '');
     _coverUrlController ??= TextEditingController(text: b?.coverPhotoUrlText ?? '');
 
-    if (_photoUrlControllers.isEmpty && (b?.additionalPhotosList.isNotEmpty == true)) {
+    if (_photoUrlControllers!.isEmpty && (b?.additionalPhotosList.isNotEmpty == true)) {
       _photoUrlControllers = b!.additionalPhotosList
           .map((url) => TextEditingController(text: url))
           .toList();
     }
 
-    if (_servicesList.isEmpty) {
+    if (_servicesList!.isEmpty) {
       _servicesList = b?.servicesList.isNotEmpty == true
           ? List<String>.from(b!.servicesList)
           : [
@@ -210,8 +215,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
     _websiteController?.dispose();
     _emailController?.dispose();
     _businessEmailController?.dispose();
-    for (final c in _additionalCategoryControllers) {
-      c.dispose();
+    if (_additionalCategoryControllers != null) {
+      for (final c in _additionalCategoryControllers!) {
+        c.dispose();
+      }
     }
     _addressController?.dispose();
     _cityController?.dispose();
@@ -222,8 +229,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
     _bookingUrlController?.dispose();
     _logoUrlController?.dispose();
     _coverUrlController?.dispose();
-    for (final c in _photoUrlControllers) {
-      c.dispose();
+    if (_photoUrlControllers != null) {
+      for (final c in _photoUrlControllers!) {
+        c.dispose();
+      }
     }
     _newServiceController?.dispose();
     _audienceController?.dispose();
@@ -1055,6 +1064,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
 
   // TAB 2: CATEGORIES
   Widget _buildCategoriesTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary, BusinessProfile? business) {
+    final addCats = _additionalCategoryControllers ?? [];
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -1108,11 +1118,11 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
             ),
             const SizedBox(height: 20),
             Text(
-              'ADDITIONAL CATEGORIES (${_additionalCategoryControllers.length})',
+              'ADDITIONAL CATEGORIES (${addCats.length})',
               style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: textSecondary, letterSpacing: 0.5),
             ),
             const SizedBox(height: 6),
-            if (_additionalCategoryControllers.isEmpty)
+            if (addCats.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
@@ -1123,14 +1133,14 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
             else
               Column(
                 children: [
-                  for (int i = 0; i < _additionalCategoryControllers.length; i++)
+                  for (int i = 0; i < addCats.length; i++)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Row(
                         children: [
                           Expanded(
                             child: TextField(
-                              controller: _additionalCategoryControllers[i],
+                              controller: addCats[i],
                               style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
                               decoration: InputDecoration(
                                 hintText: 'e.g. Advertising Agency',
@@ -1145,7 +1155,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                             icon: const Icon(Icons.delete_outline, color: AppColors.error),
                             onPressed: () {
                               setState(() {
-                                _additionalCategoryControllers.removeAt(i);
+                                addCats.removeAt(i);
                               });
                             },
                           ),
@@ -1160,7 +1170,8 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
               child: OutlinedButton.icon(
                 onPressed: () {
                   setState(() {
-                    _additionalCategoryControllers.add(TextEditingController());
+                    _additionalCategoryControllers ??= [];
+                    _additionalCategoryControllers!.add(TextEditingController());
                   });
                 },
                 icon: const Icon(Icons.add, size: 16),
@@ -1180,6 +1191,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
 
   // TAB 3: PHOTOS & LOGOS
   Widget _buildPhotosLogosTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary) {
+    final addPhotos = _photoUrlControllers ?? [];
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -1211,14 +1223,15 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
             ),
             const SizedBox(height: 16),
             AppMediaPicker(
-              initialUrl: _photoUrlControllers.isNotEmpty ? _photoUrlControllers.first.text : '',
+              initialUrl: addPhotos.isNotEmpty ? addPhotos.first.text : '',
               label: 'Additional Photos',
               subtitle: 'Add interior, exterior, product, or team photos.',
               onMediaSelected: (pathOrUrl) {
-                if (_photoUrlControllers.isEmpty) {
-                  _photoUrlControllers.add(TextEditingController(text: pathOrUrl));
+                if (addPhotos.isEmpty) {
+                  _photoUrlControllers ??= [];
+                  _photoUrlControllers!.add(TextEditingController(text: pathOrUrl));
                 } else {
-                  _photoUrlControllers.first.text = pathOrUrl;
+                  addPhotos.first.text = pathOrUrl;
                 }
               },
             ),
@@ -1260,6 +1273,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
 
   // TAB 5: SERVICES
   Widget _buildServicesTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary, BusinessProfile? business) {
+    final sList = _servicesList ?? [];
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -1272,7 +1286,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
           title: _categoryController?.text.isNotEmpty == true ? _categoryController!.text : 'Marketing consultant',
           subtitle: 'Specific services offered under this primary business category.',
           children: [
-            for (int i = 0; i < _servicesList.length; i++)
+            for (int i = 0; i < sList.length; i++)
               Container(
                 decoration: BoxDecoration(
                   border: Border(bottom: BorderSide(color: borderColor, width: 0.8)),
@@ -1280,14 +1294,14 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(
-                    _servicesList[i],
+                    sList[i],
                     style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
                   ),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
                     onPressed: () {
                       setState(() {
-                        _servicesList.removeAt(i);
+                        sList.removeAt(i);
                       });
                     },
                   ),
@@ -1316,7 +1330,8 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                     final text = _newServiceController?.text.trim() ?? '';
                     if (text.isNotEmpty) {
                       setState(() {
-                        _servicesList.add(text);
+                        _servicesList ??= [];
+                        _servicesList!.add(text);
                         _newServiceController?.clear();
                       });
                     }
@@ -1340,6 +1355,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
 
   // TAB 6: MORE (Products, Address & Hours)
   Widget _buildMoreTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary, BusinessProfile? business) {
+    final pList = _productsList ?? [];
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -1420,13 +1436,13 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
           children: [
             if (_loadingProducts)
               const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
-            else if (_productsList.isEmpty)
+            else if (pList.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text('No products currently listed. Add products to attract buyers directly on Google.', style: GoogleFonts.inter(fontSize: 13, color: textSecondary)),
               )
             else
-              for (final prod in _productsList)
+              for (final prod in pList)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.inventory_2_outlined, color: Color(0xFF4F46E5)),
@@ -1595,11 +1611,11 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
   Future<void> _saveProfile(BusinessProfile? current) async {
     setState(() => _saving = true);
     try {
-      final addCats = _additionalCategoryControllers
+      final addCats = (_additionalCategoryControllers ?? [])
           .map((c) => c.text.trim())
           .where((t) => t.isNotEmpty)
           .toList();
-      final addPhotos = _photoUrlControllers
+      final addPhotos = (_photoUrlControllers ?? [])
           .map((c) => c.text.trim())
           .where((t) => t.isNotEmpty)
           .toList();
@@ -1634,7 +1650,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
         logoUrl: _logoUrlController?.text ?? '',
         coverPhotoUrl: _coverUrlController?.text ?? '',
         additionalPhotos: addPhotos,
-        services: _servicesList,
+        services: _servicesList ?? [],
         hoursSummary: _hoursController?.text.trim() ?? '',
         targetAudience: _audienceController?.text.trim() ?? '',
         brandTone: _toneController?.text.trim() ?? '',
