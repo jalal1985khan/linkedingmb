@@ -291,13 +291,8 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                   title: 'Business Profile',
                   subtitle: 'Grow your business with SocialHive AI',
                   showSparkle: true,
-                  onOpenDrawer: () {
-                    if (scaffoldKey.currentState != null) {
-                      scaffoldKey.currentState!.openDrawer();
-                    } else {
-                      Scaffold.maybeOf(context)?.openDrawer();
-                    }
-                  },
+                  showBackButton: true,
+                  onBack: () => Navigator.of(context).maybePop(),
                   onOpenNotifications: () {
                     if (scaffoldKey.currentState != null) {
                       scaffoldKey.currentState!.openEndDrawer();
