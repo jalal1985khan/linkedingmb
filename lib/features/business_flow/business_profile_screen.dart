@@ -274,7 +274,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
       body: SafeArea(
         child: Column(
           children: [
-            // Standard Fixed DashboardHeaderBar across the app
+            // Standard Fixed DashboardHeaderBar across the app (Always pinned at top)
             Padding(
               padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 4.0),
               child: DashboardHeaderBar(
@@ -289,47 +289,54 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
               ),
             ),
 
-            // Business Profile Header Card
-            _buildHeaderCard(context, business, profileScore, isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-
-            // Navigation Tabs (6 Tabs matching Screenshot)
-            Container(
-              color: cardBgColor,
-              child: TabBar(
-                controller: _tabController!,
-                isScrollable: true,
-                tabAlignment: TabAlignment.start,
-                labelColor: const Color(0xFF4F46E5),
-                unselectedLabelColor: textSecondary,
-                indicatorColor: const Color(0xFF4F46E5),
-                indicatorWeight: 3,
-                indicatorSize: TabBarIndicatorSize.tab,
-                labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
-                unselectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 13),
-                tabs: const [
-                  Tab(icon: Icon(Icons.info_outline, size: 20), text: 'Basic Info'),
-                  Tab(icon: Icon(Icons.interests_outlined, size: 20), text: 'Categories'),
-                  Tab(icon: Icon(Icons.photo_library_outlined, size: 20), text: 'Photos & Logos'),
-                  Tab(icon: Icon(Icons.calendar_month_outlined, size: 20), text: 'Bookings'),
-                  Tab(icon: Icon(Icons.build_outlined, size: 20), text: 'Services'),
-                  Tab(icon: Icon(Icons.more_horiz, size: 20), text: 'More'),
-                ],
-              ),
-            ),
-            Divider(height: 1, thickness: 1, color: borderColor),
-
-            // Tab Views
+            // Collapsible Profile Card on scroll with Pinned TabBar
             Expanded(
-              child: TabBarView(
-                controller: _tabController!,
-                children: [
-                  _buildBasicInfoTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-                  _buildCategoriesTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
-                  _buildPhotosLogosTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-                  _buildBookingsTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
-                  _buildServicesTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
-                  _buildMoreTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
-                ],
+              child: NestedScrollView(
+                headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+                  return [
+                    SliverToBoxAdapter(
+                      child: _buildHeaderCard(context, business, profileScore, isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                    ),
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _TabBarHeaderDelegate(
+                        tabBar: TabBar(
+                          controller: _tabController!,
+                          isScrollable: true,
+                          tabAlignment: TabAlignment.start,
+                          labelColor: const Color(0xFF4F46E5),
+                          unselectedLabelColor: textSecondary,
+                          indicatorColor: const Color(0xFF4F46E5),
+                          indicatorWeight: 3,
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
+                          unselectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 13),
+                          tabs: const [
+                            Tab(icon: Icon(Icons.info_outline, size: 20), text: 'Basic Info'),
+                            Tab(icon: Icon(Icons.interests_outlined, size: 20), text: 'Categories'),
+                            Tab(icon: Icon(Icons.photo_library_outlined, size: 20), text: 'Photos & Logos'),
+                            Tab(icon: Icon(Icons.calendar_month_outlined, size: 20), text: 'Bookings'),
+                            Tab(icon: Icon(Icons.build_outlined, size: 20), text: 'Services'),
+                            Tab(icon: Icon(Icons.more_horiz, size: 20), text: 'More'),
+                          ],
+                        ),
+                        backgroundColor: cardBgColor,
+                        borderColor: borderColor,
+                      ),
+                    ),
+                  ];
+                },
+                body: TabBarView(
+                  controller: _tabController!,
+                  children: [
+                    _buildBasicInfoTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                    _buildCategoriesTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
+                    _buildPhotosLogosTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                    _buildBookingsTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
+                    _buildServicesTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
+                    _buildMoreTab(isDark, cardBgColor, borderColor, textPrimary, textSecondary, business),
+                  ],
+                ),
               ),
             ),
           ],
@@ -1673,5 +1680,41 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
         setState(() => _saving = false);
       }
     }
+  }
+}
+
+class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final TabBar tabBar;
+  final Color backgroundColor;
+  final Color borderColor;
+
+  _TabBarHeaderDelegate({
+    required this.tabBar,
+    required this.backgroundColor,
+    required this.borderColor,
+  });
+
+  @override
+  double get minExtent => 48.0;
+
+  @override
+  double get maxExtent => 48.0;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return Container(
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        border: Border(bottom: BorderSide(color: borderColor, width: 1)),
+      ),
+      child: tabBar,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_TabBarHeaderDelegate oldDelegate) {
+    return tabBar != oldDelegate.tabBar ||
+        backgroundColor != oldDelegate.backgroundColor ||
+        borderColor != oldDelegate.borderColor;
   }
 }
