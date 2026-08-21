@@ -69,13 +69,15 @@ class UpcomingPostsCard extends ConsumerWidget {
       fullUrl = '${ApiConfig.baseUrl}$cleanPath';
     }
 
-    // Convert Google Drive thumbnail URLs to Google direct CDN (lh3) to prevent CORS blocks on Web
-    if (fullUrl.contains('drive.google.com')) {
+    // Convert Google Drive URLs to resilient Backend Image Proxy to prevent CORS & 429 rate limit blocks
+    if (fullUrl.contains('drive.google.com') || fullUrl.contains('lh3.googleusercontent.com')) {
       final idMatch = RegExp(r'[?&]id=([a-zA-Z0-9_-]+)').firstMatch(fullUrl);
       final dMatch = RegExp(r'/d/([a-zA-Z0-9_-]+)').firstMatch(fullUrl);
       final fileId = idMatch?.group(1) ?? dMatch?.group(1);
       if (fileId != null && fileId.isNotEmpty) {
-        fullUrl = 'https://lh3.googleusercontent.com/d/$fileId';
+        fullUrl = '${ApiConfig.baseUrl}/api/scheduler/image-proxy?file_id=$fileId';
+      } else {
+        fullUrl = '${ApiConfig.baseUrl}/api/scheduler/image-proxy?url=${Uri.encodeComponent(fullUrl)}';
       }
     }
 
