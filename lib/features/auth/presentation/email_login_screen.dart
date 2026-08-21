@@ -35,10 +35,53 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
     }
   }
 
+  Widget _buildSocialHiveLogo() {
+    return Container(
+      width: 64,
+      height: 64,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6366F1).withValues(alpha: 0.18),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFEEF2FF), width: 1.5),
+      ),
+      padding: const EdgeInsets.all(10),
+      child: Image.asset(
+        'assets/images/logo.png',
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.auto_awesome_rounded,
+                color: Colors.white,
+                size: 26,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _build3DGoogleIcon() {
     return Container(
-      width: 32,
-      height: 32,
+      width: 28,
+      height: 28,
       decoration: const BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
@@ -47,7 +90,7 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
         child: Text(
           'G',
           style: GoogleFonts.plusJakartaSans(
-            fontSize: 20,
+            fontSize: 18,
             fontWeight: FontWeight.w900,
             color: const Color(0xFF4285F4),
           ),
@@ -64,7 +107,7 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
       backgroundColor: const Color(0xFFFAF9FF),
       body: Stack(
         children: [
-          // Background Gradient Orbs matching LoginScreen
+          // Background Gradient Orbs
           Positioned(
             top: -60,
             right: -60,
@@ -103,110 +146,99 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
             ),
           ),
 
-          // Main Screen Content inside SingleChildScrollView to prevent overflow
+          // Main Screen Content
           SafeArea(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Top Custom Navigation Bar
+                  // Top Navigation Bar (Back Button)
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF6366F1).withValues(alpha: 0.08),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1E1B4B), size: 22),
-                        onPressed: () => Navigator.of(context).pop(),
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => Navigator.of(context).maybePop(),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF6366F1).withValues(alpha: 0.08),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.arrow_back_rounded,
+                          color: Color(0xFF1E1B4B),
+                          size: 20,
+                        ),
                       ),
                     ),
                   ),
+                  const SizedBox(height: 14),
+
+                  // Official SocialHive Logo
+                  _buildSocialHiveLogo(),
                   const SizedBox(height: 16),
 
-                  // Top Icon Badge
-                  Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF6366F1).withValues(alpha: 0.15),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                      border: Border.all(color: const Color(0xFFEEF2FF)),
-                    ),
-                    child: const Icon(
-                      Icons.mail_lock_rounded,
-                      color: Color(0xFF6366F1),
-                      size: 34,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Title
+                  // Brand & Screen Title
                   RichText(
                     textAlign: TextAlign.center,
                     text: TextSpan(
                       children: [
                         TextSpan(
-                          text: 'Log in with ',
+                          text: 'Log in to ',
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 26,
+                            fontSize: 24,
                             fontWeight: FontWeight.w800,
                             color: const Color(0xFF1E1B4B),
                             letterSpacing: -0.5,
                           ),
                         ),
                         TextSpan(
-                          text: 'Email',
+                          text: 'SocialHive',
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 26,
+                            fontSize: 24,
                             fontWeight: FontWeight.w800,
-                            color: const Color(0xFF6366F1),
+                            color: const Color(0xFF4F46E5),
                             letterSpacing: -0.5,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
-                    'Enter your credentials to access your account.',
+                    'Enter your credentials to access your Google Business workspace.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
                       color: const Color(0xFF64748B),
+                      height: 1.35,
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 24),
 
                   // Form Card Container
                   Container(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: const Color(0xFFF1F5F9)),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
                       boxShadow: [
                         BoxShadow(
                           color: const Color(0xFF6366F1).withValues(alpha: 0.08),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
+                          blurRadius: 20,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
@@ -217,11 +249,11 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                         children: [
                           if (authState.errorMessage != null) ...[
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                               margin: const EdgeInsets.only(bottom: 16),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFEF2F2),
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(10),
                                 border: Border.all(color: const Color(0xFFFCA5A5)),
                               ),
                               child: Row(
@@ -229,16 +261,16 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                                   const Icon(
                                     Icons.error_outline_rounded,
                                     color: Color(0xFFEF4444),
-                                    size: 20,
+                                    size: 18,
                                   ),
-                                  const SizedBox(width: 10),
+                                  const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       authState.errorMessage!,
                                       style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 13,
+                                        fontSize: 12.5,
                                         color: const Color(0xFF991B1B),
-                                        fontWeight: FontWeight.w500,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ),
@@ -251,45 +283,45 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                           Text(
                             'Email Address',
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
+                              fontSize: 12.5,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFF1E1B4B),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             style: GoogleFonts.plusJakartaSans(
                               color: const Color(0xFF1E1B4B),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
                             ),
                             decoration: InputDecoration(
                               hintText: 'name@company.com',
                               hintStyle: GoogleFonts.plusJakartaSans(
                                 color: const Color(0xFF94A3B8),
-                                fontSize: 14,
+                                fontSize: 13,
                               ),
                               prefixIcon: const Icon(
                                 Icons.mail_outline_rounded,
-                                color: Color(0xFF6366F1),
-                                size: 20,
+                                color: Color(0xFF4F46E5),
+                                size: 18,
                               ),
                               filled: true,
-                              fillColor: const Color(0xFFF8F7FF),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              fillColor: const Color(0xFFF8FAFC),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(12),
                                 borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(12),
                                 borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(color: Color(0xFF6366F1), width: 1.5),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 1.5),
                               ),
                             ),
                             validator: (val) {
@@ -302,42 +334,42 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 18),
+                          const SizedBox(height: 16),
 
                           // Password Input
                           Text(
                             'Password',
                             style: GoogleFonts.plusJakartaSans(
-                              fontSize: 13,
+                              fontSize: 12.5,
                               fontWeight: FontWeight.w700,
                               color: const Color(0xFF1E1B4B),
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 6),
                           TextFormField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
                             style: GoogleFonts.plusJakartaSans(
                               color: const Color(0xFF1E1B4B),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
                             ),
                             decoration: InputDecoration(
                               hintText: '••••••••',
                               hintStyle: GoogleFonts.plusJakartaSans(
                                 color: const Color(0xFF94A3B8),
-                                fontSize: 14,
+                                fontSize: 13,
                               ),
                               prefixIcon: const Icon(
                                 Icons.lock_outline_rounded,
-                                color: Color(0xFF6366F1),
-                                size: 20,
+                                color: Color(0xFF4F46E5),
+                                size: 18,
                               ),
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                                   color: const Color(0xFF94A3B8),
-                                  size: 20,
+                                  size: 18,
                                 ),
                                 onPressed: () {
                                   setState(() {
@@ -346,19 +378,19 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                                 },
                               ),
                               filled: true,
-                              fillColor: const Color(0xFFF8F7FF),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              fillColor: const Color(0xFFF8FAFC),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(12),
                                 borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(12),
                                 borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                borderSide: const BorderSide(color: Color(0xFF6366F1), width: 1.5),
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 1.5),
                               ),
                             ),
                             validator: (val) {
@@ -368,79 +400,69 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 20),
 
-                          // Action Button: Sign In (Gradient identical to LoginScreen)
-                          if (authState.isInitializing)
-                            const Center(
-                              child: CircularProgressIndicator(color: Color(0xFF6366F1)),
-                            )
-                          else
-                            Container(
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF5B4DFF),
-                                    Color(0xFF4338CA),
-                                  ],
+                          // Action Button: Sign In (48px Fixed Height)
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF4F46E5),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF4338CA).withValues(alpha: 0.35),
-                                    blurRadius: 18,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
                               ),
-                              child: Material(
-                                color: Colors.transparent,
-                                child: InkWell(
-                                  onTap: _handleEmailSubmit,
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                                    child: Row(
+                              onPressed: authState.isInitializing ? null : _handleEmailSubmit,
+                              child: authState.isInitializing
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Text(
                                           'Sign In',
                                           style: GoogleFonts.plusJakartaSans(
                                             color: Colors.white,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                            letterSpacing: -0.2,
+                                            fontSize: 14.5,
+                                            fontWeight: FontWeight.w800,
                                           ),
                                         ),
                                         const SizedBox(width: 8),
                                         const Icon(
                                           Icons.arrow_forward_rounded,
                                           color: Colors.white,
-                                          size: 20,
+                                          size: 18,
                                         ),
                                       ],
                                     ),
-                                  ),
-                                ),
-                              ),
                             ),
+                          ),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
 
                   // Divider OR
                   Row(
                     children: [
                       const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Text(
                           'OR',
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
                             color: const Color(0xFF94A3B8),
                           ),
                         ),
@@ -448,62 +470,53 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                       const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
                     ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
 
-                  // Secondary Button: Continue with Google (matching LoginScreen aesthetics)
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF6366F1).withValues(alpha: 0.04),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                  // Secondary Button: Continue with Google (48px Fixed Height)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color(0xFF1E1B4B),
+                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ],
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          if (!kIsWeb) {
-                            Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(
-                                builder: (_) => const InAppGoogleAuthScreen(),
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                      ),
+                      onPressed: () {
+                        if (!kIsWeb) {
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (_) => const InAppGoogleAuthScreen(),
+                            ),
+                          );
+                        } else {
+                          ref.read(authProvider.notifier).loginWithGoogle();
+                        }
+                      },
+                      child: Row(
+                        children: [
+                          _build3DGoogleIcon(),
+                          Expanded(
+                            child: Text(
+                              'Continue with Google',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.plusJakartaSans(
+                                color: const Color(0xFF1E1B4B),
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
                               ),
-                            );
-                          } else {
-                            ref.read(authProvider.notifier).loginWithGoogle();
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(20),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          child: Row(
-                            children: [
-                              _build3DGoogleIcon(),
-                              Expanded(
-                                child: Text(
-                                  'Continue with Google',
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    color: const Color(0xFF1E1B4B),
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: -0.2,
-                                  ),
-                                ),
-                              ),
-                              const Icon(
-                                Icons.chevron_right_rounded,
-                                color: Color(0xFF64748B),
-                                size: 24,
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            color: Color(0xFF94A3B8),
+                            size: 20,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -516,21 +529,21 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                     children: [
                       const Icon(
                         Icons.shield_outlined,
-                        size: 18,
-                        color: Color(0xFF6366F1),
+                        size: 16,
+                        color: Color(0xFF4F46E5),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Text(
                         'Secure & trusted authentication',
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                           color: const Color(0xFF64748B),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
