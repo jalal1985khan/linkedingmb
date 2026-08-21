@@ -15,7 +15,6 @@ import '../dashboard/reviews_screen.dart';
 import '../customers/customers_screen.dart';
 import '../dashboard/analytics_dashboard_screen.dart';
 import '../notifications/notification_end_drawer.dart';
-import '../notifications/providers/user_notifications_provider.dart';
 import '../posts/create_post_flow_screen.dart';
 import '../posts/published_posts_screen.dart';
 import '../qa/presentation/qa_engine_screen.dart';
@@ -46,14 +45,6 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
       const CustomersScreen(showScaffold: false),
       const CreatePostFlowScreen(showScaffold: false),
       const AnalyticsDashboardScreen(showScaffold: false),
-    ];
-
-    final titles = <String>[
-      'Business Dashboard',
-      'Customer Review',
-      'Services',
-      'Create Post',
-      'Insights',
     ];
 
     return Scaffold(
@@ -270,72 +261,6 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
             ],
           ),
         ),
-      ),
-      appBar: _index == 0
-          ? null
-          : AppBar(
-              backgroundColor: const Color(0xFFFAF8FF),
-              elevation: 0,
-              centerTitle: false,
-              titleSpacing: 0,
-              leading: Builder(
-                builder: (innerContext) => IconButton(
-                  onPressed: () => Scaffold.of(innerContext).openDrawer(),
-                  icon: const Icon(Icons.grid_view_rounded, color: AppColors.primaryContainer),
-                ),
-              ),
-        title: Text(
-          titles[_index],
-          style: const TextStyle(
-            color: AppColors.primaryContainer,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        actions: [
-          Consumer(
-            builder: (context, ref, _) {
-              final unreadCount = ref.watch(unreadNotificationsCountProvider);
-              return Padding(
-                padding: const EdgeInsets.only(right: 8.0),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary),
-                      onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-                    ),
-                    if (unreadCount > 0)
-                      Positioned(
-                        right: 8,
-                        top: 8,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(
-                            color: Colors.redAccent,
-                            shape: BoxShape.circle,
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 16,
-                            minHeight: 16,
-                          ),
-                          child: Text(
-                            unreadCount > 99 ? '99+' : '$unreadCount',
-                            style: GoogleFonts.plusJakartaSans(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w800,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
       ),
       body: Container(
         decoration: BoxDecoration(

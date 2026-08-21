@@ -7,8 +7,10 @@ import '../../data/repositories/gmb_analytics_repository.dart';
 import '../../data/repositories/gmb_reviews_repository.dart';
 import '../../data/repositories/gmbapi_repository.dart';
 import '../business_flow/providers/active_location_provider.dart';
+import '../notifications/notification_end_drawer.dart';
 import '../settings/automation_settings_controller.dart';
 import 'providers/dashboard_providers.dart';
+import 'widgets/dashboard_header_bar.dart';
 
 /// Provider for location-specific reviews supporting both backend repositories
 final customerReviewsFamilyProvider =
@@ -84,150 +86,193 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
     final reviewsAsync = ref.watch(customerReviewsFamilyProvider(locationId));
     final statsAsync = ref.watch(dashboardStatsProvider(locationId));
 
-    final body = Container(
-      color: const Color(0xFFF8FAFC),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgGradient = isDark ? AppColors.backgroundGradientDark : AppColors.backgroundGradientLight;
+    final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+
+    final content = Container(
+      decoration: BoxDecoration(gradient: bgGradient),
       child: SafeArea(
         bottom: false,
-        child: reviewsAsync.when(
-          data: (allReviews) {
-            final stats = statsAsync.value ?? const GMBLocationStats();
+        child: Column(
+          children: [
+            // Standard Fixed DashboardHeaderBar across the app
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 4.0),
+              child: DashboardHeaderBar(
+                title: 'Customer Reviews',
+                subtitle: 'Track and respond to customer reviews',
+                showSparkle: true,
+                showBackButton: widget.showScaffold,
+                onBack: widget.showScaffold ? () => Navigator.of(context).maybePop() : null,
+                onOpenDrawer: () => Scaffold.of(context).openDrawer(),
+                onOpenNotifications: () => Scaffold.of(context).openEndDrawer(),
+              ),
+            ),
+            Expanded(
+              child: reviewsAsync.when(
+                data: (allReviews) {
+                  final stats = statsAsync.value ?? const GMBLocationStats();
 
-            // Calculate metrics
-            double rating = stats.averageRating;
-            if (allReviews.isNotEmpty) {
-              final valid = allReviews.where((r) => r.starRating > 0).toList();
-              if (valid.isNotEmpty) {
-                final double sum =
-                    valid.fold<double>(0.0, (acc, r) => acc + r.starRating);
-                final double computedRating = sum / valid.length;
-                if (rating <= 0.0 || computedRating > 0.0) {
-                  rating = computedRating;
-                }
-              }
-            }
+                  // Calculate metrics
+                  double rating = stats.averageRating;
+                  if (allReviews.isNotEmpty) {
+                    final valid = allReviews.where((r) => r.starRating > 0).toList();
+                    if (valid.isNotEmpty) {
+                      final double sum =
+                          valid.fold<double>(0.0, (acc, r) => acc + r.starRating);
+                      final double computedRating = sum / valid.length;
+                      if (rating <= 0.0 || computedRating > 0.0) {
+                        rating = computedRating;
+                      }
+                    }
+                  }
 
-            final unrepliedReviews = allReviews
-                .where((r) => r.reviewReply == null || r.reviewReply!.trim().isEmpty)
-                .toList();
+                  final unrepliedReviews = allReviews
+                      .where((r) => r.reviewReply == null || r.reviewReply!.trim().isEmpty)
+                      .toList();
 
-            final positiveReviews =
-                allReviews.where((r) => r.starRating >= 4).toList();
-            final negativeReviews =
-                allReviews.where((r) => r.starRating > 0 && r.starRating <= 2).toList();
+                  final positiveReviews =
+                      allReviews.where((r) => r.starRating >= 4).toList();
+                  final negativeReviews =
+                      allReviews.where((r) => r.starRating > 0 && r.starRating <= 2).toList();
 
-            List<GMBReviewItem> displayReviews = allReviews;
-            if (_selectedFilter == 1) displayReviews = unrepliedReviews;
-            if (_selectedFilter == 2) displayReviews = positiveReviews;
-            if (_selectedFilter == 3) displayReviews = negativeReviews;
+                  List<GMBReviewItem> displayReviews = allReviews;
+                  if (_selectedFilter == 1) displayReviews = unrepliedReviews;
+                  if (_selectedFilter == 2) displayReviews = positiveReviews;
+                  if (_selectedFilter == 3) displayReviews = negativeReviews;
 
-            return RefreshIndicator(
-              color: const Color(0xFF4F46E5),
-              onRefresh: () async {
-                ref.invalidate(customerReviewsFamilyProvider(locationId));
-                ref.invalidate(dashboardStatsProvider(locationId));
-                try {
-                  await Future.wait([
-                    ref.read(customerReviewsFamilyProvider(locationId).future),
-                    ref.read(dashboardStatsProvider(locationId).future),
-                    ref.read(automationSettingsProvider.notifier).fetchSettings(
-                          locationId: activeLocation?.name ?? activeLocation?.id,
-                        ),
-                  ]);
-                } catch (e) {
-                  debugPrint('Refresh error: $e');
-                }
-              },
-              child: CustomScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Top Header with Active Location Indicator & Settings Icon
-                          if (activeLocation != null) ...[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  return RefreshIndicator(
+                    color: const Color(0xFF4F46E5),
+                    onRefresh: () async {
+                      ref.invalidate(customerReviewsFamilyProvider(locationId));
+                      ref.invalidate(dashboardStatsProvider(locationId));
+                      try {
+                        await Future.wait([
+                          ref.read(customerReviewsFamilyProvider(locationId).future),
+                          ref.read(dashboardStatsProvider(locationId).future),
+                          ref.read(automationSettingsProvider.notifier).fetchSettings(
+                                locationId: activeLocation?.name ?? activeLocation?.id,
+                              ),
+                        ]);
+                      } catch (e) {
+                        debugPrint('Refresh error: $e');
+                      }
+                    },
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEEF2FF),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: const Color(0xFFC7D2FE)),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
+                                // Top Header with Active Location Indicator & Auto-Reply Button
+                                if (activeLocation != null) ...[
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Icon(
-                                        Icons.storefront_rounded,
-                                        size: 14,
-                                        color: Color(0xFF4F46E5),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        activeLocation.name,
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: const Color(0xFF4F46E5),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: isDark ? const Color(0xFF1E1B4B).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
+                                          borderRadius: BorderRadius.circular(10),
+                                          border: Border.all(color: isDark ? const Color(0xFF3730A3) : const Color(0xFFC7D2FE)),
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Icons.storefront_rounded,
+                                              size: 14,
+                                              color: Color(0xFF4F46E5),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              activeLocation.name,
+                                              style: GoogleFonts.plusJakartaSans(
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.w700,
+                                                color: const Color(0xFF4F46E5),
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      InkWell(
+                                        onTap: () => _showAutoReplySettingsModal(
+                                            context, locationId),
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: cardBgColor,
+                                            borderRadius: BorderRadius.circular(10),
+                                            border: Border.all(color: borderColor),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                                                blurRadius: 4,
+                                                offset: const Offset(0, 1),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(
+                                                Icons.auto_awesome,
+                                                size: 14,
+                                                color: Color(0xFF4F46E5),
+                                              ),
+                                              const SizedBox(width: 5),
+                                              Text(
+                                                'Auto-Reply',
+                                                style: GoogleFonts.plusJakartaSans(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: textPrimary,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ),
+                                  const SizedBox(height: 14),
+                                ],
+
+                                // 1. Overall Rating & Distribution Overview Card
+                                _buildReviewsOverviewCard(
+                                  context,
+                                  rating,
+                                  stats.totalReviews > 0
+                                      ? stats.totalReviews
+                                      : allReviews.length,
+                                  allReviews,
                                 ),
-                                InkWell(
-                                  onTap: () => _showAutoReplySettingsModal(
-                                      context, locationId),
-                                  borderRadius: BorderRadius.circular(10),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(7),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(10),
-                                      border: Border.all(
-                                          color: const Color(0xFFCBD5E1)),
-                                    ),
-                                    child: const Icon(
-                                      Icons.settings_outlined,
-                                      size: 18,
-                                      color: Color(0xFF0F172A),
-                                    ),
-                                  ),
+                                const SizedBox(height: 18),
+
+                                // 2. Filter Chips
+                                _buildFilters(
+                                  allCount: allReviews.length,
+                                  unrepliedCount: unrepliedReviews.length,
+                                  positiveCount: positiveReviews.length,
+                                  negativeCount: negativeReviews.length,
                                 ),
+                                const SizedBox(height: 16),
                               ],
                             ),
-                            const SizedBox(height: 16),
-                          ],
-
-                          // 1. Overall Rating & Distribution Overview Card (Replicated from Dashboard)
-                          _buildReviewsOverviewCard(
-                            context,
-                            rating,
-                            stats.totalReviews > 0
-                                ? stats.totalReviews
-                                : allReviews.length,
-                            allReviews,
                           ),
-                          const SizedBox(height: 20),
-
-                          // 2. Filter Chips
-                          _buildFilters(
-                            allCount: allReviews.length,
-                            unrepliedCount: unrepliedReviews.length,
-                            positiveCount: positiveReviews.length,
-                            negativeCount: negativeReviews.length,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                      ),
-                    ),
-                  ),
+                        ),
 
                   // Reviews List
                   if (displayReviews.isEmpty)
@@ -290,15 +335,22 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
           ),
         ),
       ),
-    );
+    ],
+  ),
+),
+);
 
     if (!widget.showScaffold) {
-      return body;
+      return Material(
+        color: Colors.transparent,
+        child: content,
+      );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      body: body,
+      backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFFAF8FF),
+      endDrawer: const NotificationEndDrawer(),
+      body: content,
     );
   }
 
@@ -388,15 +440,21 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
       avgResponse = 'Fast';
     }
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBgColor,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -412,7 +470,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
+                  color: isDark ? const Color(0xFF1E1B4B) : const Color(0xFFEEF2FF),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -431,7 +489,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF0F172A),
+                        color: textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -439,7 +497,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                       'Track and respond to customer reviews',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
-                        color: const Color(0xFF64748B),
+                        color: textSecondary,
                       ),
                     ),
                   ],
@@ -463,7 +521,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                     style: GoogleFonts.plusJakartaSans(
                       fontSize: 44,
                       fontWeight: FontWeight.w800,
-                      color: const Color(0xFF0F172A),
+                      color: textPrimary,
                       height: 1.0,
                     ),
                   ),
@@ -708,25 +766,39 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
   }
 
   Widget _buildFilterChip(String label, int filterIndex) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = _selectedFilter == filterIndex;
+    final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF475569);
+
     return GestureDetector(
       onTap: () => setState(() => _selectedFilter = filterIndex),
       child: Container(
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF4F46E5) : Colors.white,
+          color: isSelected ? const Color(0xFF4F46E5) : cardBgColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
                 ? const Color(0xFF4F46E5)
-                : const Color(0xFFE2E8F0),
+                : borderColor,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF4F46E5).withValues(alpha: 0.25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           label,
           style: GoogleFonts.plusJakartaSans(
-            color: isSelected ? Colors.white : const Color(0xFF475569),
+            color: isSelected ? Colors.white : textSecondary,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
             fontSize: 13,
           ),
@@ -736,20 +808,26 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
   }
 
   Widget _buildEmptyState() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBgColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: const BoxDecoration(
-              color: Color(0xFFEEF2FF),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E1B4B) : const Color(0xFFEEF2FF),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -764,7 +842,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
             style: GoogleFonts.plusJakartaSans(
               fontSize: 16,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF0F172A),
+              color: textPrimary,
             ),
           ),
           const SizedBox(height: 4),
@@ -773,7 +851,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
             textAlign: TextAlign.center,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 13,
-              color: const Color(0xFF64748B),
+              color: textSecondary,
             ),
           ),
         ],
@@ -800,6 +878,13 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final textBody = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155);
+
     final review = widget.review;
     final reviewerName = review.reviewerName;
     final profilePhotoUrl = review.reviewerPhoto;
@@ -837,12 +922,12 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBgColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -856,7 +941,7 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
             children: [
               CircleAvatar(
                 radius: 22,
-                backgroundColor: const Color(0xFFEEF2FF),
+                backgroundColor: isDark ? const Color(0xFF312E81) : const Color(0xFFEEF2FF),
                 backgroundImage: profilePhotoUrl != null && profilePhotoUrl.isNotEmpty
                     ? NetworkImage(profilePhotoUrl)
                     : null,
@@ -883,7 +968,7 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                       style: GoogleFonts.plusJakartaSans(
                         fontWeight: FontWeight.w800,
                         fontSize: 15,
-                        color: const Color(0xFF0F172A),
+                        color: textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -904,7 +989,7 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
               Text(
                 timeAgo,
                 style: GoogleFonts.plusJakartaSans(
-                  color: const Color(0xFF94A3B8),
+                  color: textSecondary,
                   fontSize: 12,
                 ),
               ),
@@ -914,7 +999,7 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
           Text(
             comment,
             style: GoogleFonts.plusJakartaSans(
-              color: const Color(0xFF334155),
+              color: textBody,
               height: 1.5,
               fontSize: 14,
             ),
