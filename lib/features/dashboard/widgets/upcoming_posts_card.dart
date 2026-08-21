@@ -350,45 +350,68 @@ class UpcomingPostsCard extends ConsumerWidget {
                       Text(
                         post.title.isNotEmpty ? post.title : 'Scheduled Post',
                         style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
+                          fontSize: 13.5,
                           fontWeight: FontWeight.w700,
                           color: const Color(0xFF0F172A),
+                          height: 1.25,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 3),
                       if (isOverdue)
-                        Text(
-                          'Time passed (${_formatDate(post.scheduledAt)}) - Reschedule required',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFFB45309),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            const Icon(Icons.calendar_today_outlined, size: 11, color: Color(0xFFB45309)),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                'Time passed (${_formatDate(post.scheduledAt)}) - Reschedule required',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFFB45309),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         )
                       else if (isDraft)
-                        Text(
-                          'No schedule date assigned - Click to set',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF64748B),
-                          ),
+                        Row(
+                          children: [
+                            const Icon(Icons.calendar_today_outlined, size: 11, color: Color(0xFF64748B)),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                'No schedule date assigned - Click to set',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF64748B),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         )
                       else
                         Row(
                           children: [
                             const Icon(Icons.calendar_today_outlined, size: 11, color: Color(0xFF64748B)),
                             const SizedBox(width: 3),
-                            Text(
-                              _formatScheduledDateOnly(post.scheduledAt),
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w500,
-                                color: const Color(0xFF64748B),
+                            Expanded(
+                              child: Text(
+                                _formatScheduledDateOnly(post.scheduledAt),
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF64748B),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
