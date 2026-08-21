@@ -35,6 +35,291 @@ class _PublishedPostsScreenState extends ConsumerState<PublishedPostsScreen> {
     _scaffoldKey ??= GlobalKey<ScaffoldState>();
   }
 
+  void _showPostDetailModal(
+    BuildContext context,
+    dynamic post,
+    bool isDark,
+    Color cardBgColor,
+    Color borderColor,
+    Color textPrimary,
+    Color textSecondary,
+  ) {
+    final content = (post['content'] ?? post['summary'] ?? post['caption'] ?? post['title'] ?? 'GMB Post Update').toString();
+    final imageUrl = post['media_url'] ?? post['image_url'] ?? post['image_data'];
+    final postType = (post['topic_type'] ?? post['post_type'] ?? 'STANDARD').toString();
+    final actionType = post['action_type'] ?? post['cta_type'];
+    final actionUrl = post['action_url'] ?? post['cta_url'];
+    final postedAtRaw = post['posted_at'] ?? post['created_at'] ?? post['scheduled_time'] ?? post['createTime'];
+
+    DateTime? postedDate;
+    if (postedAtRaw != null) {
+      try {
+        postedDate = DateTime.parse(postedAtRaw.toString());
+      } catch (_) {}
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.88,
+          ),
+          decoration: BoxDecoration(
+            color: cardBgColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 1. Drag Handle
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+
+                // 2. Header with Post Type & Close Button
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 8, 12, 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.5) : const Color(0xFFDCFCE7),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: isDark ? const Color(0xFF059669) : const Color(0xFF86EFAC)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.check_circle_rounded,
+                              size: 14,
+                              color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF15803D),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Published',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 11,
+                                color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF15803D),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          postType,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                            color: isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4338CA),
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: Icon(Icons.close_rounded, color: textSecondary, size: 22),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Divider(height: 1, color: borderColor),
+
+                // 3. Scrollable Detailed Content
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Post Image (Full Width)
+                        if (imageUrl != null && imageUrl.toString().isNotEmpty) ...[
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(14),
+                            child: Image.network(
+                              imageUrl.toString(),
+                              width: double.infinity,
+                              height: 220,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+
+                        // Timestamp Row
+                        if (postedDate != null) ...[
+                          Row(
+                            children: [
+                              Icon(Icons.calendar_today_outlined, size: 14, color: textSecondary),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Published on ${DateFormat('MMMM d, y • h:mm a').format(postedDate)}',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+
+                        // Full Post Content Copy
+                        SelectableText(
+                          content,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 15,
+                            color: textPrimary,
+                            height: 1.6,
+                          ),
+                        ),
+
+                        // CTA Link Info (if present)
+                        if (actionType != null) ...[
+                          const SizedBox(height: 20),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: borderColor),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.touch_app_rounded, size: 16, color: Color(0xFF4F46E5)),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'Call to Action: $actionType',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF4F46E5),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                if (actionUrl != null && actionUrl.toString().isNotEmpty) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    actionUrl.toString(),
+                                    style: GoogleFonts.plusJakartaSans(
+                                      fontSize: 12,
+                                      color: textSecondary,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+
+                Divider(height: 1, color: borderColor),
+
+                // 4. Modal Action Buttons Footer
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: content));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Post content copied to clipboard!',
+                                  style: GoogleFonts.plusJakartaSans(fontSize: 13),
+                                ),
+                                duration: const Duration(seconds: 2),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.copy_rounded, size: 17),
+                          label: Text(
+                            'Copy Post Copy',
+                            style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: textPrimary,
+                            side: BorderSide(color: borderColor),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          icon: const Icon(Icons.check_rounded, size: 18),
+                          label: Text(
+                            'Done',
+                            style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4F46E5),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final postsAsync = ref.watch(publishedPostsProvider);
@@ -305,13 +590,22 @@ class _PublishedPostsScreenState extends ConsumerState<PublishedPostsScreen> {
                       itemCount: posts.length,
                       itemBuilder: (context, index) {
                         final post = posts[index];
-                        return _PublishedPostCard(
+                        return _CompactPublishedPostCard(
                           post: post,
                           isDark: isDark,
                           cardBgColor: cardBgColor,
                           borderColor: borderColor,
                           textPrimary: textPrimary,
                           textSecondary: textSecondary,
+                          onTap: () => _showPostDetailModal(
+                            context,
+                            post,
+                            isDark,
+                            cardBgColor,
+                            borderColor,
+                            textPrimary,
+                            textSecondary,
+                          ),
                         );
                       },
                     );
@@ -337,14 +631,15 @@ class _PublishedPostsScreenState extends ConsumerState<PublishedPostsScreen> {
   }
 }
 
-class _PublishedPostCard extends StatelessWidget {
-  const _PublishedPostCard({
+class _CompactPublishedPostCard extends StatelessWidget {
+  const _CompactPublishedPostCard({
     required this.post,
     required this.isDark,
     required this.cardBgColor,
     required this.borderColor,
     required this.textPrimary,
     required this.textSecondary,
+    required this.onTap,
   });
 
   final dynamic post;
@@ -353,6 +648,7 @@ class _PublishedPostCard extends StatelessWidget {
   final Color borderColor;
   final Color textPrimary;
   final Color textSecondary;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -360,7 +656,7 @@ class _PublishedPostCard extends StatelessWidget {
     final imageUrl = post['media_url'] ?? post['image_url'] ?? post['image_data'];
     final postType = (post['topic_type'] ?? post['post_type'] ?? 'STANDARD').toString();
     final actionType = post['action_type'] ?? post['cta_type'];
-    final postedAtRaw = post['posted_at'] ?? post['created_at'] ?? post['scheduled_time'];
+    final postedAtRaw = post['posted_at'] ?? post['created_at'] ?? post['scheduled_time'] ?? post['createTime'];
 
     DateTime? postedDate;
     if (postedAtRaw != null) {
@@ -370,7 +666,7 @@ class _PublishedPostCard extends StatelessWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: cardBgColor,
         borderRadius: BorderRadius.circular(16),
@@ -383,191 +679,176 @@ class _PublishedPostCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. Header Status Bar
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.5) : const Color(0xFFDCFCE7),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: isDark ? const Color(0xFF059669) : const Color(0xFF86EFAC)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.check_circle_rounded,
-                        size: 14,
-                        color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF15803D),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Published',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 11,
-                          color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF15803D),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    postType,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 10,
-                      color: isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4338CA),
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                if (postedDate != null)
-                  Row(
-                    children: [
-                      Icon(Icons.access_time_rounded, size: 13, color: textSecondary),
-                      const SizedBox(width: 4),
-                      Text(
-                        DateFormat('MMM d, y • h:mm a').format(postedDate),
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11,
-                          color: textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
-          ),
-
-          // 2. Post Image (if present)
-          if (imageUrl != null && imageUrl.toString().isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  imageUrl.toString(),
-                  height: 180,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                ),
-              ),
-            ),
-
-          // 3. Content Text
-          Padding(
-            padding: const EdgeInsets.all(16),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  content,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    color: textPrimary,
-                    height: 1.5,
-                  ),
-                ),
-                if (actionType != null) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: borderColor),
+                // 1. Top Metadata Row
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.5) : const Color(0xFFDCFCE7),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: isDark ? const Color(0xFF059669) : const Color(0xFF86EFAC)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle_rounded,
+                            size: 12,
+                            color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF15803D),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Published',
+                            style: GoogleFonts.plusJakartaSans(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 10,
+                              color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF15803D),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.touch_app_rounded, size: 14, color: Color(0xFF4F46E5)),
-                        const SizedBox(width: 6),
-                        Text(
-                          'CTA: $actionType',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF4F46E5),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        postType,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 10,
+                          color: isDark ? const Color(0xFFA5B4FC) : const Color(0xFF4338CA),
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    if (postedDate != null)
+                      Row(
+                        children: [
+                          Icon(Icons.access_time_rounded, size: 12, color: textSecondary),
+                          const SizedBox(width: 4),
+                          Text(
+                            DateFormat('MMM d • h:mm a').format(postedDate),
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 11,
+                              color: textSecondary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+
+                // 2. Main Content & Thumbnail Row
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Thumbnail if image present
+                    if (imageUrl != null && imageUrl.toString().isNotEmpty) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Image.network(
+                          imageUrl.toString(),
+                          width: 68,
+                          height: 68,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Container(
+                            width: 68,
+                            height: 68,
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(Icons.image_not_supported_outlined, size: 22, color: textSecondary),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-
-          Divider(height: 1, color: borderColor),
-
-          // 4. Actions Footer
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            child: Row(
-              children: [
-                TextButton.icon(
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: content));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Post content copied to clipboard!', style: GoogleFonts.plusJakartaSans(fontSize: 13)),
-                        duration: const Duration(seconds: 2),
-                        behavior: SnackBarBehavior.floating,
                       ),
-                    );
-                  },
-                  icon: Icon(Icons.copy_rounded, size: 16, color: textSecondary),
-                  label: Text(
-                    'Copy Content',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: textSecondary,
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E3A8A).withValues(alpha: 0.3) : const Color(0xFFF0F7FF),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: isDark ? const Color(0xFF1D4ED8) : const Color(0xFFBFDBFE)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.g_mobiledata_rounded, size: 18, color: Color(0xFF3B82F6)),
-                      Text(
-                        'Live GMB',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: const Color(0xFF3B82F6),
-                        ),
-                      ),
+                      const SizedBox(width: 12),
                     ],
-                  ),
+
+                    // Text snippet & CTA badge
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            content,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 13,
+                              color: textPrimary,
+                              height: 1.4,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              if (actionType != null) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: borderColor),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.touch_app_rounded, size: 12, color: Color(0xFF4F46E5)),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'CTA: $actionType',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF4F46E5),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              Text(
+                                'Tap to view full post →',
+                                style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF6366F1),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.chevron_right_rounded, size: 20, color: textSecondary),
+                  ],
                 ),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
