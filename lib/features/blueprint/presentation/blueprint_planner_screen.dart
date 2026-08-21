@@ -443,192 +443,123 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
     Color textPrimary,
     Color textSecondary,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: cardBgColor,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Top Badges Row
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: isDark ? const Color(0xFF4338CA) : const Color(0xFFC7D2FE)),
-                ),
-                child: Text(
-                  'DAY ${item.dayNumber}',
-                  style: GoogleFonts.plusJakartaSans(
-                    color: const Color(0xFF4F46E5),
-                    fontWeight: FontWeight.w800,
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: borderColor),
-                ),
-                child: Text(
-                  item.format.replaceAll('_', ' '),
-                  style: GoogleFonts.plusJakartaSans(
-                    color: textSecondary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              Text(
-                '${item.costCredits} Credits',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w600,
-                  color: textSecondary,
-                ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _openEditConceptModal(item),
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: cardBgColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-
-          // Headline Title
-          Text(
-            item.title,
-            style: GoogleFonts.plusJakartaSans(
-              fontWeight: FontWeight.w800,
-              fontSize: 15,
-              color: textPrimary,
-              height: 1.3,
-            ),
-          ),
-          const SizedBox(height: 6),
-
-          // Caption Preview
-          Text(
-            item.caption,
-            style: GoogleFonts.plusJakartaSans(
-              color: textSecondary,
-              fontSize: 12.5,
-              height: 1.4,
-            ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-          ),
-
-          // AI Selection Rationale Note
-          if (item.selectionReasons.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Chosen because ${item.selectionReasons.take(2).join(", ")}',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 11,
-                fontStyle: FontStyle.italic,
-                color: textSecondary.withValues(alpha: 0.8),
-              ),
-            ),
-          ],
-
-          // Visual Prompt Concept Box
-          if (item.mediaConcept.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: borderColor),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Top Badges Row
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.auto_awesome_rounded, size: 14, color: Color(0xFF4F46E5)),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Media Concept',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w800,
-                          color: textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.mediaConcept,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 11.5,
-                      color: textSecondary,
-                      height: 1.35,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
+                      borderRadius: BorderRadius.circular(7),
+                      border: Border.all(color: isDark ? const Color(0xFF4338CA) : const Color(0xFFC7D2FE)),
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                    child: Text(
+                      'DAY ${item.dayNumber}',
+                      style: GoogleFonts.plusJakartaSans(
+                        color: const Color(0xFF4F46E5),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 10.5,
+                      ),
+                    ),
                   ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(7),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Text(
+                      item.format.replaceAll('_', ' '),
+                      style: GoogleFonts.plusJakartaSans(
+                        color: textSecondary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 10.5,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(7),
+                      border: Border.all(color: borderColor),
+                    ),
+                    child: Text(
+                      'CTA: ${item.ctaType.replaceAll('_', ' ')}',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: textSecondary,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${item.costCredits} Credits',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: textSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.chevron_right_rounded, size: 18, color: textSecondary),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 8),
 
-          // Bottom Action Row
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: borderColor),
+              // Title (Single line, prominent)
+              Text(
+                item.title,
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 14,
+                  color: textPrimary,
                 ),
-                child: Text(
-                  'CTA: ${item.ctaType.replaceAll('_', ' ')}',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w700,
-                    color: textSecondary,
-                  ),
-                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              const Spacer(),
-              ElevatedButton.icon(
-                onPressed: () => _openEditConceptModal(item),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF4F46E5).withValues(alpha: 0.1),
-                  foregroundColor: const Color(0xFF4F46E5),
-                  elevation: 0,
-                  side: const BorderSide(color: Color(0xFF4F46E5), width: 0.8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              const SizedBox(height: 4),
+
+              // Caption Preview (1 line snippet)
+              Text(
+                item.caption,
+                style: GoogleFonts.plusJakartaSans(
+                  color: textSecondary,
+                  fontSize: 12,
+                  height: 1.3,
                 ),
-                icon: const Icon(Icons.auto_fix_high_rounded, size: 15),
-                label: Text(
-                  'AI Assist & Edit',
-                  style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700),
-                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
