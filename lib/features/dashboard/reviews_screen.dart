@@ -985,29 +985,30 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: cardBgColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
             blurRadius: 10,
-            offset: const Offset(0, 4),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Top Row: Avatar, Name + Rating, Time Ago
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               CircleAvatar(
-                radius: 22,
-                backgroundColor: isDark ? const Color(0xFF312E81) : const Color(0xFFEEF2FF),
+                radius: 20,
+                backgroundColor: isDark ? const Color(0xFF1E1B4B) : const Color(0xFFEEF2FF),
                 backgroundImage: profilePhotoUrl != null && profilePhotoUrl.isNotEmpty
                     ? NetworkImage(profilePhotoUrl)
                     : null,
@@ -1018,8 +1019,8 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                             : 'A',
                         style: GoogleFonts.plusJakartaSans(
                           color: const Color(0xFF4F46E5),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16,
                         ),
                       )
                     : null,
@@ -1032,20 +1033,23 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                     Text(
                       reviewerName,
                       style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14.5,
                         color: textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Row(
                       children: List.generate(5, (index) {
-                        return Icon(
-                          index < starRating
-                              ? Icons.star_rounded
-                              : Icons.star_border_rounded,
-                          color: const Color(0xFFF59E0B),
-                          size: 16,
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 2.0),
+                          child: Icon(
+                            index < starRating
+                                ? Icons.star_rounded
+                                : Icons.star_border_rounded,
+                            color: const Color(0xFFF59E0B),
+                            size: 15,
+                          ),
                         );
                       }),
                     ),
@@ -1057,27 +1061,29 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                 style: GoogleFonts.plusJakartaSans(
                   color: textSecondary,
                   fontSize: 12,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Text(
             comment,
             style: GoogleFonts.plusJakartaSans(
               color: textBody,
               height: 1.5,
-              fontSize: 14,
+              fontSize: 13.5,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
+          // Action Section
           if (!isReplied)
             Row(
               children: [
                 Expanded(
                   child: SizedBox(
-                    height: 44,
+                    height: 40,
                     child: ElevatedButton.icon(
                       onPressed: () => _showReplyDialog(
                         context,
@@ -1089,13 +1095,13 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                         rating: starRating,
                       ),
                       icon: const Icon(Icons.auto_awesome_rounded,
-                          color: Colors.white, size: 18),
+                          color: Colors.white, size: 16),
                       label: Text(
                         'Reply with AI',
                         style: GoogleFonts.plusJakartaSans(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
-                          fontSize: 14,
+                          fontSize: 13,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -1103,45 +1109,48 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                GestureDetector(
+                const SizedBox(width: 8),
+                InkWell(
                   onTap: () => _showReplyDialog(
                     context,
                     ref,
                     review.id,
                     comment,
                     isAi: false,
+                    reviewerName: reviewerName,
+                    rating: starRating,
                   ),
+                  borderRadius: BorderRadius.circular(10),
                   child: Container(
-                    height: 44,
-                    width: 44,
+                    height: 40,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(12),
+                      color: cardBgColor,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: borderColor),
                     ),
-                    child: const Center(
-                      child: Icon(Icons.chat_bubble_outline_rounded,
-                          color: Color(0xFF475569), size: 20),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.edit_note_rounded,
+                            color: textPrimary, size: 18),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Reply',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: textPrimary,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  height: 44,
-                  width: 44,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF2F2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.flag_outlined,
-                        color: Color(0xFFEF4444), size: 20),
                   ),
                 ),
               ],
@@ -1149,84 +1158,134 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
           else
             Column(
               children: [
-                GestureDetector(
+                InkWell(
                   onTap: () {
                     setState(() {
                       _isExpanded = !_isExpanded;
                     });
                   },
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 44,
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDCFCE7),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFBBF7D0)),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    height: 40,
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF064E3B).withValues(alpha: 0.3)
+                          : const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isDark
+                            ? const Color(0xFF059669).withValues(alpha: 0.4)
+                            : const Color(0xFFBBF7D0),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle_rounded,
+                            color: Color(0xFF10B981), size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Replied to Customer',
+                          style: GoogleFonts.plusJakartaSans(
+                            color: isDark
+                                ? const Color(0xFF34D399)
+                                : const Color(0xFF15803D),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.5,
                           ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.check_circle_rounded,
-                                  color: Color(0xFF15803D), size: 18),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Replied to Customer',
-                                style: GoogleFonts.plusJakartaSans(
-                                  color: const Color(0xFF15803D),
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13,
-                                ),
+                        ),
+                        const Spacer(),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _isExpanded ? 'Hide' : 'View Reply',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: isDark
+                                    ? const Color(0xFF34D399)
+                                    : const Color(0xFF15803D),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              _isExpanded
+                                  ? Icons.keyboard_arrow_up_rounded
+                                  : Icons.keyboard_arrow_down_rounded,
+                              color: isDark
+                                  ? const Color(0xFF34D399)
+                                  : const Color(0xFF15803D),
+                              size: 16,
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Container(
-                        height: 44,
-                        width: 44,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            _isExpanded
-                                ? Icons.keyboard_arrow_up_rounded
-                                : Icons.chat_bubble_outline_rounded,
-                            color: const Color(0xFF475569),
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 if (_isExpanded) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: borderColor),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.subdirectory_arrow_right_rounded,
-                                color: Color(0xFF4F46E5), size: 16),
+                            Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF4F46E5).withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Icon(Icons.subdirectory_arrow_right_rounded,
+                                  color: Color(0xFF4F46E5), size: 13),
+                            ),
                             const SizedBox(width: 6),
                             Text(
                               'Owner Response',
                               style: GoogleFonts.plusJakartaSans(
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w700,
                                 color: const Color(0xFF4F46E5),
                                 fontSize: 12,
+                              ),
+                            ),
+                            const Spacer(),
+                            InkWell(
+                              onTap: () => _showReplyDialog(
+                                context,
+                                ref,
+                                review.id,
+                                comment,
+                                isAi: false,
+                                reviewerName: reviewerName,
+                                rating: starRating,
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.edit_outlined, size: 12, color: textSecondary),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      'Edit',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -1235,7 +1294,7 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                         Text(
                           reply,
                           style: GoogleFonts.plusJakartaSans(
-                            color: const Color(0xFF334155),
+                            color: textBody,
                             height: 1.45,
                             fontSize: 13,
                           ),
