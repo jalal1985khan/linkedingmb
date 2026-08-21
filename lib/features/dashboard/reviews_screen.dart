@@ -1257,37 +1257,6 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                                 fontSize: 12,
                               ),
                             ),
-                            const Spacer(),
-                            InkWell(
-                              onTap: () => _showReplyDialog(
-                                context,
-                                ref,
-                                review.id,
-                                comment,
-                                isAi: false,
-                                reviewerName: reviewerName,
-                                rating: starRating,
-                              ),
-                              borderRadius: BorderRadius.circular(6),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.edit_outlined, size: 12, color: textSecondary),
-                                    const SizedBox(width: 3),
-                                    Text(
-                                      'Edit',
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                        color: textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                         const SizedBox(height: 6),
