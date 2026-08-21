@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/app_media_picker.dart';
 import '../dashboard/dashboard_controller.dart';
+import '../dashboard/widgets/dashboard_header_bar.dart';
+import '../notifications/notification_end_drawer.dart';
 import '../scheduler/scheduler_screen.dart';
 
 class PostEditorScreen extends ConsumerStatefulWidget {
@@ -21,6 +22,7 @@ class PostEditorScreen extends ConsumerStatefulWidget {
 }
 
 class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
+  GlobalKey<ScaffoldState>? _scaffoldKey;
   final _titleController = TextEditingController();
   final _summaryController = TextEditingController();
   final _mediaUrlController = TextEditingController();
@@ -51,6 +53,7 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
   @override
   void initState() {
     super.initState();
+    _scaffoldKey ??= GlobalKey<ScaffoldState>();
     _loadPost();
   }
 
@@ -68,60 +71,95 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+    final scaffoldKey = _scaffoldKey ??= GlobalKey<ScaffoldState>();
+
+    // Design System Tokens
     final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
     final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1E1B4B);
     final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
+    final bgGradient = isDark
+        ? const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0F172A), Color(0xFF0B0F19)],
+          )
+        : const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF0F4FF), Color(0xFFFAF8FF), Color(0xFFFFFFFF)],
+            stops: [0.0, 0.35, 1.0],
+          );
+
     return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(
-        backgroundColor: cardBgColor,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text(
-          'Edit Post',
-          style: GoogleFonts.inter(
-            color: textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+      key: scaffoldKey,
+      backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFFAF8FF),
+      endDrawer: const NotificationEndDrawer(),
+      body: Container(
+        decoration: BoxDecoration(gradient: bgGradient),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 1. Standard Unified DashboardHeaderBar
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 4.0),
+                child: DashboardHeaderBar(
+                  title: 'Edit Post',
+                  subtitle: 'Update GMB post content & scheduling',
+                  showSparkle: true,
+                  showBackButton: true,
+                  onBack: () => Navigator.of(context).maybePop(),
+                  onOpenNotifications: () {
+                    if (scaffoldKey.currentState != null) {
+                      scaffoldKey.currentState!.openEndDrawer();
+                    } else {
+                      Scaffold.maybeOf(context)?.openEndDrawer();
+                    }
+                  },
+                ),
+              ),
+
+              // 2. Main Scrollable Form Content
+              Expanded(
+                child: _loading
+                    ? const Center(
+                        child: CircularProgressIndicator(color: Color(0xFF4F46E5)),
+                      )
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Topic Type Segmented Cards
+                            _buildTopicSelector(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+
+                            const SizedBox(height: 16),
+
+                            // Main Content Card
+                            _buildContentCard(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+
+                            const SizedBox(height: 16),
+
+                            // Call To Action Card
+                            _buildCallToActionCard(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+
+                            if (_topicType == 'EVENT' || _topicType == 'OFFER') ...[
+                              const SizedBox(height: 16),
+                              _buildEventOfferCard(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                            ],
+                          ],
+                        ),
+                      ),
+              ),
+            ],
           ),
         ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Topic Type Segmented Cards
-                  _buildTopicSelector(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-
-                  const SizedBox(height: 16),
-
-                  // Main Content Card
-                  _buildContentCard(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-
-                  const SizedBox(height: 16),
-
-                  // Call To Action Card
-                  _buildCallToActionCard(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-
-                  if (_topicType == 'EVENT' || _topicType == 'OFFER') ...[
-                    const SizedBox(height: 16),
-                    _buildEventOfferCard(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-                  ],
-
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
       bottomNavigationBar: _loading
           ? null
           : Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: cardBgColor,
                 border: Border(top: BorderSide(color: borderColor, width: 1)),
@@ -138,44 +176,51 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => SchedulerScreen(postId: widget.postId),
+                      child: SizedBox(
+                        height: 48,
+                        child: OutlinedButton.icon(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => SchedulerScreen(postId: widget.postId),
+                            ),
                           ),
-                        ),
-                        icon: const Icon(Icons.schedule_rounded, size: 18),
-                        label: Text('Schedule', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: textPrimary,
-                          side: BorderSide(color: borderColor),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          icon: const Icon(Icons.schedule_rounded, size: 18),
+                          label: Text(
+                            'Schedule',
+                            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: textPrimary,
+                            side: BorderSide(color: borderColor),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       flex: 2,
-                      child: ElevatedButton.icon(
-                        onPressed: _saving ? null : _saveDraft,
-                        icon: _saving
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Icon(Icons.save_rounded, size: 18),
-                        label: Text(
-                          _saving ? 'Saving...' : 'Save Changes',
-                          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
+                      child: SizedBox(
+                        height: 48,
+                        child: ElevatedButton.icon(
+                          onPressed: _saving ? null : _saveDraft,
+                          icon: _saving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                              : const Icon(Icons.save_rounded, size: 18),
+                          label: Text(
+                            _saving ? 'Saving...' : 'Save Changes',
+                            style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4F46E5),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
                         ),
                       ),
                     ),
@@ -193,13 +238,38 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
         color: cardBgColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'POST TOPIC TYPE',
-            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: textSecondary, letterSpacing: 0.5),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(Icons.category_rounded, size: 13, color: Color(0xFF4F46E5)),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'POST TOPIC TYPE',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF6366F1),
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           Row(
@@ -226,24 +296,24 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppColors.primary.withValues(alpha: 0.12)
+                ? (isDark ? const Color(0xFF312E81).withValues(alpha: 0.6) : const Color(0xFFEEF2FF))
                 : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC)),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? AppColors.primary : borderColor,
+              color: isSelected ? const Color(0xFF4F46E5) : borderColor,
               width: isSelected ? 1.8 : 1,
             ),
           ),
           child: Column(
             children: [
-              Icon(icon, size: 20, color: isSelected ? AppColors.primary : Colors.grey),
+              Icon(icon, size: 20, color: isSelected ? const Color(0xFF4F46E5) : (isDark ? Colors.white60 : Colors.grey.shade600)),
               const SizedBox(height: 4),
               Text(
                 label,
-                style: GoogleFonts.inter(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                  color: isSelected ? AppColors.primary : Colors.grey[600],
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                  color: isSelected ? const Color(0xFF4F46E5) : (isDark ? Colors.white70 : Colors.grey.shade700),
                 ),
               ),
             ],
@@ -260,31 +330,38 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
         color: cardBgColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Headline / Title',
-            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary),
+            style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
           ),
           const SizedBox(height: 6),
           TextField(
             controller: _titleController,
-            style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
+            style: GoogleFonts.plusJakartaSans(fontSize: 14, color: textPrimary, fontWeight: FontWeight.w600),
             decoration: _inputDecoration('e.g. Special Weekend Announcement', isDark, borderColor, textSecondary),
           ),
           const SizedBox(height: 16),
           Text(
             'Post Summary / Description',
-            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary),
+            style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
           ),
           const SizedBox(height: 6),
           TextField(
             controller: _summaryController,
             minLines: 7,
             maxLines: 12,
-            style: GoogleFonts.inter(fontSize: 14, color: textPrimary, height: 1.5),
+            style: GoogleFonts.plusJakartaSans(fontSize: 14, color: textPrimary, height: 1.5),
             decoration: _inputDecoration('Write detailed update or promotional text...', isDark, borderColor, textSecondary),
           ),
           const SizedBox(height: 16),
@@ -310,18 +387,43 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
         color: cardBgColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'CALL TO ACTION BUTTON',
-            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: textSecondary, letterSpacing: 0.5),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(Icons.touch_app_rounded, size: 13, color: Color(0xFF4F46E5)),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'CALL TO ACTION BUTTON',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF6366F1),
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
             initialValue: _actionType,
-            style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
+            style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w600, color: textPrimary),
             decoration: _inputDecoration('Select Button Action', isDark, borderColor, textSecondary),
             dropdownColor: cardBgColor,
             items: [
@@ -330,7 +432,7 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
                   value: action,
                   child: Text(
                     action == 'NONE' ? 'No Button' : action.replaceAll('_', ' '),
-                    style: GoogleFonts.inter(color: textPrimary),
+                    style: GoogleFonts.plusJakartaSans(color: textPrimary, fontWeight: FontWeight.w600),
                   ),
                 ),
             ],
@@ -340,12 +442,12 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
             const SizedBox(height: 14),
             Text(
               'Action Destination URL',
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary),
+              style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
             ),
             const SizedBox(height: 6),
             TextField(
               controller: _actionUrlController,
-              style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
+              style: GoogleFonts.plusJakartaSans(fontSize: 14, color: textPrimary),
               decoration: _inputDecoration('https://www.socialhive.pro/signup', isDark, borderColor, textSecondary),
             ),
           ],
@@ -362,13 +464,25 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
         color: cardBgColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             _topicType == 'OFFER' ? 'OFFER DETAILS' : 'EVENT SCHEDULE',
-            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.bold, color: textSecondary, letterSpacing: 0.5),
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF6366F1),
+              letterSpacing: 0.8,
+            ),
           ),
           const SizedBox(height: 14),
           Row(
@@ -387,7 +501,7 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
                   icon: const Icon(Icons.calendar_month_outlined, size: 16),
                   label: Text(
                     _startDate != null ? dateFormat.format(_startDate!) : 'Start Date',
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: textPrimary,
@@ -411,7 +525,7 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
                   icon: const Icon(Icons.event_available_outlined, size: 16),
                   label: Text(
                     _endDate != null ? dateFormat.format(_endDate!) : 'End Date',
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: textPrimary,
@@ -426,24 +540,24 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
             const SizedBox(height: 14),
             Text(
               'Coupon Code (Optional)',
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary),
+              style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
             ),
             const SizedBox(height: 6),
             TextField(
               controller: _couponCodeController,
-              style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
+              style: GoogleFonts.plusJakartaSans(fontSize: 14, color: textPrimary),
               decoration: _inputDecoration('e.g. SAVE20', isDark, borderColor, textSecondary),
             ),
             const SizedBox(height: 14),
             Text(
               'Terms & Conditions',
-              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: textPrimary),
+              style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary),
             ),
             const SizedBox(height: 6),
             TextField(
               controller: _termsController,
               maxLines: 2,
-              style: GoogleFonts.inter(fontSize: 14, color: textPrimary),
+              style: GoogleFonts.plusJakartaSans(fontSize: 14, color: textPrimary),
               decoration: _inputDecoration('e.g. Valid in-store only.', isDark, borderColor, textSecondary),
             ),
           ],
@@ -455,7 +569,7 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
   InputDecoration _inputDecoration(String hint, bool isDark, Color borderColor, Color textSecondary) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: GoogleFonts.inter(color: textSecondary, fontSize: 13),
+      hintStyle: GoogleFonts.plusJakartaSans(color: textSecondary, fontSize: 13),
       filled: true,
       fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -469,7 +583,7 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 1.5),
       ),
     );
   }
@@ -509,9 +623,13 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Post changes saved successfully!'),
-          backgroundColor: AppColors.success,
+        SnackBar(
+          content: Text(
+            'Post changes saved successfully!',
+            style: GoogleFonts.plusJakartaSans(fontSize: 13),
+          ),
+          backgroundColor: const Color(0xFF16A34A),
+          behavior: SnackBarBehavior.floating,
         ),
       );
       Navigator.of(context).pop();
@@ -519,8 +637,12 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to save changes: ${e.toString()}'),
-            backgroundColor: AppColors.error,
+            content: Text(
+              'Failed to save changes: ${e.toString()}',
+              style: GoogleFonts.plusJakartaSans(fontSize: 13),
+            ),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
