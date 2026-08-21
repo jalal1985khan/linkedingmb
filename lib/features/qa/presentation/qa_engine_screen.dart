@@ -963,36 +963,41 @@ class _QAEngineScreenState extends ConsumerState<QAEngineScreen> {
             const SizedBox(height: 12),
             Divider(height: 1, color: borderColor),
             const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () {
-                    setState(() => _drafts.remove(item));
-                  },
-                  style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFFDC2626),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      setState(() => _drafts.remove(item));
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFFDC2626),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    ),
+                    child: Text('Discard', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 12)),
                   ),
-                  child: Text('Discard', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 12)),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF16A34A),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                    elevation: 0,
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF16A34A),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                      elevation: 0,
+                    ),
+                    icon: const Icon(Icons.send_rounded, size: 14),
+                    label: Text(
+                      'Publish to Google',
+                      style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w800),
+                    ),
+                    onPressed: () => _publishQA(item),
                   ),
-                  icon: const Icon(Icons.send_rounded, size: 14),
-                  label: Text(
-                    'Publish to Google',
-                    style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w800),
-                  ),
-                  onPressed: () => _publishQA(item),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ],
