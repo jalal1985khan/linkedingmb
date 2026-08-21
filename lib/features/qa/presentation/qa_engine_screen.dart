@@ -640,7 +640,9 @@ class _QAEngineScreenState extends ConsumerState<QAEngineScreen> {
             ),
           ),
           const SizedBox(height: 14),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: [
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
@@ -657,7 +659,6 @@ class _QAEngineScreenState extends ConsumerState<QAEngineScreen> {
                 ),
                 onPressed: _showGenerateDialog,
               ),
-              const SizedBox(width: 8),
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.white,
@@ -698,8 +699,7 @@ class _QAEngineScreenState extends ConsumerState<QAEngineScreen> {
           Expanded(
             child: GestureDetector(
               onTap: () => setState(() => _selectedTabIndex = 0),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
+              child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 9),
                 decoration: BoxDecoration(
                   color: _selectedTabIndex == 0 ? const Color(0xFF4F46E5) : Colors.transparent,
@@ -729,8 +729,7 @@ class _QAEngineScreenState extends ConsumerState<QAEngineScreen> {
           Expanded(
             child: GestureDetector(
               onTap: () => setState(() => _selectedTabIndex = 1),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
+              child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 9),
                 decoration: BoxDecoration(
                   color: _selectedTabIndex == 1 ? const Color(0xFF4F46E5) : Colors.transparent,
