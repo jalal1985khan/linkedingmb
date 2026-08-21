@@ -196,86 +196,100 @@ class AppSettingsScreen extends ConsumerWidget {
                       ),
                       child: Column(
                         children: [
-                          ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.5) : const Color(0xFFDCFCE7),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 18),
-                            ),
-                            title: Text(
-                              'AI Post Generator',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                                color: textPrimary,
-                              ),
-                            ),
-                            trailing: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.5) : const Color(0xFFDCFCE7),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 6,
-                                    height: 6,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF16A34A),
-                                      shape: BoxShape.circle,
-                                    ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.5) : const Color(0xFFDCFCE7),
+                                    shape: BoxShape.circle,
                                   ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    'AI Active',
+                                  child: const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 18),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'AI Post Generator',
                                     style: GoogleFonts.plusJakartaSans(
-                                      color: const Color(0xFF16A34A),
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
+                                      color: textPrimary,
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.5) : const Color(0xFFDCFCE7),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 6,
+                                        height: 6,
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFF16A34A),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        'AI Active',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          color: const Color(0xFF16A34A),
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           Divider(height: 1, indent: 16, endIndent: 16, color: borderColor),
-                          ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: credits <= 0
-                                    ? (isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.5) : const Color(0xFFFEE2E2))
-                                    : (isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF)),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                credits <= 0 ? Icons.warning_amber_rounded : Icons.bolt_rounded,
-                                color: credits <= 0 ? const Color(0xFFDC2626) : const Color(0xFF4F46E5),
-                                size: 18,
-                              ),
-                            ),
-                            title: Text(
-                              'Available Credits',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                                color: textPrimary,
-                              ),
-                            ),
-                            subtitle: Text(
-                              credits <= 0 ? 'Automation is paused until recharge' : 'Monthly cycle',
-                              style: GoogleFonts.plusJakartaSans(fontSize: 11.5, color: textSecondary),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: Row(
                               children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: credits <= 0
+                                        ? (isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.5) : const Color(0xFFFEE2E2))
+                                        : (isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF)),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    credits <= 0 ? Icons.warning_amber_rounded : Icons.bolt_rounded,
+                                    color: credits <= 0 ? const Color(0xFFDC2626) : const Color(0xFF4F46E5),
+                                    size: 18,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Available Credits',
+                                        style: GoogleFonts.plusJakartaSans(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: textPrimary,
+                                        ),
+                                      ),
+                                      Text(
+                                        credits <= 0 ? 'Automation is paused until recharge' : 'Monthly cycle',
+                                        style: GoogleFonts.plusJakartaSans(fontSize: 11.5, color: textSecondary),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                                 Text(
                                   '$credits',
                                   style: GoogleFonts.plusJakartaSans(
@@ -285,44 +299,60 @@ class AppSettingsScreen extends ConsumerWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                IconButton(
-                                  icon: Icon(Icons.refresh_rounded, size: 18, color: textSecondary),
-                                  onPressed: () {
+                                GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () {
                                     ref.read(userCreditsProvider.notifier).fetchCredits();
                                   },
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(6),
+                                    child: Icon(Icons.refresh_rounded, size: 20, color: textSecondary),
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                           if (activeLocation != null) ...[
                             Divider(height: 1, indent: 16, endIndent: 16, color: borderColor),
-                            ListTile(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                              leading: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(Icons.storefront_rounded, color: Color(0xFF4F46E5), size: 18),
-                              ),
-                              title: Text(
-                                'Connected Business',
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14,
-                                  color: textPrimary,
-                                ),
-                              ),
-                              subtitle: Text(
-                                activeLocation.name,
-                                style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 12,
-                                  color: textSecondary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.storefront_rounded, color: Color(0xFF4F46E5), size: 18),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Connected Business',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 14,
+                                            color: textPrimary,
+                                          ),
+                                        ),
+                                        Text(
+                                          activeLocation.name,
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontSize: 12,
+                                            color: textSecondary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
@@ -361,34 +391,49 @@ class AppSettingsScreen extends ConsumerWidget {
                       ),
                       child: Column(
                         children: [
-                          ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(Icons.tune_rounded, color: Color(0xFF4F46E5), size: 20),
-                            ),
-                            title: Text(
-                              'Automation Settings',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                                color: textPrimary,
-                              ),
-                            ),
-                            subtitle: Text(
-                              'Configure AI posting schedules & frequency',
-                              style: GoogleFonts.plusJakartaSans(fontSize: 11.5, color: textSecondary),
-                            ),
-                            trailing: Icon(Icons.chevron_right_rounded, color: textSecondary),
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(builder: (_) => const AutomationSettingsScreen()),
                               );
                             },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: const Icon(Icons.tune_rounded, color: Color(0xFF4F46E5), size: 20),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Automation Settings',
+                                          style: GoogleFonts.plusJakartaSans(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 14,
+                                            color: textPrimary,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Configure AI posting schedules & frequency',
+                                          style: GoogleFonts.plusJakartaSans(fontSize: 11.5, color: textSecondary),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(Icons.chevron_right_rounded, color: textSecondary),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ),
