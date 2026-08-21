@@ -1329,159 +1329,183 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
               isGeneratingAi = true;
             }
 
-            return AlertDialog(
-              insetPadding: const EdgeInsets.symmetric(horizontal: 16),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-              title: Row(
-                children: [
-                  Icon(
-                    isAi
-                        ? Icons.auto_awesome_rounded
-                        : Icons.chat_bubble_outline_rounded,
-                    color: const Color(0xFF4F46E5),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    isAi ? 'AI Generated Reply' : 'Manual Reply',
-                    style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              content: SizedBox(
-                width: MediaQuery.of(context).size.width,
-                child: isGeneratingAi &&
-                        textController.text.isEmpty &&
-                        !aiGenerationFailed
-                    ? Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const CircularProgressIndicator(
-                                color: Color(0xFF4F46E5)),
-                            const SizedBox(height: 16),
-                            Text(
-                              "AI is crafting a personalized response...",
-                              style: GoogleFonts.plusJakartaSans(
-                                  color: const Color(0xFF64748B), fontSize: 13),
-                            ),
-                          ],
-                        ),
-                      )
-                    : TextField(
-                        controller: textController,
-                        minLines: 4,
-                        maxLines: 7,
-                        style: GoogleFonts.plusJakartaSans(fontSize: 14, height: 1.5),
-                        decoration: InputDecoration(
-                          hintText: aiGenerationFailed
-                              ? 'AI generation failed. Type your reply here...'
-                              : 'Type your reply here...',
-                          hintStyle: GoogleFonts.plusJakartaSans(
-                            color: const Color(0xFF94A3B8),
-                            fontSize: 13.5,
-                          ),
-                          filled: true,
-                          fillColor: const Color(0xFFF8FAFC),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                                color: Color(0xFF4F46E5), width: 1.5),
-                          ),
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+              final inputBgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+              final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+              final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+              final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+              return AlertDialog(
+                backgroundColor: cardBgColor,
+                insetPadding: const EdgeInsets.symmetric(horizontal: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: borderColor),
+                ),
+                title: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4F46E5).withValues(alpha: isDark ? 0.2 : 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        isAi
+                            ? Icons.auto_awesome_rounded
+                            : Icons.chat_bubble_outline_rounded,
+                        color: const Color(0xFF4F46E5),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        isAi ? 'AI Generated Reply' : 'Manual Reply',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: textPrimary,
                         ),
                       ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel',
-                      style: GoogleFonts.plusJakartaSans(
-                          color: const Color(0xFF64748B))),
+                    ),
+                  ],
                 ),
-                ElevatedButton(
-                  onPressed: isSubmitting
-                      ? null
-                      : () async {
-                          final replyText = textController.text.trim();
-                          if (replyText.isEmpty) return;
-
-                          setState(() => isSubmitting = true);
-                          try {
-                            // 1. Try GmbapiRepository
-                            try {
-                              await ref
-                                  .read(gmbapiRepositoryProvider)
-                                  .replyToReview(reviewId, replyText);
-                            } catch (_) {
-                              // 2. Fallback to GMBReviewsRepository
-                              await ref
-                                  .read(gmbReviewsRepositoryProvider)
-                                  .postReply(
-                                      reviewName: reviewId, replyText: replyText);
-                            }
-
-                            if (context.mounted) {
-                              Navigator.pop(context);
-                              ref.invalidate(
-                                  customerReviewsFamilyProvider(widget.locationId));
-                              ref.invalidate(
-                                  dashboardReviewsProvider(widget.locationId));
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('✨ Reply posted successfully!'),
-                                  backgroundColor: Color(0xFF16A34A),
-                                ),
-                              );
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Failed to post reply: $e'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          } finally {
-                            if (context.mounted) {
-                              setState(() => isSubmitting = false);
-                            }
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4F46E5),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                content: SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  child: isGeneratingAi &&
+                          textController.text.isEmpty &&
+                          !aiGenerationFailed
+                      ? Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const CircularProgressIndicator(
+                                  color: Color(0xFF4F46E5)),
+                              const SizedBox(height: 16),
+                              Text(
+                                "AI is crafting a personalized response...",
+                                style: GoogleFonts.plusJakartaSans(
+                                    color: textSecondary, fontSize: 13),
+                              ),
+                            ],
+                          ),
+                        )
+                      : TextField(
+                          controller: textController,
+                          minLines: 4,
+                          maxLines: 7,
+                          style: GoogleFonts.plusJakartaSans(fontSize: 14, height: 1.5, color: textPrimary),
+                          decoration: InputDecoration(
+                            hintText: aiGenerationFailed
+                                ? 'AI generation failed. Type your reply here...'
+                                : 'Type your reply here...',
+                            hintStyle: GoogleFonts.plusJakartaSans(
+                              color: textSecondary,
+                              fontSize: 13.5,
+                            ),
+                            filled: true,
+                            fillColor: inputBgColor,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: borderColor),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(color: borderColor),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(
+                                  color: Color(0xFF4F46E5), width: 1.5),
+                            ),
+                          ),
+                        ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Cancel',
+                        style: GoogleFonts.plusJakartaSans(
+                            color: textSecondary, fontWeight: FontWeight.w600)),
                   ),
-                  child: isSubmitting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2))
-                      : Text('Post Reply',
-                          style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.bold)),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
+                  ElevatedButton(
+                    onPressed: isSubmitting
+                        ? null
+                        : () async {
+                            final replyText = textController.text.trim();
+                            if (replyText.isEmpty) return;
+
+                            setState(() => isSubmitting = true);
+                            try {
+                              // 1. Try GmbapiRepository
+                              try {
+                                await ref
+                                    .read(gmbapiRepositoryProvider)
+                                    .replyToReview(reviewId, replyText);
+                              } catch (_) {
+                                // 2. Fallback to GMBReviewsRepository
+                                await ref
+                                    .read(gmbReviewsRepositoryProvider)
+                                    .postReply(
+                                        reviewName: reviewId, replyText: replyText);
+                              }
+
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                ref.invalidate(
+                                    customerReviewsFamilyProvider(widget.locationId));
+                                ref.invalidate(
+                                    dashboardReviewsProvider(widget.locationId));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('✨ Reply posted successfully!'),
+                                    backgroundColor: Color(0xFF16A34A),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Failed to post reply: $e'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            } finally {
+                              if (context.mounted) {
+                                setState(() => isSubmitting = false);
+                              }
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4F46E5),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    child: isSubmitting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2))
+                        : Text('Post Reply',
+                            style: GoogleFonts.plusJakartaSans(
+                                fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+    }
 }
 
 Widget _buildAutoReplySheet(BuildContext context, String locationId) {
@@ -1501,14 +1525,22 @@ class AutoReplySettingsModalSheet extends ConsumerWidget {
     final settings = ref.watch(automationSettingsProvider);
     final controller = ref.read(automationSettingsProvider.notifier);
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final inputBgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
       ),
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        decoration: BoxDecoration(
+          color: cardBgColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          border: Border(top: BorderSide(color: borderColor)),
         ),
         padding: const EdgeInsets.all(24),
         child: SingleChildScrollView(
@@ -1522,7 +1554,7 @@ class AutoReplySettingsModalSheet extends ConsumerWidget {
                   width: 38,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
+                    color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -1535,12 +1567,12 @@ class AutoReplySettingsModalSheet extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryContainer.withValues(alpha: 0.1),
+                      color: const Color(0xFF4F46E5).withValues(alpha: isDark ? 0.2 : 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
                       Icons.forum_rounded,
-                      color: AppColors.primaryContainer,
+                      color: Color(0xFF4F46E5),
                       size: 22,
                     ),
                   ),
@@ -1554,7 +1586,7 @@ class AutoReplySettingsModalSheet extends ConsumerWidget {
                           style: GoogleFonts.plusJakartaSans(
                             fontWeight: FontWeight.w800,
                             fontSize: 16,
-                            color: const Color(0xFF0F172A),
+                            color: textPrimary,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -1562,7 +1594,7 @@ class AutoReplySettingsModalSheet extends ConsumerWidget {
                           'Automatically respond to incoming customer reviews.',
                           style: GoogleFonts.plusJakartaSans(
                             fontSize: 11,
-                            color: const Color(0xFF64748B),
+                            color: textSecondary,
                           ),
                         ),
                       ],
@@ -1570,8 +1602,8 @@ class AutoReplySettingsModalSheet extends ConsumerWidget {
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded,
-                        color: Color(0xFF64748B)),
+                    icon: Icon(Icons.close_rounded,
+                        color: textSecondary),
                   ),
                 ],
               ),
@@ -1589,7 +1621,7 @@ class AutoReplySettingsModalSheet extends ConsumerWidget {
                         style: GoogleFonts.plusJakartaSans(
                           fontWeight: FontWeight.w700,
                           fontSize: 13,
-                          color: const Color(0xFF0F172A),
+                          color: textPrimary,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -1599,7 +1631,7 @@ class AutoReplySettingsModalSheet extends ConsumerWidget {
                           fontSize: 12,
                           color: settings.autoReviewReply
                               ? const Color(0xFF15803D)
-                              : const Color(0xFF64748B),
+                              : textSecondary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -1608,7 +1640,8 @@ class AutoReplySettingsModalSheet extends ConsumerWidget {
                   Switch(
                     value: settings.autoReviewReply,
                     onChanged: controller.setAutoReviewReply,
-                    activeThumbColor: AppColors.primaryContainer,
+                    activeTrackColor: const Color(0xFF4F46E5).withValues(alpha: 0.5),
+                    activeThumbColor: const Color(0xFF4F46E5),
                   ),
                 ],
               ),
@@ -1625,26 +1658,36 @@ class AutoReplySettingsModalSheet extends ConsumerWidget {
                             style: GoogleFonts.plusJakartaSans(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 12,
-                                color: const Color(0xFF475569))),
+                                color: textSecondary)),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<int>(
                           initialValue: settings.minStars,
+                          dropdownColor: cardBgColor,
+                          icon: Icon(Icons.keyboard_arrow_down_rounded, color: textSecondary, size: 20),
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
+                            fillColor: inputBgColor,
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 12),
                             border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide:
-                                    const BorderSide(color: Color(0xFFE2E8F0))),
+                                    BorderSide(color: borderColor)),
+                            enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    BorderSide(color: borderColor)),
+                            focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    const BorderSide(color: Color(0xFF4F46E5), width: 1.5)),
                           ),
                           items: [1, 2, 3, 4, 5].map((s) {
                             return DropdownMenuItem<int>(
                               value: s,
                               child: Text('$s ★',
                                   style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 13, fontWeight: FontWeight.w700)),
+                                      fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary)),
                             );
                           }).toList(),
                           onChanged: (val) {
@@ -1663,26 +1706,36 @@ class AutoReplySettingsModalSheet extends ConsumerWidget {
                             style: GoogleFonts.plusJakartaSans(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 12,
-                                color: const Color(0xFF475569))),
+                                color: textSecondary)),
                         const SizedBox(height: 6),
                         DropdownButtonFormField<int>(
                           initialValue: settings.maxStars,
+                          dropdownColor: cardBgColor,
+                          icon: Icon(Icons.keyboard_arrow_down_rounded, color: textSecondary, size: 20),
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
+                            fillColor: inputBgColor,
                             contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 12),
                             border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide:
-                                    const BorderSide(color: Color(0xFFE2E8F0))),
+                                    BorderSide(color: borderColor)),
+                            enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    BorderSide(color: borderColor)),
+                            focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    const BorderSide(color: Color(0xFF4F46E5), width: 1.5)),
                           ),
                           items: [1, 2, 3, 4, 5].map((s) {
                             return DropdownMenuItem<int>(
                               value: s,
                               child: Text('$s ★',
                                   style: GoogleFonts.plusJakartaSans(
-                                      fontSize: 13, fontWeight: FontWeight.w700)),
+                                      fontSize: 13, fontWeight: FontWeight.w700, color: textPrimary)),
                             );
                           }).toList(),
                           onChanged: (val) {
@@ -1698,10 +1751,10 @@ class AutoReplySettingsModalSheet extends ConsumerWidget {
               Text(
                 'Only reviews within this star rating range will receive auto-replies.',
                 style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11, color: const Color(0xFF94A3B8)),
+                    fontSize: 11, color: textSecondary),
               ),
               const SizedBox(height: 16),
-              const Divider(height: 1, color: Color(0xFFE2E8F0)),
+              Divider(height: 1, color: borderColor),
               const SizedBox(height: 14),
 
               // Written Comment Only Toggle
@@ -1714,19 +1767,20 @@ class AutoReplySettingsModalSheet extends ConsumerWidget {
                       children: [
                         Text('Only Reply to Written Comments',
                             style: GoogleFonts.plusJakartaSans(
-                                fontWeight: FontWeight.w700, fontSize: 13)),
+                                fontWeight: FontWeight.w700, fontSize: 13, color: textPrimary)),
                         const SizedBox(height: 2),
                         Text(
                             'Ignore reviews that only leave a star rating without text.',
                             style: GoogleFonts.plusJakartaSans(
-                                fontSize: 11, color: const Color(0xFF64748B))),
+                                fontSize: 11, color: textSecondary)),
                       ],
                     ),
                   ),
                   Switch(
                     value: settings.onlyWithComments,
                     onChanged: controller.setOnlyWithComments,
-                    activeThumbColor: AppColors.primaryContainer,
+                    activeTrackColor: const Color(0xFF4F46E5).withValues(alpha: 0.5),
+                    activeThumbColor: const Color(0xFF4F46E5),
                   ),
                 ],
               ),
@@ -1738,7 +1792,7 @@ class AutoReplySettingsModalSheet extends ConsumerWidget {
                 height: 48,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0F172A),
+                    backgroundColor: const Color(0xFF4F46E5),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
