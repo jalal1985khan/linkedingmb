@@ -18,7 +18,6 @@ class BlueprintPlannerScreen extends ConsumerStatefulWidget {
 class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen> {
   bool _isLoading = true;
   bool _isGenerating = false;
-  bool _isScheduling = false;
   String? _selectedFormat;
   GMBBlueprint? _blueprint;
 
@@ -192,34 +191,6 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
     }
   }
 
-  Future<void> _renderAndScheduleAll() async {
-    final activeLocation = ref.read(activeLocationProvider).activeLocation;
-    if (activeLocation == null) return;
-
-    setState(() => _isScheduling = true);
-    try {
-      final repo = ref.read(gmbBlueprintRepositoryProvider);
-      await repo.renderAndSchedule(activeLocation.id);
-      if (mounted) {
-        setState(() => _isScheduling = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🚀 All blueprint items rendered and added to Post Queue!'),
-            backgroundColor: Color(0xFF16A34A),
-          ),
-        );
-        _loadBlueprint();
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isScheduling = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to schedule: $e'), backgroundColor: const Color(0xFFDC2626)),
-        );
-      }
-    }
-  }
-
   Future<void> _improviseItem(GMBBlueprintItem item) async {
     final activeLocation = ref.read(activeLocationProvider).activeLocation;
     if (activeLocation == null) return;
@@ -342,7 +313,7 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
                                 // Cards List
                                 Expanded(
                                   child: ListView.separated(
-                                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 90),
+                                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
                                     itemCount: filteredItems.length,
                                     separatorBuilder: (_, _) => const SizedBox(height: 12),
                                     itemBuilder: (context, index) {
@@ -365,25 +336,6 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
           ),
         ),
       ),
-      floatingActionButton: items.isNotEmpty
-          ? FloatingActionButton.extended(
-              backgroundColor: const Color(0xFF4F46E5),
-              foregroundColor: Colors.white,
-              elevation: 4,
-              icon: _isScheduling
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                    )
-                  : const Icon(Icons.calendar_month_rounded, size: 20),
-              label: Text(
-                _isScheduling ? 'Scheduling...' : 'Schedule All to Queue',
-                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13.5),
-              ),
-              onPressed: _isScheduling ? null : _renderAndScheduleAll,
-            )
-          : null,
     );
   }
 
