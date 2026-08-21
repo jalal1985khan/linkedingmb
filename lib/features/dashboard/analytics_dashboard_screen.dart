@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../data/repositories/gmb_analytics_repository.dart';
 import '../business_flow/providers/active_location_provider.dart';
 import '../notifications/notification_end_drawer.dart';
+import '../shell/providers/shell_nav_provider.dart';
 import 'competitor_analysis_screen.dart';
 import 'widgets/dashboard_header_bar.dart';
 
@@ -64,7 +65,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
                 subtitle: activeLoc?.name ?? 'SocialHive',
                 showSparkle: true,
                 showBackButton: true,
-                onBack: () => Navigator.of(context).maybePop(),
+                onBack: () => ref.handleSmartBack(context),
                 onOpenNotifications: () {
                   Scaffold.maybeOf(context)?.openEndDrawer();
                 },

@@ -9,6 +9,7 @@ import '../../data/repositories/gmbapi_repository.dart';
 import '../business_flow/providers/active_location_provider.dart';
 import '../notifications/notification_end_drawer.dart';
 import '../settings/automation_settings_controller.dart';
+import '../shell/providers/shell_nav_provider.dart';
 import 'providers/dashboard_providers.dart';
 import 'widgets/dashboard_header_bar.dart';
 
@@ -106,7 +107,7 @@ class _ReviewsScreenState extends ConsumerState<ReviewsScreen> {
                 subtitle: 'Track and respond to customer reviews',
                 showSparkle: true,
                 showBackButton: true,
-                onBack: () => Navigator.of(context).maybePop(),
+                onBack: () => ref.handleSmartBack(context),
                 onOpenDrawer: () => Scaffold.maybeOf(context)?.openDrawer(),
                 onOpenNotifications: () => Scaffold.maybeOf(context)?.openEndDrawer(),
               ),

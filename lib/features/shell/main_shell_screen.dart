@@ -8,6 +8,7 @@ import '../dashboard/dashboard_screen.dart';
 import '../dashboard/reviews_screen.dart';
 import '../notifications/notification_end_drawer.dart';
 import '../posts/create_post_flow_screen.dart';
+import 'providers/shell_nav_provider.dart';
 import 'widgets/main_app_drawer.dart';
 
 class MainShellScreen extends ConsumerStatefulWidget {
@@ -18,11 +19,11 @@ class MainShellScreen extends ConsumerStatefulWidget {
 }
 
 class _MainShellScreenState extends ConsumerState<MainShellScreen> {
-  int _index = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
+    final currentIndex = ref.watch(bottomNavIndexProvider);
 
     final screens = <Widget>[
       const DashboardScreen(showScaffold: false),
@@ -36,7 +37,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
       key: _scaffoldKey,
       endDrawer: const NotificationEndDrawer(),
       drawer: MainAppDrawer(
-        selectedIndex: _index,
+        selectedIndex: currentIndex,
         onTabSelected: _selectTabFromDrawer,
       ),
       body: Container(
@@ -48,7 +49,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
         child: SafeArea(
           top: false,
           child: IndexedStack(
-            index: _index,
+            index: currentIndex,
             children: screens,
           ),
         ),
@@ -72,12 +73,12 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(0, 'Home', Icons.home_rounded, Icons.home_outlined),
-                _buildNavItem(2, 'Services', Icons.business_center_rounded, Icons.business_center_outlined),
+                _buildNavItem(0, 'Home', Icons.home_rounded, Icons.home_outlined, currentIndex),
+                _buildNavItem(2, 'Services', Icons.business_center_rounded, Icons.business_center_outlined, currentIndex),
                 // Center Floating Create Button
                 GestureDetector(
                   onTap: () {
-                    setState(() => _index = 3);
+                    ref.read(bottomNavIndexProvider.notifier).state = 3;
                   },
                   child: Container(
                     width: 48,
@@ -104,8 +105,8 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                     ),
                   ),
                 ),
-                _buildNavItem(1, 'Reviews', Icons.chat_bubble_rounded, Icons.chat_bubble_outline_rounded),
-                _buildNavItem(4, 'Insights', Icons.bar_chart_rounded, Icons.bar_chart_outlined),
+                _buildNavItem(1, 'Reviews', Icons.chat_bubble_rounded, Icons.chat_bubble_outline_rounded, currentIndex),
+                _buildNavItem(4, 'Insights', Icons.bar_chart_rounded, Icons.bar_chart_outlined, currentIndex),
               ],
             ),
           ),
@@ -114,8 +115,8 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
     );
   }
 
-  Widget _buildNavItem(int index, String label, IconData selectedIcon, IconData unselectedIcon) {
-    final isSelected = _index == index;
+  Widget _buildNavItem(int index, String label, IconData selectedIcon, IconData unselectedIcon, int currentIndex) {
+    final isSelected = currentIndex == index;
     final color = isSelected ? AppColors.primaryContainer : Colors.grey.shade500;
     
     return GestureDetector(
@@ -123,7 +124,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
         if (index == 5) {
           _scaffoldKey.currentState?.openDrawer();
         } else {
-          setState(() => _index = index);
+          ref.read(bottomNavIndexProvider.notifier).state = index;
         }
       },
       behavior: HitTestBehavior.opaque,
@@ -175,6 +176,6 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
   }
 
   void _selectTabFromDrawer(int tabIndex) {
-    setState(() => _index = tabIndex);
+    ref.read(bottomNavIndexProvider.notifier).state = tabIndex;
   }
 }
