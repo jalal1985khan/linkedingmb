@@ -39,7 +39,7 @@ class DashboardHeaderBar extends ConsumerWidget {
         InkWell(
           onTap: showBackButton
               ? (onBack ?? () => Navigator.of(context).maybePop())
-              : (onOpenDrawer ?? () => Scaffold.of(context).openDrawer()),
+              : (onOpenDrawer ?? () => Scaffold.maybeOf(context)?.openDrawer()),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(8),
@@ -125,7 +125,7 @@ class DashboardHeaderBar extends ConsumerWidget {
 
         // Notification Bell Icon with Badge
         InkWell(
-          onTap: onOpenNotifications ?? () => Scaffold.of(context).openEndDrawer(),
+          onTap: onOpenNotifications ?? () => Scaffold.maybeOf(context)?.openEndDrawer(),
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.all(10),

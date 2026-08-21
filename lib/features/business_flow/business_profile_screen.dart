@@ -632,6 +632,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
   // TAB 1: BASIC INFO (Matching Screenshot)
   Widget _buildBasicInfoTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary) {
     return ListView(
+      primary: false,
       padding: const EdgeInsets.all(16),
       children: [
         // Card 1: Basic Identity
@@ -1065,6 +1066,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
   Widget _buildCategoriesTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary, BusinessProfile? business) {
     final addCats = _additionalCategoryControllers ?? [];
     return ListView(
+      primary: false,
       padding: const EdgeInsets.all(16),
       children: [
         _buildSectionCard(
@@ -1215,6 +1217,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
   Widget _buildPhotosLogosTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary) {
     final addPhotos = _photoUrlControllers ?? [];
     return ListView(
+      primary: false,
       padding: const EdgeInsets.all(16),
       children: [
         _buildSectionCard(
@@ -1266,6 +1269,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
   // TAB 4: BOOKINGS
   Widget _buildBookingsTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary, BusinessProfile? business) {
     return ListView(
+      primary: false,
       padding: const EdgeInsets.all(16),
       children: [
         _buildSectionCard(
@@ -1297,6 +1301,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
   Widget _buildServicesTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary, BusinessProfile? business) {
     final sList = _servicesList ?? [];
     return ListView(
+      primary: false,
       padding: const EdgeInsets.all(16),
       children: [
         _buildSectionCard(
@@ -1389,6 +1394,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
   Widget _buildMoreTab(bool isDark, Color cardBgColor, Color borderColor, Color textPrimary, Color textSecondary, BusinessProfile? business) {
     final pList = _productsList ?? [];
     return ListView(
+      primary: false,
       padding: const EdgeInsets.all(16),
       children: [
         // Address & Hours
