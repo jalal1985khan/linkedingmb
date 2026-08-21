@@ -1193,18 +1193,32 @@ class _ReviewCardState extends ConsumerState<_ReviewCard> {
                       )
                     : TextField(
                         controller: textController,
-                        maxLines: 4,
-                        style: GoogleFonts.plusJakartaSans(fontSize: 14),
+                        minLines: 4,
+                        maxLines: 7,
+                        style: GoogleFonts.plusJakartaSans(fontSize: 14, height: 1.5),
                         decoration: InputDecoration(
                           hintText: aiGenerationFailed
                               ? 'AI generation failed. Type your reply here...'
                               : 'Type your reply here...',
+                          hintStyle: GoogleFonts.plusJakartaSans(
+                            color: const Color(0xFF94A3B8),
+                            fontSize: 13.5,
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                           border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                          ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                                color: Color(0xFF4F46E5), width: 2),
+                                color: Color(0xFF4F46E5), width: 1.5),
                           ),
                         ),
                       ),
