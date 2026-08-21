@@ -1076,17 +1076,38 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
           textSecondary: textSecondary,
           title: 'Business Categories',
           subtitle: 'Help customers find your business by industry. Add additional categories to increase Google Maps visibility.',
-          headerAction: OutlinedButton.icon(
-            onPressed: () {
+          headerAction: InkWell(
+            onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('✨ AI Category Research: Analyzing competitor categories...'), backgroundColor: Color(0xFF4F46E5)),
+                const SnackBar(
+                  content: Text('✨ AI Category Research: Analyzing competitor categories...'),
+                  backgroundColor: Color(0xFF4F46E5),
+                ),
               );
             },
-            icon: const Icon(Icons.auto_awesome, size: 14, color: Color(0xFF4F46E5)),
-            label: Text('AI Category Research', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: const Color(0xFF4F46E5))),
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: Color(0xFF4F46E5)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: isDark ? const Color(0xFF4338CA) : const Color(0xFFC7D2FE)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.auto_awesome, size: 13, color: Color(0xFF4F46E5)),
+                  const SizedBox(width: 5),
+                  Text(
+                    'AI Category Research',
+                    style: GoogleFonts.inter(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF4F46E5),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           children: [
@@ -1485,33 +1506,35 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.inter(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                        color: textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: GoogleFonts.inter(
-                        fontSize: 12.5,
-                        color: textSecondary,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: textPrimary,
+                  ),
                 ),
               ),
-              ?headerAction,
+              if (headerAction != null) ...[
+                const SizedBox(width: 12),
+                headerAction,
+              ],
             ],
           ),
+          if (subtitle.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: GoogleFonts.inter(
+                fontSize: 12.5,
+                color: textSecondary,
+                height: 1.35,
+              ),
+            ),
+          ],
           const SizedBox(height: 18),
           ...children,
         ],
