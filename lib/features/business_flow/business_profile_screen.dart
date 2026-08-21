@@ -21,7 +21,7 @@ class BusinessProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> with SingleTickerProviderStateMixin {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  GlobalKey<ScaffoldState>? _scaffoldKey;
   TabController? _tabController;
 
   // Basic Identity
@@ -84,6 +84,7 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
   }
 
   void _ensureControllers([BusinessProfile? business]) {
+    _scaffoldKey ??= GlobalKey<ScaffoldState>();
     _tabController ??= TabController(length: 6, vsync: this);
     _additionalCategoryControllers ??= [];
     _photoUrlControllers ??= [];
@@ -271,9 +272,10 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
     }
 
     final profileScore = business != null ? ref.watch(profileCompletenessProvider(business)) : 100;
+    final scaffoldKey = _scaffoldKey ??= GlobalKey<ScaffoldState>();
 
     return Scaffold(
-      key: _scaffoldKey,
+      key: scaffoldKey,
       backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFFAF8FF),
       drawer: const MainAppDrawer(),
       endDrawer: const NotificationEndDrawer(),
@@ -290,10 +292,18 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                   subtitle: 'Grow your business with SocialHive AI',
                   showSparkle: true,
                   onOpenDrawer: () {
-                    _scaffoldKey.currentState?.openDrawer();
+                    if (scaffoldKey.currentState != null) {
+                      scaffoldKey.currentState!.openDrawer();
+                    } else {
+                      Scaffold.maybeOf(context)?.openDrawer();
+                    }
                   },
                   onOpenNotifications: () {
-                    _scaffoldKey.currentState?.openEndDrawer();
+                    if (scaffoldKey.currentState != null) {
+                      scaffoldKey.currentState!.openEndDrawer();
+                    } else {
+                      Scaffold.maybeOf(context)?.openEndDrawer();
+                    }
                   },
                 ),
               ),
