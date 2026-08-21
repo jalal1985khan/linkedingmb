@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../../data/repositories/gmb_blueprint_repository.dart';
 import '../../business_flow/providers/active_location_provider.dart';
+import '../../dashboard/widgets/dashboard_header_bar.dart';
+import '../../notifications/notification_end_drawer.dart';
+import '../../shell/providers/shell_nav_provider.dart';
 
 class BlueprintPlannerScreen extends ConsumerStatefulWidget {
   const BlueprintPlannerScreen({super.key});
@@ -73,11 +76,18 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Row(
             children: [
-              const Icon(Icons.auto_awesome_rounded, color: Color(0xFF6366F1)),
-              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.auto_awesome_rounded, color: Color(0xFF4F46E5), size: 20),
+              ),
+              const SizedBox(width: 12),
               Text(
-                'Generate 30-Day Blueprint',
-                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 16),
+                'Generate Blueprint',
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w800, fontSize: 16),
               ),
             ],
           ),
@@ -87,18 +97,21 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
             children: [
               Text(
                 'AI will analyze your local category, reviews, and search keywords to craft a 30-day content calendar.',
-                style: GoogleFonts.plusJakartaSans(color: const Color(0xFF64748B), fontSize: 13),
+                style: GoogleFonts.plusJakartaSans(color: const Color(0xFF64748B), fontSize: 13, height: 1.4),
               ),
               const SizedBox(height: 20),
-              Text('Posting Frequency', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13)),
+              Text(
+                'Posting Frequency',
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
               const SizedBox(height: 8),
               DropdownButtonFormField<int>(
-                value: postsPerWeek,
+                initialValue: postsPerWeek,
                 decoration: InputDecoration(
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 ),
-                items: [3, 5, 7].map((p) => DropdownMenuItem(value: p, child: Text('$p posts / week'))).toList(),
+                items: [3, 5, 7].map((p) => DropdownMenuItem(value: p, child: Text('$p posts / week', style: GoogleFonts.plusJakartaSans()))).toList(),
                 onChanged: (v) {
                   if (v != null) setDialogState(() => postsPerWeek = v);
                 },
@@ -108,11 +121,11 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
                 contentPadding: EdgeInsets.zero,
                 title: Text(
                   'Auto-schedule to Post Queue',
-                  style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700),
                 ),
                 subtitle: Text(
                   'Automatically push generated posts into the scheduler calendar.',
-                  style: GoogleFonts.plusJakartaSans(fontSize: 11, color: Colors.grey),
+                  style: GoogleFonts.plusJakartaSans(fontSize: 11.5, color: const Color(0xFF64748B)),
                 ),
                 value: autoSchedule,
                 onChanged: (v) => setDialogState(() => autoSchedule = v ?? false),
@@ -122,16 +135,18 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+              child: Text('Cancel', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600)),
             ),
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366F1),
+                backgroundColor: const Color(0xFF4F46E5),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                elevation: 0,
               ),
               icon: const Icon(Icons.bolt_rounded, size: 18),
-              label: const Text('Generate Strategy'),
+              label: Text('Generate Strategy', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13)),
               onPressed: () {
                 Navigator.pop(ctx);
                 _generateBlueprint(postsPerWeek, autoSchedule);
@@ -162,8 +177,8 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Generated ${res.totalItems} content concepts!'),
-            backgroundColor: Colors.green,
+            content: Text('✨ Generated ${res.totalItems} content concepts!'),
+            backgroundColor: const Color(0xFF16A34A),
           ),
         );
       }
@@ -171,7 +186,7 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
       if (mounted) {
         setState(() => _isGenerating = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Failed: $e'), backgroundColor: const Color(0xFFDC2626)),
         );
       }
     }
@@ -189,8 +204,8 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
         setState(() => _isScheduling = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('All blueprint items rendered and added to Post Queue!'),
-            backgroundColor: Colors.green,
+            content: Text('🚀 All blueprint items rendered and added to Post Queue!'),
+            backgroundColor: Color(0xFF16A34A),
           ),
         );
         _loadBlueprint();
@@ -199,7 +214,7 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
       if (mounted) {
         setState(() => _isScheduling = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to schedule: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Failed to schedule: $e'), backgroundColor: const Color(0xFFDC2626)),
         );
       }
     }
@@ -210,7 +225,7 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
     if (activeLocation == null) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('AI is improvising a fresh angle for this post...')),
+      const SnackBar(content: Text('✨ AI is improvising a fresh angle for this post...')),
     );
 
     try {
@@ -223,13 +238,13 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
       if (updated != null && mounted) {
         _loadBlueprint();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Concept improvised!'), backgroundColor: Colors.green),
+          const SnackBar(content: Text('✨ Concept improvised!'), backgroundColor: Color(0xFF16A34A)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('Error: $e'), backgroundColor: const Color(0xFFDC2626)),
         );
       }
     }
@@ -238,13 +253,26 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
   @override
   Widget build(BuildContext context) {
     final activeLocation = ref.watch(activeLocationProvider).activeLocation;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    if (activeLocation == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Strategy Blueprint')),
-        body: const Center(child: Text('Please select a business location first.')),
-      );
-    }
+    // Design System Tokens
+    final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1E1B4B);
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
+    final bgGradient = isDark
+        ? const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0F172A), Color(0xFF0B0F19)],
+          )
+        : const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF0F4FF), Color(0xFFFAF8FF), Color(0xFFFFFFFF)],
+            stops: [0.0, 0.35, 1.0],
+          );
 
     final items = _blueprint?.items ?? [];
     final filteredItems = (_selectedFormat == null || _selectedFormat == 'ALL')
@@ -252,86 +280,107 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
         : items.where((i) => i.format.toUpperCase() == _selectedFormat).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Content Strategy Blueprint',
-              style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFF1E293B),
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-              ),
-            ),
-            Text(
-              activeLocation.name,
-              style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFF64748B),
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Color(0xFF64748B)),
-            onPressed: _loadBlueprint,
-            tooltip: 'Refresh Blueprint',
-          ),
-        ],
-      ),
-      body: _isLoading || _isGenerating
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CircularProgressIndicator(color: Color(0xFF6366F1)),
-                  const SizedBox(height: 16),
-                  Text(
-                    _isGenerating
-                        ? 'AI is crafting your 30-day strategy...'
-                        : 'Loading content blueprint...',
-                    style: GoogleFonts.plusJakartaSans(
-                      color: const Color(0xFF64748B),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : items.isEmpty
-              ? _buildEmptyState()
-              : Column(
-                  children: [
-                    _buildHeaderStats(),
-                    _buildFormatFilterBar(),
-                    Expanded(
-                      child: ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-                        itemCount: filteredItems.length,
-                        itemBuilder: (context, index) {
-                          return _buildBlueprintCard(filteredItems[index]);
-                        },
-                      ),
-                    ),
-                  ],
+      backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFFAF8FF),
+      endDrawer: const NotificationEndDrawer(),
+      body: Container(
+        decoration: BoxDecoration(gradient: bgGradient),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 1. Standard Unified DashboardHeaderBar
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 4.0),
+                child: DashboardHeaderBar(
+                  title: 'Content Strategy Blueprint',
+                  subtitle: activeLocation?.name ?? 'SocialHive',
+                  showSparkle: true,
+                  showBackButton: true,
+                  onBack: () => ref.handleSmartBack(context),
+                  onOpenNotifications: () {
+                    Scaffold.maybeOf(context)?.openEndDrawer();
+                  },
                 ),
+              ),
+              const SizedBox(height: 6),
+
+              // 2. Main Body Content
+              Expanded(
+                child: _isLoading || _isGenerating
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const CircularProgressIndicator(color: Color(0xFF4F46E5)),
+                            const SizedBox(height: 16),
+                            Text(
+                              _isGenerating
+                                  ? 'AI is crafting your 30-day strategy...'
+                                  : 'Loading content blueprint...',
+                              style: GoogleFonts.plusJakartaSans(
+                                color: textSecondary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : items.isEmpty
+                        ? _buildEmptyState(isDark, cardBgColor, borderColor, textPrimary, textSecondary)
+                        : RefreshIndicator(
+                            color: const Color(0xFF4F46E5),
+                            onRefresh: _loadBlueprint,
+                            child: Column(
+                              children: [
+                                // Top Hero Strategy Banner
+                                _buildHeaderStats(),
+
+                                // Horizontal Format Filter Pills
+                                _buildFormatFilterBar(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                                const SizedBox(height: 6),
+
+                                // Cards List
+                                Expanded(
+                                  child: ListView.separated(
+                                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 90),
+                                    itemCount: filteredItems.length,
+                                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                                    itemBuilder: (context, index) {
+                                      return _buildBlueprintCard(
+                                        filteredItems[index],
+                                        isDark,
+                                        cardBgColor,
+                                        borderColor,
+                                        textPrimary,
+                                        textSecondary,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+              ),
+            ],
+          ),
+        ),
+      ),
       floatingActionButton: items.isNotEmpty
           ? FloatingActionButton.extended(
-              backgroundColor: const Color(0xFF6366F1),
+              backgroundColor: const Color(0xFF4F46E5),
               foregroundColor: Colors.white,
+              elevation: 4,
               icon: _isScheduling
                   ? const SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                     )
-                  : const Icon(Icons.calendar_month_rounded),
-              label: Text(_isScheduling ? 'Scheduling...' : 'Schedule All to Queue'),
+                  : const Icon(Icons.calendar_month_rounded, size: 20),
+              label: Text(
+                _isScheduling ? 'Scheduling...' : 'Schedule All to Queue',
+                style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13.5),
+              ),
               onPressed: _isScheduling ? null : _renderAndScheduleAll,
             )
           : null,
@@ -343,7 +392,7 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
     final planDays = _blueprint?.planDays ?? 30;
 
     return Container(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 4, 16, 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -351,10 +400,10 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.indigo.withValues(alpha: 0.25),
+            color: const Color(0xFF4F46E5).withValues(alpha: 0.3),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -378,8 +427,9 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
                 Text(
                   '$total AI-optimized concepts ready for publishing',
                   style: GoogleFonts.plusJakartaSans(
-                    color: Colors.white.withValues(alpha: 0.8),
+                    color: Colors.white.withValues(alpha: 0.85),
                     fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -390,10 +440,14 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
               backgroundColor: Colors.white,
               foregroundColor: const Color(0xFF4F46E5),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              elevation: 0,
             ),
             icon: const Icon(Icons.auto_awesome_rounded, size: 16),
-            label: const Text('Re-plan', style: TextStyle(fontWeight: FontWeight.w700)),
+            label: Text(
+              'Re-plan',
+              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 12.5),
+            ),
             onPressed: _showGenerateDialog,
           ),
         ],
@@ -401,7 +455,13 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
     );
   }
 
-  Widget _buildFormatFilterBar() {
+  Widget _buildFormatFilterBar(
+    bool isDark,
+    Color cardBgColor,
+    Color borderColor,
+    Color textPrimary,
+    Color textSecondary,
+  ) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -410,23 +470,45 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
           final isSelected = (_selectedFormat == null && fmt == 'ALL') || _selectedFormat == fmt;
           return Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(fmt.replaceAll('_', ' ')),
-              selected: isSelected,
-              onSelected: (_) {
+            child: GestureDetector(
+              onTap: () {
                 setState(() => _selectedFormat = fmt == 'ALL' ? null : fmt);
               },
-              selectedColor: const Color(0xFFEEF2FF),
-              labelStyle: TextStyle(
-                color: isSelected ? const Color(0xFF4F46E5) : const Color(0xFF64748B),
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 12,
-              ),
-              backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-                side: BorderSide(
-                  color: isSelected ? const Color(0xFF6366F1) : const Color(0xFFE2E8F0),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF4F46E5) : cardBgColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected ? const Color(0xFF4F46E5) : borderColor,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isSelected
+                          ? const Color(0xFF4F46E5).withValues(alpha: 0.3)
+                          : Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
+                      blurRadius: isSelected ? 6 : 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isSelected) ...[
+                      const Icon(Icons.check_rounded, size: 14, color: Colors.white),
+                      const SizedBox(width: 5),
+                    ],
+                    Text(
+                      fmt.replaceAll('_', ' '),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                        color: isSelected ? Colors.white : textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -436,18 +518,24 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
     );
   }
 
-  Widget _buildBlueprintCard(GMBBlueprintItem item) {
+  Widget _buildBlueprintCard(
+    GMBBlueprintItem item,
+    bool isDark,
+    Color cardBgColor,
+    Color borderColor,
+    Color textPrimary,
+    Color textSecondary,
+  ) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: cardBgColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
+            blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
@@ -455,13 +543,15 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Top Badges Row
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
+                  color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: isDark ? const Color(0xFF4338CA) : const Color(0xFFC7D2FE)),
                 ),
                 child: Text(
                   'DAY ${item.dayNumber}',
@@ -476,21 +566,22 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F9),
+                  color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: borderColor),
                 ),
                 child: Text(
-                  item.format,
+                  item.format.replaceAll('_', ' '),
                   style: GoogleFonts.plusJakartaSans(
-                    color: const Color(0xFF475569),
-                    fontWeight: FontWeight.w600,
+                    color: textSecondary,
+                    fontWeight: FontWeight.w700,
                     fontSize: 11,
                   ),
                 ),
               ),
               const Spacer(),
               IconButton(
-                icon: const Icon(Icons.auto_awesome_rounded, size: 18, color: Color(0xFF6366F1)),
+                icon: const Icon(Icons.auto_awesome_rounded, size: 18, color: Color(0xFF4F46E5)),
                 onPressed: () => _improviseItem(item),
                 tooltip: 'Improvise with AI',
                 constraints: const BoxConstraints(),
@@ -498,43 +589,54 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
+
+          // Headline Title
           Text(
             item.title,
             style: GoogleFonts.plusJakartaSans(
-              fontWeight: FontWeight.w700,
-              fontSize: 14,
-              color: const Color(0xFF1E293B),
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+              color: textPrimary,
+              height: 1.3,
             ),
           ),
           const SizedBox(height: 6),
+
+          // Caption Preview
           Text(
             item.caption,
             style: GoogleFonts.plusJakartaSans(
-              color: const Color(0xFF475569),
-              fontSize: 12,
+              color: textSecondary,
+              fontSize: 12.5,
               height: 1.4,
             ),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
+
+          // Visual Prompt Concept Box
           if (item.mediaConcept.isNotEmpty) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFF1F5F9)),
+                color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: borderColor),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.image_outlined, size: 16, color: Color(0xFF64748B)),
-                  const SizedBox(width: 6),
+                  Icon(Icons.image_outlined, size: 16, color: textSecondary),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Visual: ${item.mediaConcept}',
-                      style: GoogleFonts.plusJakartaSans(fontSize: 11, color: const Color(0xFF64748B)),
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
+                        color: textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -548,52 +650,72 @@ class _BlueprintPlannerScreenState extends ConsumerState<BlueprintPlannerScreen>
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(
+    bool isDark,
+    Color cardBgColor,
+    Color borderColor,
+    Color textPrimary,
+    Color textSecondary,
+  ) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEEF2FF),
-                shape: BoxShape.circle,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Container(
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: cardBgColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: borderColor),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Icon(Icons.auto_awesome_rounded, size: 32, color: Color(0xFF4F46E5)),
               ),
-              child: const Icon(Icons.auto_awesome_rounded, size: 48, color: Color(0xFF6366F1)),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'No Strategy Blueprint Yet',
-              style: GoogleFonts.plusJakartaSans(
-                fontWeight: FontWeight.w800,
-                fontSize: 18,
-                color: const Color(0xFF1E293B),
+              const SizedBox(height: 18),
+              Text(
+                'No Strategy Blueprint Yet',
+                style: GoogleFonts.plusJakartaSans(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 17,
+                  color: textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Generate an AI-powered 30-day posting strategy tailored to your Google business category and local audience.',
-              style: GoogleFonts.plusJakartaSans(
-                color: const Color(0xFF64748B),
-                fontSize: 13,
+              const SizedBox(height: 8),
+              Text(
+                'Generate an AI-powered 30-day posting strategy tailored to your Google business category and local audience.',
+                style: GoogleFonts.plusJakartaSans(
+                  color: textSecondary,
+                  fontSize: 13,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6366F1),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              const SizedBox(height: 22),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF4F46E5),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                icon: const Icon(Icons.bolt_rounded, size: 18),
+                label: Text(
+                  'Generate 30-Day Plan',
+                  style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+                ),
+                onPressed: _showGenerateDialog,
               ),
-              icon: const Icon(Icons.bolt_rounded),
-              label: const Text('Generate 30-Day Plan', style: TextStyle(fontWeight: FontWeight.w700)),
-              onPressed: _showGenerateDialog,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
