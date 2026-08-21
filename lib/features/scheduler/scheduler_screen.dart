@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../data/models/scheduled_post.dart';
 import '../dashboard/dashboard_controller.dart';
+import '../dashboard/widgets/dashboard_header_bar.dart';
+import '../notifications/notification_end_drawer.dart';
 import '../posts/post_editor_screen.dart';
 
 class SchedulerScreen extends ConsumerStatefulWidget {
@@ -21,71 +22,115 @@ class SchedulerScreen extends ConsumerStatefulWidget {
 }
 
 class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
+  GlobalKey<ScaffoldState>? _scaffoldKey;
   DateTime _scheduledDateTime = DateTime.now().add(const Duration(hours: 2));
   bool _saving = false;
 
   @override
+  void initState() {
+    super.initState();
+    _scaffoldKey ??= GlobalKey<ScaffoldState>();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+    final scaffoldKey = _scaffoldKey ??= GlobalKey<ScaffoldState>();
+
+    // Design System Tokens
     final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
     final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
-    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF1E1B4B);
     final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
+    final bgGradient = isDark
+        ? const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF0F172A), Color(0xFF0B0F19)],
+          )
+        : const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF0F4FF), Color(0xFFFAF8FF), Color(0xFFFFFFFF)],
+            stops: [0.0, 0.35, 1.0],
+          );
+
     return Scaffold(
-      backgroundColor: bgColor,
-      appBar: AppBar(
-        backgroundColor: cardBgColor,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        title: Text(
-          'Schedule Post',
-          style: GoogleFonts.inter(
-            color: textPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+      key: scaffoldKey,
+      backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFFAF8FF),
+      endDrawer: const NotificationEndDrawer(),
+      body: Container(
+        decoration: BoxDecoration(gradient: bgGradient),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // 1. Standard Unified DashboardHeaderBar
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 4.0),
+                child: DashboardHeaderBar(
+                  title: 'Schedule Post',
+                  subtitle: 'Select publishing time & date',
+                  showSparkle: true,
+                  showBackButton: true,
+                  onBack: () => Navigator.of(context).maybePop(),
+                  onOpenNotifications: () {
+                    if (scaffoldKey.currentState != null) {
+                      scaffoldKey.currentState!.openEndDrawer();
+                    } else {
+                      Scaffold.maybeOf(context)?.openEndDrawer();
+                    }
+                  },
+                ),
+              ),
+
+              // 2. Main Scrollable Form Content
+              Expanded(
+                child: FutureBuilder<ScheduledPost?>(
+                  future: ref.read(postRepositoryProvider).getPostById(widget.postId),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: Color(0xFF4F46E5)),
+                      );
+                    }
+
+                    final post = snapshot.data;
+                    if (post == null) {
+                      return Center(
+                        child: Text(
+                          'Post not found',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 15, color: textSecondary),
+                        ),
+                      );
+                    }
+
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Post Preview Card
+                          _buildPostPreviewCard(post, isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+
+                          const SizedBox(height: 16),
+
+                          // Date & Time Picker Card
+                          _buildDateTimePickerCard(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),
-      body: FutureBuilder<ScheduledPost?>(
-        future: ref.read(postRepositoryProvider).getPostById(widget.postId),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-          }
-
-          final post = snapshot.data;
-          if (post == null) {
-            return Center(
-              child: Text(
-                'Post not found',
-                style: GoogleFonts.inter(fontSize: 16, color: textSecondary),
-              ),
-            );
-          }
-
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Post Preview Card
-                _buildPostPreviewCard(post, isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-
-                const SizedBox(height: 16),
-
-                // Date & Time Picker Card
-                _buildDateTimePickerCard(isDark, cardBgColor, borderColor, textPrimary, textSecondary),
-
-                const SizedBox(height: 24),
-              ],
-            ),
-          );
-        },
-      ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: cardBgColor,
           border: Border(top: BorderSide(color: borderColor, width: 1)),
@@ -102,42 +147,60 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
           child: Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => PostEditorScreen(postId: widget.postId)),
-                  ),
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  label: Text('Edit Content', style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: textPrimary,
-                    side: BorderSide(color: borderColor),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                flex: 2,
+                child: SizedBox(
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (_) => PostEditorScreen(postId: widget.postId)),
+                    ),
+                    icon: const Icon(Icons.edit_outlined, size: 17),
+                    label: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        'Edit Content',
+                        maxLines: 1,
+                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: textPrimary,
+                      side: BorderSide(color: borderColor),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
-                flex: 2,
-                child: ElevatedButton.icon(
-                  onPressed: _saving ? null : _schedulePost,
-                  icon: _saving
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Icon(Icons.check_circle_rounded, size: 18),
-                  label: Text(
-                    _saving ? 'Scheduling...' : 'Confirm Schedule',
-                    style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
+                flex: 3,
+                child: SizedBox(
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: _saving ? null : _schedulePost,
+                    icon: _saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.check_circle_rounded, size: 18),
+                    label: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        _saving ? 'Scheduling...' : 'Confirm Schedule',
+                        maxLines: 1,
+                        style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4F46E5),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
                   ),
                 ),
               ),
@@ -155,6 +218,13 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
         color: cardBgColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,12 +235,12 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
+                  color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.5) : const Color(0xFFEEF2FF),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
                   Icons.article_rounded,
-                  color: AppColors.primary,
+                  color: Color(0xFF4F46E5),
                   size: 22,
                 ),
               ),
@@ -181,16 +251,16 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
                   children: [
                     Text(
                       'Post Preview',
-                      style: GoogleFonts.inter(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 15,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w700,
                         color: textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'Target Platform: Google Business Profile',
-                      style: GoogleFonts.inter(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         color: textSecondary,
                       ),
@@ -202,19 +272,19 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.secondary.withValues(alpha: 0.12),
+                    color: const Color(0xFFFDF2F8),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.auto_awesome, size: 12, color: AppColors.secondary),
+                      const Icon(Icons.auto_awesome, size: 12, color: Color(0xFFDB2777)),
                       const SizedBox(width: 4),
                       Text(
                         'AI',
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.secondary,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFFDB2777),
                         ),
                       ),
                     ],
@@ -225,9 +295,9 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
           const SizedBox(height: 16),
           Text(
             post.title.isNotEmpty ? post.title : 'Scheduled Post',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
               color: textPrimary,
             ),
           ),
@@ -235,9 +305,9 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
             const SizedBox(height: 6),
             Text(
               post.preview,
-              style: GoogleFonts.inter(
+              style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
-                height: 1.4,
+                height: 1.45,
                 color: textSecondary,
               ),
               maxLines: 4,
@@ -259,6 +329,13 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
         color: cardBgColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -269,12 +346,12 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.success.withValues(alpha: 0.12),
+                  color: isDark ? const Color(0xFF064E3B).withValues(alpha: 0.5) : const Color(0xFFDCFCE7),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.event_available_rounded,
-                  color: AppColors.success,
+                  color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF16A34A),
                   size: 22,
                 ),
               ),
@@ -285,16 +362,16 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
                   children: [
                     Text(
                       'Publishing Schedule',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
                         color: textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'Choose exact date and time for automatic posting',
-                      style: GoogleFonts.inter(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         color: textSecondary,
                       ),
@@ -312,16 +389,16 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: isDark ? const Color(0xFF312E81).withValues(alpha: 0.4) : const Color(0xFFEEF2FF),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+              border: Border.all(color: isDark ? const Color(0xFF4F46E5) : const Color(0xFFC7D2FE)),
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: const BoxDecoration(
-                    color: AppColors.primary,
+                    color: Color(0xFF4F46E5),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -337,19 +414,19 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
                     children: [
                       Text(
                         dateStr,
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                           color: textPrimary,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Scheduled for $timeStr',
-                        style: GoogleFonts.inter(
+                        style: GoogleFonts.plusJakartaSans(
                           fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF4F46E5),
                         ),
                       ),
                     ],
@@ -362,16 +439,29 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
           const SizedBox(height: 16),
 
           // Quick Presets Header
-          Text(
-            'QUICK PRESETS',
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: textSecondary,
-              letterSpacing: 0.5,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEEF2FF),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Icon(Icons.bolt_rounded, size: 13, color: Color(0xFF4F46E5)),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'QUICK PRESETS',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF6366F1),
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
 
           // Quick Preset Chips
           Wrap(
@@ -396,7 +486,7 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
                   icon: const Icon(Icons.calendar_month_rounded, size: 16),
                   label: Text(
                     'Pick Date',
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: textPrimary,
@@ -413,7 +503,7 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
                   icon: const Icon(Icons.schedule_rounded, size: 16),
                   label: Text(
                     'Pick Time',
-                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: textPrimary,
@@ -439,15 +529,15 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
     return ChoiceChip(
       label: Text(label),
       selected: isSelected,
-      labelStyle: GoogleFonts.inter(
+      labelStyle: GoogleFonts.plusJakartaSans(
         fontSize: 12,
-        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-        color: isSelected ? Colors.white : (isDark ? Colors.grey[300] : const Color(0xFF334155)),
+        fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+        color: isSelected ? Colors.white : (isDark ? Colors.white70 : const Color(0xFF334155)),
       ),
-      selectedColor: AppColors.primary,
-      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+      selectedColor: const Color(0xFF4F46E5),
+      backgroundColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
       side: BorderSide(
-        color: isSelected ? AppColors.primary : borderColor,
+        color: isSelected ? const Color(0xFF4F46E5) : borderColor,
       ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       onSelected: (selected) {
@@ -521,9 +611,13 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('📅 Post scheduled successfully!'),
-          backgroundColor: AppColors.success,
+        SnackBar(
+          content: Text(
+            'Post scheduled successfully!',
+            style: GoogleFonts.plusJakartaSans(fontSize: 13),
+          ),
+          backgroundColor: const Color(0xFF16A34A),
+          behavior: SnackBarBehavior.floating,
         ),
       );
       Navigator.of(context).pop();
@@ -531,8 +625,12 @@ class _SchedulerScreenState extends ConsumerState<SchedulerScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to schedule: ${e.toString()}'),
-            backgroundColor: AppColors.error,
+            content: Text(
+              'Failed to schedule: ${e.toString()}',
+              style: GoogleFonts.plusJakartaSans(fontSize: 13),
+            ),
+            backgroundColor: const Color(0xFFDC2626),
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
