@@ -176,6 +176,7 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
                 child: Row(
                   children: [
                     Expanded(
+                      flex: 2,
                       child: SizedBox(
                         height: 48,
                         child: OutlinedButton.icon(
@@ -185,21 +186,26 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
                             ),
                           ),
                           icon: const Icon(Icons.schedule_rounded, size: 18),
-                          label: Text(
-                            'Schedule',
-                            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+                          label: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              'Schedule',
+                              maxLines: 1,
+                              style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+                            ),
                           ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: textPrimary,
                             side: BorderSide(color: borderColor),
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
-                      flex: 2,
+                      flex: 3,
                       child: SizedBox(
                         height: 48,
                         child: ElevatedButton.icon(
@@ -211,14 +217,19 @@ class _PostEditorScreenState extends ConsumerState<PostEditorScreen> {
                                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                 )
                               : const Icon(Icons.save_rounded, size: 18),
-                          label: Text(
-                            _saving ? 'Saving...' : 'Save Changes',
-                            style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700),
+                          label: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              _saving ? 'Saving...' : 'Save Changes',
+                              maxLines: 1,
+                              style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w700),
+                            ),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF4F46E5),
                             foregroundColor: Colors.white,
                             elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                         ),
