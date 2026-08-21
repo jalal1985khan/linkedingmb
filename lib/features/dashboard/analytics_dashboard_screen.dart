@@ -18,28 +18,14 @@ final gmbAnalyticsProvider = FutureProvider.autoDispose<GMBLocationStats>((ref) 
   return repo.fetchStats(activeLoc.id, timeframe: timeframe);
 });
 
-class AnalyticsDashboardScreen extends ConsumerStatefulWidget {
+class AnalyticsDashboardScreen extends ConsumerWidget {
   const AnalyticsDashboardScreen({super.key, this.showScaffold = true});
 
   final bool showScaffold;
 
   @override
-  ConsumerState<AnalyticsDashboardScreen> createState() => _AnalyticsDashboardScreenState();
-}
-
-class _AnalyticsDashboardScreenState extends ConsumerState<AnalyticsDashboardScreen> {
-  GlobalKey<ScaffoldState>? _scaffoldKey;
-
-  @override
-  void initState() {
-    super.initState();
-    _scaffoldKey ??= GlobalKey<ScaffoldState>();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final scaffoldKey = _scaffoldKey ??= GlobalKey<ScaffoldState>();
     final activeLoc = ref.watch(activeLocationProvider).activeLocation;
 
     // Design System Tokens
@@ -79,11 +65,7 @@ class _AnalyticsDashboardScreenState extends ConsumerState<AnalyticsDashboardScr
                 showBackButton: true,
                 onBack: () => Navigator.of(context).maybePop(),
                 onOpenNotifications: () {
-                  if (scaffoldKey.currentState != null) {
-                    scaffoldKey.currentState!.openEndDrawer();
-                  } else {
-                    Scaffold.maybeOf(context)?.openEndDrawer();
-                  }
+                  Scaffold.maybeOf(context)?.openEndDrawer();
                 },
               ),
             ),
@@ -161,9 +143,9 @@ class _AnalyticsDashboardScreenState extends ConsumerState<AnalyticsDashboardScr
                         ),
                         child: Row(
                           children: [
-                            Expanded(child: _buildSegment('Weekly', selectedTimeframe == 'Weekly', isDark, textPrimary, textSecondary)),
-                            Expanded(child: _buildSegment('Monthly', selectedTimeframe == 'Monthly', isDark, textPrimary, textSecondary)),
-                            Expanded(child: _buildSegment('Yearly', selectedTimeframe == 'Yearly', isDark, textPrimary, textSecondary)),
+                            Expanded(child: _buildSegment('Weekly', selectedTimeframe == 'Weekly', ref, isDark, textPrimary, textSecondary)),
+                            Expanded(child: _buildSegment('Monthly', selectedTimeframe == 'Monthly', ref, isDark, textPrimary, textSecondary)),
+                            Expanded(child: _buildSegment('Yearly', selectedTimeframe == 'Yearly', ref, isDark, textPrimary, textSecondary)),
                           ],
                         ),
                       ),
@@ -248,7 +230,7 @@ class _AnalyticsDashboardScreenState extends ConsumerState<AnalyticsDashboardScr
                           ],
                         ),
                         loading: () => _buildLoadingSkeleton(isDark, cardBgColor, borderColor),
-                        error: (err, stack) => _buildErrorCard(err, isDark, cardBgColor, borderColor, textPrimary, textSecondary),
+                        error: (err, stack) => _buildErrorCard(err, ref, isDark, cardBgColor, borderColor, textPrimary, textSecondary),
                       ),
                     ],
                   ),
@@ -260,12 +242,11 @@ class _AnalyticsDashboardScreenState extends ConsumerState<AnalyticsDashboardScr
       ),
     );
 
-    if (!widget.showScaffold) {
+    if (!showScaffold) {
       return body;
     }
 
     return Scaffold(
-      key: scaffoldKey,
       backgroundColor: isDark ? const Color(0xFF0B0F19) : const Color(0xFFFAF8FF),
       endDrawer: const NotificationEndDrawer(),
       body: body,
@@ -275,6 +256,7 @@ class _AnalyticsDashboardScreenState extends ConsumerState<AnalyticsDashboardScr
   Widget _buildSegment(
     String title,
     bool isSelected,
+    WidgetRef ref,
     bool isDark,
     Color textPrimary,
     Color textSecondary,
@@ -781,6 +763,7 @@ class _AnalyticsDashboardScreenState extends ConsumerState<AnalyticsDashboardScr
 
   Widget _buildErrorCard(
     Object error,
+    WidgetRef ref,
     bool isDark,
     Color cardBgColor,
     Color borderColor,
