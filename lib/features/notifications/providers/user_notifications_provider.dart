@@ -122,15 +122,15 @@ class UserNotificationsNotifier extends StateNotifier<AsyncValue<List<AppNotific
         if (kDebugMode) {
           debugPrint('⚠️ [UserNotifications] HTTP ${response.statusCode}');
         }
-        if (!silent) {
+        if (!silent && state.valueOrNull == null) {
           state = AsyncValue.error('Failed to fetch notifications: ${response.statusCode}', StackTrace.current);
         }
       }
     } catch (e, stack) {
       if (kDebugMode) {
-        print('[UserNotifications] Error fetching notifications: $e');
+        debugPrint('⚠️ [UserNotifications] Transient error fetching notifications: $e');
       }
-      if (!silent) {
+      if (!silent && state.valueOrNull == null) {
         state = AsyncValue.error(e, stack);
       }
     }
