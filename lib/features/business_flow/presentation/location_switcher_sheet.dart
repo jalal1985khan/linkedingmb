@@ -31,6 +31,13 @@ class _LocationSwitcherSheetState
     final activeLoc = locationState.activeLocation;
     final allLocations = locationState.availableLocations;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final inputBgColor = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     final filtered = allLocations.where((loc) {
       final q = _searchQuery.toLowerCase();
       return loc.name.toLowerCase().contains(q) ||
@@ -39,12 +46,13 @@ class _LocationSwitcherSheetState
     }).toList();
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: cardBgColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        border: Border(top: BorderSide(color: borderColor)),
       ),
       padding: EdgeInsets.only(
-        top: 20,
+        top: 18,
         left: 20,
         right: 20,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
@@ -56,15 +64,15 @@ class _LocationSwitcherSheetState
           // Drag Handle
           Center(
             child: Container(
-              width: 40,
+              width: 38,
               height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFE2E8F0),
+                color: isDark ? const Color(0xFF475569) : const Color(0xFFCBD5E1),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
 
           // Sheet Header
           Row(
@@ -72,12 +80,12 @@ class _LocationSwitcherSheetState
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEEF2FF),
-                  borderRadius: BorderRadius.circular(14),
+                  color: const Color(0xFF4F46E5).withValues(alpha: isDark ? 0.2 : 0.1),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.storefront_rounded,
-                  color: Color(0xFF6366F1),
+                  color: Color(0xFF4F46E5),
                   size: 22,
                 ),
               ),
@@ -89,16 +97,17 @@ class _LocationSwitcherSheetState
                     Text(
                       'Switch Business Location',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF1E1B4B),
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: textPrimary,
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       'Select a profile to manage posts, reviews & analytics',
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: const Color(0xFF64748B),
+                        fontSize: 11.5,
+                        color: textSecondary,
                       ),
                     ),
                   ],
@@ -106,38 +115,42 @@ class _LocationSwitcherSheetState
               ),
               IconButton(
                 onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close_rounded, color: Color(0xFF64748B)),
+                icon: Icon(Icons.close_rounded, color: textSecondary),
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
 
           // Search Field
           if (allLocations.length > 3) ...[
             TextField(
               controller: _searchController,
               onChanged: (v) => setState(() => _searchQuery = v),
-              style: GoogleFonts.plusJakartaSans(fontSize: 13),
+              style: GoogleFonts.plusJakartaSans(fontSize: 13.5, color: textPrimary),
               decoration: InputDecoration(
                 hintText: 'Search locations...',
                 hintStyle: GoogleFonts.plusJakartaSans(
                   fontSize: 13,
-                  color: const Color(0xFF94A3B8),
+                  color: textSecondary,
                 ),
-                prefixIcon: const Icon(
+                prefixIcon: Icon(
                   Icons.search_rounded,
-                  color: Color(0xFF94A3B8),
+                  color: textSecondary,
                   size: 20,
                 ),
                 filled: true,
-                fillColor: const Color(0xFFF8FAFC),
+                fillColor: inputBgColor,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: borderColor),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: borderColor),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 1.5),
                 ),
                 contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
@@ -161,7 +174,6 @@ class _LocationSwitcherSheetState
               ),
             ),
           ),
-
         ],
       ),
     );
@@ -173,6 +185,12 @@ class _LocationSwitcherSheetState
     required BusinessProfile location,
     required bool isSelected,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBgColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final textPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+
     double displayRating = location.rating;
     if (displayRating <= 0.0) {
       final statsAsync = ref.watch(dashboardStatsProvider(location.id));
@@ -193,17 +211,34 @@ class _LocationSwitcherSheetState
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFFF5F3FF) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: isSelected
+            ? (isDark ? const Color(0xFF1E1B4B).withValues(alpha: 0.5) : const Color(0xFFEEF2FF))
+            : cardBgColor,
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isSelected ? const Color(0xFF818CF8) : const Color(0xFFE2E8F0),
+          color: isSelected ? const Color(0xFF6366F1) : borderColor,
           width: isSelected ? 1.5 : 1,
         ),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: const Color(0xFF4F46E5).withValues(alpha: 0.12),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1.5),
+                ),
+              ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
           onTap: () {
             ref.read(activeLocationProvider.notifier).selectLocation(location);
             ref.invalidate(dashboardStatsProvider(location.id));
@@ -217,19 +252,23 @@ class _LocationSwitcherSheetState
               children: [
                 // Store Icon Container
                 Container(
-                  width: 44,
-                  height: 44,
+                  width: 42,
+                  height: 42,
                   decoration: BoxDecoration(
-                    color: isSelected ? const Color(0xFF6366F1) : const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(12),
+                    color: isSelected
+                        ? const Color(0xFF4F46E5)
+                        : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9)),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
                     Icons.store_rounded,
-                    color: isSelected ? Colors.white : const Color(0xFF64748B),
-                    size: 22,
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                    size: 20,
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
 
                 // Location Info
                 Expanded(
@@ -241,40 +280,49 @@ class _LocationSwitcherSheetState
                         style: GoogleFonts.plusJakartaSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: isSelected ? const Color(0xFF1E1B4B) : const Color(0xFF334155),
+                          color: textPrimary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 3),
                       Row(
                         children: [
-                          Text(
-                            location.category,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: const Color(0xFF64748B),
+                          Flexible(
+                            child: Text(
+                              location.category,
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: textSecondary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           if (displayRating > 0.0) ...[
                             const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFEF3C7),
+                                color: isDark
+                                    ? const Color(0xFF78350F).withValues(alpha: 0.4)
+                                    : const Color(0xFFFEF3C7),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.star_rounded, size: 12, color: Color(0xFFD97706)),
+                                  Icon(Icons.star_rounded,
+                                      size: 12,
+                                      color: isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706)),
                                   const SizedBox(width: 2),
                                   Text(
                                     displayRating.toStringAsFixed(1),
                                     style: GoogleFonts.plusJakartaSans(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
-                                      color: const Color(0xFFB45309),
+                                      color: isDark ? const Color(0xFFFBBF24) : const Color(0xFFB45309),
                                     ),
                                   ),
                                 ],
@@ -290,16 +338,16 @@ class _LocationSwitcherSheetState
                 // Active Checkmark Indicator
                 if (isSelected)
                   Container(
-                    width: 26,
-                    height: 26,
+                    width: 24,
+                    height: 24,
                     decoration: const BoxDecoration(
-                      color: Color(0xFF6366F1),
+                      color: Color(0xFF4F46E5),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.check_rounded,
                       color: Colors.white,
-                      size: 16,
+                      size: 15,
                     ),
                   ),
               ],
