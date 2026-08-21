@@ -585,7 +585,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row
+          // Header Row: Title & View Details
           Row(
             children: [
               Container(
@@ -605,23 +605,6 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
                   color: textPrimary,
                 ),
               ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.5) : const Color(0xFFFEE2E2),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: isDark ? const Color(0xFFB91C1C) : const Color(0xFFFCA5A5)),
-                ),
-                child: Text(
-                  '↓ 33.3% $periodLabel',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFFDC2626),
-                  ),
-                ),
-              ),
               const Spacer(),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -630,6 +613,7 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
                   border: Border.all(color: borderColor),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       'View details',
@@ -648,15 +632,37 @@ class AnalyticsDashboardScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
 
-          // Large Metric Value
-          Text(
-            '${stats.totalImpressions}',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
-              color: textPrimary,
-              letterSpacing: -1,
-            ),
+          // Large Metric Value + Trend Badge Row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                '${stats.totalImpressions}',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w800,
+                  color: textPrimary,
+                  letterSpacing: -1,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF7F1D1D).withValues(alpha: 0.5) : const Color(0xFFFEE2E2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: isDark ? const Color(0xFFB91C1C) : const Color(0xFFFCA5A5)),
+                ),
+                child: Text(
+                  '↓ 33.3% $periodLabel',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFFDC2626),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 4),
 
