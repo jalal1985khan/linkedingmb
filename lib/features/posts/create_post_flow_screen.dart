@@ -76,22 +76,22 @@ class _CreatePostFlowScreenState extends ConsumerState<CreatePostFlowScreen> {
     if (mounted) {
       if (_topicType == 'OFFER') {
         _titleController.text = "Special 20% Discount on $category!";
-        _summaryController.text = "Enjoy 20% off all $category services at $name this week! Limited time offer — show this post at checkout to redeem. ✨\n\n#SpecialOffer #Discount #$category #LocalBusiness";
+        _summaryController.text = "Enjoy 20% off all $category services at $name this week! Limited time offer — show this post at checkout to redeem.\n\n#SpecialOffer #Discount #$category #LocalBusiness";
         _couponCodeController.text = "SAVE20";
         _actionType = 'LEARN_MORE';
       } else if (_topicType == 'EVENT') {
         _titleController.text = "$name Community Showcase";
-        _summaryController.text = "Join us at $name for our upcoming customer event! Meet the team, enjoy refreshments, and experience our latest $category services firsthand. 🎉\n\n#CommunityEvent #JoinUs #$category";
+        _summaryController.text = "Join us at $name for our upcoming customer event! Meet the team, enjoy refreshments, and experience our latest $category services firsthand.\n\n#CommunityEvent #JoinUs #$category";
         _actionType = 'BOOK';
       } else {
         if (tone == 'promo') {
-          _summaryController.text = "Looking for top-rated $category in your area? $name provides premium results tailored to your exact needs. Book your consultation today! 🚀\n\n#Local$category #CustomerFirst #$name";
+          _summaryController.text = "Looking for top-rated $category in your area? $name provides premium results tailored to your exact needs. Book your consultation today!\n\n#Local$category #CustomerFirst #$name";
           _actionType = 'BOOK';
         } else if (tone == 'seo') {
-          _summaryController.text = "Did you know $name is recognized for delivering premier $category? We specialize in reliable, fast, and high-quality solutions for our local community.\n\n📍 Visit us today or tap below to learn more! #LocalExperts #$category";
+          _summaryController.text = "Did you know $name is recognized for delivering premier $category? We specialize in reliable, fast, and high-quality solutions for our local community.\n\nVisit us today or tap below to learn more! #LocalExperts #$category";
           _actionType = 'LEARN_MORE';
         } else {
-          _summaryController.text = "Exciting updates from $name! We are proud to deliver top-quality $category tailored for our customers. Visit us today or tap below to learn more! 🚀 #BusinessUpdate #LocalService";
+          _summaryController.text = "Exciting updates from $name! We are proud to deliver top-quality $category tailored for our customers. Visit us today or tap below to learn more!\n\n#BusinessUpdate #LocalService";
         }
       }
       setState(() => _busy = false);
@@ -516,9 +516,9 @@ class _CreatePostFlowScreenState extends ConsumerState<CreatePostFlowScreen> {
                             spacing: 6,
                             runSpacing: 6,
                             children: [
-                              _buildAIChip('🔥 Promo Boost', () => _onGenerateAIPreset('promo'), isDark, borderColor, textSecondary),
-                              _buildAIChip('⭐ SEO Boost', () => _onGenerateAIPreset('seo'), isDark, borderColor, textSecondary),
-                              _buildAIChip('📅 Event Announcement', () => _onGenerateAIPreset('event'), isDark, borderColor, textSecondary),
+                              _buildAIChip(Icons.local_fire_department_rounded, 'Promo Boost', () => _onGenerateAIPreset('promo'), isDark, borderColor, textSecondary),
+                              _buildAIChip(Icons.trending_up_rounded, 'SEO Boost', () => _onGenerateAIPreset('seo'), isDark, borderColor, textSecondary),
+                              _buildAIChip(Icons.event_rounded, 'Event Announcement', () => _onGenerateAIPreset('event'), isDark, borderColor, textSecondary),
                             ],
                           ),
                           const SizedBox(height: 10),
@@ -909,23 +909,30 @@ class _CreatePostFlowScreenState extends ConsumerState<CreatePostFlowScreen> {
     );
   }
 
-  Widget _buildAIChip(String label, VoidCallback onTap, bool isDark, Color borderColor, Color textSecondary) {
+  Widget _buildAIChip(IconData icon, String label, VoidCallback onTap, bool isDark, Color borderColor, Color textSecondary) {
     return GestureDetector(
       onTap: _busy ? null : onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: borderColor),
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.plusJakartaSans(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: textSecondary,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: const Color(0xFF4F46E5)),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: textSecondary,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1052,9 +1059,9 @@ class _CreatePostFlowScreenState extends ConsumerState<CreatePostFlowScreen> {
           style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: textPrimary),
         ),
         const SizedBox(height: 6),
-        InkWell(
+        GestureDetector(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          behavior: HitTestBehavior.opaque,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             decoration: BoxDecoration(
