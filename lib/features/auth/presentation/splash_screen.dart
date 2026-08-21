@@ -23,8 +23,8 @@ class SplashScreen extends ConsumerWidget {
                   center: const Alignment(0, 0.8),
                   radius: 0.9,
                   colors: [
-                    const Color(0xFF6366F1).withOpacity(0.12),
-                    const Color(0xFF8B5CF6).withOpacity(0.05),
+                    const Color(0xFF6366F1).withValues(alpha: 0.12),
+                    const Color(0xFF8B5CF6).withValues(alpha: 0.05),
                     Colors.transparent,
                   ],
                 ),
@@ -38,24 +38,28 @@ class SplashScreen extends ConsumerWidget {
                 children: [
                   const Spacer(flex: 2),
 
-                  // High-Res 3D Briefcase Orbit Illustration Image
-                  SizedBox(
-                    height: 290,
-                    width: double.infinity,
-                    child: Center(
+                  // Official Splash Logo
+                  Flexible(
+                    flex: 8,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 220, maxWidth: 220),
                       child: Image.asset(
-                        'assets/images/gmb_briefcase_3d.png',
-                        width: 280,
-                        height: 280,
+                        'assets/images/splash.png',
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) {
-                          return _buildFallbackIllustration();
+                          return Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.contain,
+                            errorBuilder: (ctx, err, st) {
+                              return _buildFallbackLogo();
+                            },
+                          );
                         },
                       ),
                     ),
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
 
                   // Brand Title: SocialHive
                   RichText(
@@ -168,160 +172,33 @@ class SplashScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFallbackIllustration() {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Container(
-          width: 240,
-          height: 240,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: const Color(0xFF6366F1).withOpacity(0.12),
-              width: 1.5,
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 25,
-          child: Container(
-            width: 180,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEEECFF),
-              borderRadius: const BorderRadius.all(Radius.elliptical(180, 40)),
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 45,
-          child: _build3DBriefcase(),
-        ),
-      ],
-    );
-  }
-
-  // 3D Styled Briefcase Widget
-  Widget _build3DBriefcase() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Handle
-        Container(
-          width: 50,
-          height: 22,
-          decoration: BoxDecoration(
-            color: const Color(0xFF4F46E5),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(12),
-              topRight: Radius.circular(12),
-            ),
-            border: Border.all(color: const Color(0xFF6366F1), width: 3),
-          ),
-        ),
-        // Briefcase Body
-        Container(
-          width: 140,
-          height: 100,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF6366F1),
-                Color(0xFF4F46E5),
-                Color(0xFF4338CA),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF4338CA).withOpacity(0.35),
-                blurRadius: 18,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              // Strap details
-              Positioned(
-                top: 25,
-                child: Container(
-                  width: 140,
-                  height: 3,
-                  color: Colors.white.withOpacity(0.25),
-                ),
-              ),
-              // Center Clasp Lock
-              Container(
-                width: 24,
-                height: 20,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(6),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.12),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF4F46E5),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  // Floating Badge Node Widget
-  Widget _buildFloatingBadge({
-    required IconData icon,
-    required double size,
-    required Color iconColor,
-    required Color bgColor,
-  }) {
+  Widget _buildFallbackLogo() {
     return Container(
-      width: size,
-      height: size,
+      width: 140,
+      height: 140,
       decoration: BoxDecoration(
-        color: Colors.white,
-        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF6366F1),
+            Color(0xFF4F46E5),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF6366F1).withOpacity(0.18),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
+            color: const Color(0xFF4F46E5).withValues(alpha: 0.35),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
         ],
       ),
-      child: Center(
-        child: Container(
-          width: size - 8,
-          height: size - 8,
-          decoration: BoxDecoration(
-            color: bgColor,
-            shape: BoxShape.circle,
-          ),
-          child: Icon(
-            icon,
-            size: size * 0.45,
-            color: iconColor,
-          ),
+      child: const Center(
+        child: Icon(
+          Icons.auto_awesome_rounded,
+          color: Colors.white,
+          size: 54,
         ),
       ),
     );
