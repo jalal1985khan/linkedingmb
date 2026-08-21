@@ -306,20 +306,45 @@ class _BusinessProfileScreenState extends ConsumerState<BusinessProfileScreen> w
                           controller: _tabController!,
                           isScrollable: true,
                           tabAlignment: TabAlignment.start,
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
                           labelColor: const Color(0xFF4F46E5),
                           unselectedLabelColor: textSecondary,
                           indicatorColor: const Color(0xFF4F46E5),
                           indicatorWeight: 3,
                           indicatorSize: TabBarIndicatorSize.tab,
-                          labelStyle: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
-                          unselectedLabelStyle: GoogleFonts.inter(fontWeight: FontWeight.w500, fontSize: 13),
+                          labelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700, fontSize: 13),
+                          unselectedLabelStyle: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600, fontSize: 13),
                           tabs: const [
-                            Tab(icon: Icon(Icons.info_outline, size: 20), text: 'Basic Info'),
-                            Tab(icon: Icon(Icons.interests_outlined, size: 20), text: 'Categories'),
-                            Tab(icon: Icon(Icons.photo_library_outlined, size: 20), text: 'Photos & Logos'),
-                            Tab(icon: Icon(Icons.calendar_month_outlined, size: 20), text: 'Bookings'),
-                            Tab(icon: Icon(Icons.build_outlined, size: 20), text: 'Services'),
-                            Tab(icon: Icon(Icons.more_horiz, size: 20), text: 'More'),
+                            Tab(
+                              icon: Icon(Icons.info_outline_rounded, size: 19),
+                              iconMargin: EdgeInsets.only(bottom: 4),
+                              text: 'Basic Info',
+                            ),
+                            Tab(
+                              icon: Icon(Icons.interests_outlined, size: 19),
+                              iconMargin: EdgeInsets.only(bottom: 4),
+                              text: 'Categories',
+                            ),
+                            Tab(
+                              icon: Icon(Icons.photo_library_outlined, size: 19),
+                              iconMargin: EdgeInsets.only(bottom: 4),
+                              text: 'Photos & Logos',
+                            ),
+                            Tab(
+                              icon: Icon(Icons.calendar_month_outlined, size: 19),
+                              iconMargin: EdgeInsets.only(bottom: 4),
+                              text: 'Bookings',
+                            ),
+                            Tab(
+                              icon: Icon(Icons.build_outlined, size: 19),
+                              iconMargin: EdgeInsets.only(bottom: 4),
+                              text: 'Services',
+                            ),
+                            Tab(
+                              icon: Icon(Icons.more_horiz_rounded, size: 19),
+                              iconMargin: EdgeInsets.only(bottom: 4),
+                              text: 'More',
+                            ),
                           ],
                         ),
                         backgroundColor: cardBgColor,
@@ -1700,10 +1725,10 @@ class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
   });
 
   @override
-  double get minExtent => 48.0;
+  double get minExtent => 60.0;
 
   @override
-  double get maxExtent => 48.0;
+  double get maxExtent => 60.0;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
@@ -1712,6 +1737,7 @@ class _TabBarHeaderDelegate extends SliverPersistentHeaderDelegate {
         color: backgroundColor,
         border: Border(bottom: BorderSide(color: borderColor, width: 1)),
       ),
+      padding: const EdgeInsets.only(top: 4),
       child: tabBar,
     );
   }
