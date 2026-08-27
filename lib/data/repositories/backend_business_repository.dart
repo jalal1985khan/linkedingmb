@@ -499,6 +499,61 @@ class BackendBusinessRepository implements BusinessRepository {
     return response.statusCode == 200;
   }
 
+  Future<bool> updateProduct(String locationId, String productId, Map<String, dynamic> productData) async {
+    final token = await _secureStorage.read(key: _tokenStorageKey);
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/gmb/products/$productId?location_id=${Uri.encodeComponent(locationId)}',
+    );
+    final response = await _httpClient.put(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(productData),
+    );
+
+    return response.statusCode == 200;
+  }
+
+  Future<bool> syncProduct(String locationId, String productId) async {
+    final token = await _secureStorage.read(key: _tokenStorageKey);
+    final uri = Uri.parse(
+      '${ApiConfig.baseUrl}/api/gmb/products/$productId/sync?location_id=${Uri.encodeComponent(locationId)}',
+    );
+    final response = await _httpClient.post(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({}),
+    );
+
+    return response.statusCode == 200;
+  }
+
+  Future<String?> uploadProductImage(List<int> bytes, String filename) async {
+    try {
+      final token = await _secureStorage.read(key: _tokenStorageKey);
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/image/upload');
+      final request = http.MultipartRequest('POST', uri);
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.files.add(
+        http.MultipartFile.fromBytes('file', bytes, filename: filename),
+      );
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return data['url']?.toString();
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<List<Map<String, dynamic>>> analyzeWebsiteProducts(String locationId, {String? websiteUrl}) async {
     final token = await _secureStorage.read(key: _tokenStorageKey);
     final uri = Uri.parse(

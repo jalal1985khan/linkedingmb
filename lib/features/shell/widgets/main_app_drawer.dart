@@ -147,8 +147,8 @@ class _MainAppDrawerState extends ConsumerState<MainAppDrawer> {
                     onTap: () => _handleTabSelect(0),
                   ),
                   DrawerNavItem(
-                    icon: Icons.business_center_outlined,
-                    label: 'Manage Services',
+                    icon: Icons.inventory_2_outlined,
+                    label: 'Manage Products',
                     selected: widget.selectedIndex == 2,
                     onTap: () => _handleTabSelect(2),
                   ),

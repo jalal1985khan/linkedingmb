@@ -74,7 +74,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildNavItem(0, 'Home', Icons.home_rounded, Icons.home_outlined, currentIndex),
-                _buildNavItem(2, 'Services', Icons.business_center_rounded, Icons.business_center_outlined, currentIndex),
+                _buildNavItem(2, 'Products', Icons.inventory_2_rounded, Icons.inventory_2_outlined, currentIndex),
                 // Center Floating Create Button
                 GestureDetector(
                   onTap: () {
